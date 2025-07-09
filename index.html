@@ -13,10 +13,15 @@
 
   <style>
     :root {
-      --color-background: #F8F9FA; --color-surface: #FFFFFF; --color-border: #E9ECEF;
-      --color-text-primary: #181A1C; --color-text-secondary: #5A6169;
-      --color-accent-blue: #3A5F8A; --color-accent-blue-light: #6F8DAF;
-      --color-accent-warm: #8B5E3C; --color-danger: #e63946;
+      /* Paleta de colores actualizada con acento rojo */
+      --color-background: #F8F9FA;
+      --color-surface: #FFFFFF;
+      --color-border: #E9ECEF;
+      --color-text-primary: #181A1C;
+      --color-text-secondary: #5A6169;
+      --color-accent-red: #E64937; /* Nuevo color de acento principal */
+      --color-accent-red-hover: #D04533; /* Tono más oscuro para hover */
+      --color-accent-warm: #8B5E3C;
       --shadow-soft: 0 8px 25px rgba(0, 0, 0, 0.06);
       --font-body: 'Inter', sans-serif;
     }
@@ -39,7 +44,7 @@
       position: sticky; top: 0; z-index: 100;
     }
     .logo-container { display:flex; align-items:center; gap: 0.75rem; text-decoration:none; }
-    .logo { height: 40px; }
+    .logo { height: 68px; /* Agrandado 1.7x */ }
     .header-title .main-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); }
     .header-title .subtitle-text { font-size: 0.8rem; font-weight: 400; color: var(--color-text-secondary); }
     
@@ -51,7 +56,7 @@
       cursor: pointer; transition: all 0.2s ease-out; text-decoration: none;
     }
     .btn-header:hover { transform: scale(0.95); background-color: #ced4da; }
-    .btn-header img { width: 26px; height: 26px; object-fit: contain; }
+    .btn-header img { width: 39px; height: 39px; /* Agrandados 1.5x */ object-fit: contain; }
     
     .hero { text-align: center; padding: 4rem 2rem 3rem; }
     .hero-title-wrapper { display: flex; justify-content: center; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
@@ -61,7 +66,7 @@
       color: var(--color-text-primary);
     }
     .hero h1 .highlight { color: var(--color-accent-warm); }
-    .hero .title-logo { height: 75px; }
+    .hero .title-logo { height: 150px; /* Agrandado 2x */ }
     .hero p { font-size: 1.05rem; color: var(--color-text-secondary); max-width: 650px; margin: 0.5rem auto 0 auto; font-weight: 400; }
     
     main { padding: 0 2rem 2rem 2rem; }
@@ -72,7 +77,7 @@
     .fade-in { opacity: 0; transform: translateY(15px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
     .fade-in.is-visible { opacity: 1; transform: translateY(0); }
     
-    .form-section-header { border-left: 3px solid var(--color-accent-blue); padding-left: 1rem; margin-bottom: 1.25rem; }
+    .form-section-header { border-left: 3px solid var(--color-accent-red); padding-left: 1rem; margin-bottom: 1.25rem; }
     .form-section-header h2 { font-size: 1.2rem; font-weight: 700; }
     .form-section-header p { font-size: 0.85rem; color: var(--color-text-secondary); }
     
@@ -80,12 +85,12 @@
     
     label { display: block; margin-top: 0.75rem; font-weight: 500; font-size: 0.8rem; margin-bottom: 0.4rem; }
     input, select, textarea { padding: 0.8rem; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary); font-family: var(--font-body); transition: all 0.3s ease; width: 100%; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent-blue); box-shadow: 0 0 0 3px rgba(58, 95, 138, 0.15); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent-red); box-shadow: 0 0 0 3px rgba(230, 73, 55, 0.15); }
     
     #logos-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 0.75rem; padding: 0.5rem 0; }
     .logo-wrapper { height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; padding: 0.5rem; border-radius: 8px; border: 1px solid transparent; }
     .logo-wrapper:hover { background-color: #f1f3f5; }
-    .logo-wrapper.selected { background-color: var(--color-surface); border-color: var(--color-accent-blue-light); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .logo-wrapper.selected { background-color: var(--color-surface); border-color: var(--color-accent-red-hover); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     .logo-wrapper img { width: 100%; max-width: 40px; height: 40px; object-fit: contain; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s, opacity 0.3s; filter: grayscale(1); opacity: 0.6; margin-bottom: 0.3rem; }
     .logo-wrapper.selected img { transform: scale(2); filter: none; opacity: 1; }
     .logo-wrapper span { font-size: 0.7rem; color: var(--color-text-secondary); font-weight: 500; text-align: center; }
@@ -102,9 +107,9 @@
     
     .btn-form-action { width: fit-content; border: none; padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
     .btn-form-action:hover:not(:disabled) { transform: translateY(-2px); }
-    .btn-form-action img { width: 16px; height: 16px; object-fit: contain;}
-    #btn-assistant-form { margin-top: 1rem; background-color: var(--color-surface); border: 1px solid var(--color-accent-blue); color: var(--color-accent-blue); }
-    #btn-assistant-form:hover { background-color: var(--color-accent-blue); color: white; }
+    .btn-form-action img { width: 24px; height: 24px; /* Agrandado 1.5x */ object-fit: contain;}
+    #btn-assistant-form { margin-top: 1rem; background-color: var(--color-accent-red); color: white; }
+    #btn-assistant-form:hover { background-color: var(--color-accent-red-hover); }
     #submit-button-whatsapp { margin-top: 1rem; background-color: #25D366; color: white; width:100%; }
     #submit-button-whatsapp:hover:not(:disabled) { background-color: #1DAE51; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.2); }
     #submit-button-whatsapp:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
@@ -131,7 +136,7 @@
     .chat-widget.hidden { opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none; }
     .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
     .chat-header .title-group { display: flex; align-items: center; gap: 0.75rem; }
-    .chat-header .title-group img { width: 24px; height: 24px; }
+    .chat-header .title-group img { width: 36px; height: 36px; /* Agrandado 1.5x */ }
     .chat-header h4 { margin: 0; color: var(--color-text-primary); font-weight: 600; font-size: 1rem; }
     .chat-header-buttons { display: flex; align-items: center; gap: 0.5rem; }
     .chat-header-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; }
@@ -140,7 +145,7 @@
     .chat-close-btn { font-size: 1.8rem; line-height: 1; }
     .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
     .chat-message { padding: 0.75rem 1.25rem; border-radius: 18px; max-width: 85%; line-height: 1.5; word-wrap: break-word; font-size: 0.95rem; }
-    .user-message { background-color: var(--color-accent-blue); color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
+    .user-message { background-color: var(--color-accent-red); color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
     .assistant-message { background-color: #f1f3f5; color: var(--color-text-primary); align-self: flex-start; border-bottom-left-radius: 6px; }
     .chat-input-container { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-surface); flex-shrink: 0; }
     #chat-input { flex-grow: 1; background: var(--color-background); border-color: var(--color-border); }
@@ -148,13 +153,13 @@
         background-color: transparent; border: 1px solid var(--color-border); border-radius: 10px;
         width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; transition: all 0.2s ease; color: var(--color-text-secondary); flex-shrink: 0;
-        -webkit-user-select: none; user-select: none; /* Evita seleccionar texto al mantener presionado */
+        -webkit-user-select: none; user-select: none;
     }
     #chat-mic-btn:hover { color: var(--color-text-primary); background-color: #f1f3f5; }
     #chat-mic-btn.is-listening { color: white; background-color: var(--color-danger); transform: scale(1.1); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 57, 70, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); } }
-    #chat-send-btn { background-color: var(--color-accent-blue); border: none; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease; color: white; flex-shrink: 0; }
-    #chat-send-btn:hover { background-color: var(--color-accent-blue-light); }
+    #chat-send-btn { background-color: var(--color-accent-red); border: none; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease; color: white; flex-shrink: 0; }
+    #chat-send-btn:hover { background-color: var(--color-accent-red-hover); }
     #chat-send-btn:disabled { background-color: var(--color-border); cursor: not-allowed; }
     #chat-send-btn svg { width: 20px; height: 20px; }
     .thinking-dots span { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; } .thinking-dots span:nth-of-type(1) { animation-delay: -0.32s; } .thinking-dots span:nth-of-type(2) { animation-delay: -0.16s; } @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
@@ -174,6 +179,7 @@
     }
     @media (max-width: 768px) {
       .header-title { display: block; }
+      .logo { height: 35px; } /* Ajuste para móvil */
       .header-buttons { gap: 0.5rem; }
       .btn-header { width: 40px; height: 40px; }
       .btn-header img { width: 20px; height: 20px; }
@@ -190,7 +196,7 @@
     <div class="content-column">
       <header>
         <a href="#" class="logo-container">
-          <img src="reeccaja.png" alt="ANG AutoPartes" class="logo" />
+          <img src="reeccaja.png" alt="AGN AutoPartes" class="logo" />
           <div class="header-title">
             <span class="main-title">ANG AutoRepuestos</span>
             <span class="subtitle-text">Cotización Inteligente</span>
@@ -276,7 +282,7 @@
             </form>
             
             <div id="selected-brand-display" class="fade-in">
-              <div class="display-logo-container"><img id="selected-brand-display-logo" src="docs.png" alt="Logo por defecto"></div>
+              <div class="display-logo-container"><img id="selected-brand-display-logo" src="reeccaja.png" alt="Logo por defecto"></div>
               <h3 id="selected-brand-name">RESUMEN DE COTIZACIÓN</h3>
               <div id="live-data-display">
                   <p id="display-modelo" style="display:none;"><strong>Modelo:</strong> <span></span></p>
