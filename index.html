@@ -3,8 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AGN AutoPartes -  Cotización Inteligente</title>
+  <title>AGN AutoPartes - Cotización Inteligente</title>
+  
+  <!-- === METADATOS PARA VISTA PREVIA (MINIATURA) EN WHATSAPP Y REDES SOCIALES === -->
   <meta name="description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agnautopartes.github.io/">
+  <meta property="og:title" content="AGN AutoPartes - Cotización Inteligente">
+  <meta property="og:description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
+  <meta property="og:image" content="https://agnautopartes.github.io/images/social-preview.png"> <!-- ¡IMPORTANTE! Debes crear y subir esta imagen -->
+  <meta property="og:site_name" content="ANG AutoRepuestos">
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://agnautopartes.github.io/">
+  <meta property="twitter:title" content="AGN AutoPartes - Cotización Inteligente">
+  <meta property="twitter:description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
+  <meta property="twitter:image" content="https://agnautopartes.github.io/images/social-preview.png"> <!-- ¡IMPORTANTE! Debes crear y subir esta imagen -->
+  <!-- ============================================================================= -->
+
   <link rel="icon" href="reeccaja.png" type="image/png">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,13 +68,13 @@
     .header-buttons { display: flex; align-items: center; gap: 0.75rem; }
     .btn-header {
       background-color: #e9ecef; border: 1px solid var(--color-border); color: var(--color-text-primary);
-      width: 52px; height: 52px; /* Agrandados */
+      width: 68px; height: 68px; /* Agrandados 1.3x */
       border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.2s ease-out; text-decoration: none;
     }
     .btn-header:hover { transform: scale(0.95); background-color: #ced4da; }
-    .btn-header img { width: 28px; height: 28px; /* Agrandados */ object-fit: contain; }
+    .btn-header img { width: 36px; height: 36px; /* Agrandados 1.3x */ object-fit: contain; }
     
     .hero { text-align: center; padding: 4rem 2rem 3rem; }
     .hero-title-wrapper { display: flex; justify-content: center; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
@@ -68,7 +85,7 @@
     }
     .hero h1 .highlight { color: var(--color-accent-warm); }
     .hero .title-logo { height: 150px; }
-    .hero p { font-size: 1.05rem; color: var(--color-text-secondary); max-width: 650px; margin: 0.5rem auto 0 auto; font-weight: 400; }
+    .hero p { font-size: 1.35rem; /* Agrandado 1.3x */ color: var(--color-text-secondary); max-width: 650px; margin: 0.5rem auto 0 auto; font-weight: 400; }
     
     main { padding: 0 2rem 2rem 2rem; }
     .main-content-wrapper { position: relative; }
@@ -88,13 +105,13 @@
     input, select, textarea { padding: 0.8rem; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary); font-family: var(--font-body); transition: all 0.3s ease; width: 100%; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent-red); box-shadow: 0 0 0 3px rgba(230, 73, 55, 0.15); }
     
-    #logos-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 0.75rem; padding: 0.5rem 0; }
-    .logo-wrapper { height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; padding: 0.5rem; border-radius: 8px; border: 1px solid transparent; }
+    #logos-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 0.75rem; padding: 0.5rem 0; }
+    .logo-wrapper { height: 100px; /* Agrandado 1.25x */ display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; padding: 0.5rem; border-radius: 8px; border: 1px solid transparent; }
     .logo-wrapper:hover { background-color: #f1f3f5; }
     .logo-wrapper.selected { background-color: var(--color-surface); border-color: var(--color-accent-red-hover); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .logo-wrapper img { width: 100%; max-width: 40px; height: 40px; object-fit: contain; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s, opacity 0.3s; filter: grayscale(1); opacity: 0.6; margin-bottom: 0.3rem; }
+    .logo-wrapper img { width: 100%; max-width: 50px; /* Agrandado 1.25x */ height: 50px; /* Agrandado 1.25x */ object-fit: contain; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s, opacity 0.3s; filter: grayscale(1); opacity: 0.6; margin-bottom: 0.3rem; }
     .logo-wrapper.selected img { transform: scale(2); filter: none; opacity: 1; }
-    .logo-wrapper span { font-size: 0.7rem; color: var(--color-text-secondary); font-weight: 500; text-align: center; }
+    .logo-wrapper span { font-size: 0.875rem; /* Agrandado 1.25x */ color: var(--color-text-secondary); font-weight: 500; text-align: center; }
     
     #selected-brand-display { position: sticky; top: 110px; text-align: center; padding: 1.5rem; }
     .display-logo-container { height: 95px; margin-bottom: 0.5rem; display:flex; justify-content:center; align-items:center; }
@@ -199,7 +216,7 @@
         <a href="#" class="logo-container">
           <img src="reeccaja.png" alt="AGN AutoPartes" class="logo" />
           <div class="header-title">
-            <span class="main-title">ANG AutoPartes</span>
+            <span class="main-title">ANG AutoRepuestos</span>
             <span class="subtitle-text">Cotización Inteligente</span>
           </div>
         </a>
