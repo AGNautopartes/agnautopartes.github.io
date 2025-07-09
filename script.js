@@ -127,15 +127,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let selectedVoice;
             const maleNames = ['jorge', 'diego', 'pablo', 'carlos', 'male', 'hombre'];
             
-            // Prioridad 1: Voces masculinas de alta calidad
             selectedVoice = this.voices.find(voice => voice.name.includes('Google') && maleNames.some(name => voice.name.toLowerCase().includes(name)));
-            
-            // Prioridad 2: Cualquier voz masculina
             if (!selectedVoice) {
                 selectedVoice = this.voices.find(voice => maleNames.some(name => voice.name.toLowerCase().includes(name)));
             }
-
-            // Prioridad 3: Fallback a la primera voz en español
             if (!selectedVoice) {
                 selectedVoice = this.voices.find(voice => voice.lang === 'es-ES') || this.voices[0];
             }
@@ -156,10 +151,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.recognition.interimResults = false;
 
             if(chatMicBtn) {
-                // Implementación Push-to-Talk
                 chatMicBtn.addEventListener('mousedown', () => {
                     try {
-                        this.synth.cancel(); // Silencia al asistente al presionar
+                        this.synth.cancel(); 
                         this.recognition.start();
                     } catch(e) { console.error("Error al iniciar reconocimiento:", e); }
                 });
@@ -168,7 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.recognition.stop();
                     } catch(e) { console.error("Error al detener reconocimiento:", e); }
                 });
-                // Soporte táctil para móvil
                 chatMicBtn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     try {
@@ -218,12 +211,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const voiceAssistant = new VoiceAssistant();
 
-
     // ==================================================================
     // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
     // ==================================================================
     
-    function addMessage(sender, text, isThinking = false) { if (!chatMessages) return; const existingThinkingMessage = document.getElementById('thinking-message'); if (existingThinkingMessage) existingThinkingMessage.remove(); const messageElement = document.createElement('div'); messageElement.classList.add('chat-message', `${sender}-message`); if (isThinking) { messageElement.innerHTML = '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>'; messageElement.id = 'thinking-message'; } else { messageElement.textContent = text; } chatMessages.appendChild(messageElement); chatMessages.scrollTop = chatMessages.scrollHeight; return messageElement; }
+    function addMessage(sender, text, isThinking = false) { 
+        if (!chatMessages) return; 
+        const existingThinkingMessage = document.getElementById('thinking-message'); 
+        if (existingThinkingMessage) existingThinkingMessage.remove(); 
+        const messageElement = document.createElement('div'); 
+        messageElement.classList.add('chat-message', `${sender}-message`); 
+        if (isThinking) { 
+            messageElement.innerHTML = '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>'; 
+            messageElement.id = 'thinking-message'; 
+        } else { 
+            messageElement.textContent = text; 
+        } 
+        chatMessages.appendChild(messageElement); 
+        chatMessages.scrollTop = chatMessages.scrollHeight; 
+        return messageElement; 
+    }
     
     async function handleSendMessage() {
         const messageText = chatInput.value.trim();
@@ -325,9 +332,9 @@ document.addEventListener('DOMContentLoaded', function() {
         anioSelect.disabled = true;
         
         document.getElementById('otro-modelo-container').style.display = 'none';
-        document.getElementById('otro-modelo').required = false;
+        if(document.getElementById('otro-modelo')) document.getElementById('otro-modelo').required = false;
         document.getElementById('otro-anio-container').style.display = 'none';
-        document.getElementById('otro-anio').required = false;
+        if(document.getElementById('otro-anio')) document.getElementById('otro-anio').required = false;
 
         updateLiveData('modelo', ''); updateLiveData('anio', '');
         
