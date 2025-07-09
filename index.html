@@ -4,7 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AGN AutoPartes -  Cotización Inteligente</title>
+  
   <meta name="description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
+  <meta property="og:title" content="AGN AutoPartes - Cotización Inteligente">
+  <meta property="og:description" content="Importamos el repuesto que necesitas. Usa nuestro asistente IA para una cotización inmediata.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://agnautopartes.github.io/images/post.png">
+  <meta property="og:url" content="https://agnautopartes.github.io/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://agnautopartes.github.io/images/post.png">
+
   <link rel="icon" href="reeccaja.png" type="image/png">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,7 +49,7 @@
       position: sticky; top: 0; z-index: 100;
     }
     .logo-container { display:flex; align-items:center; gap: 0.75rem; text-decoration:none; }
-    .logo { height: 40px; }
+    .logo { height: 68px; /* CORREGIDO Y VERIFICADO */ }
     .header-title .main-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); }
     .header-title .subtitle-text { font-size: 0.8rem; font-weight: 400; color: var(--color-text-secondary); }
     
@@ -62,7 +71,7 @@
       color: var(--color-text-primary);
     }
     .hero h1 .highlight { color: var(--color-accent-warm); }
-    .hero .title-logo { height: 75px; }
+    .hero .title-logo { height: 150px; /* CORREGIDO Y VERIFICADO */ }
     .hero p { font-size: 1.05rem; color: var(--color-text-secondary); max-width: 650px; margin: 0.5rem auto 0 auto; font-weight: 400; }
     
     main { padding: 0 2rem 2rem 2rem; }
@@ -91,7 +100,7 @@
     .logo-wrapper.selected img { transform: scale(2); filter: none; opacity: 1; }
     .logo-wrapper span { font-size: 0.7rem; color: var(--color-text-secondary); font-weight: 500; text-align: center; }
     
-    #selected-brand-display { position: sticky; top: 95px; text-align: center; padding: 1.5rem; }
+    #selected-brand-display { position: sticky; top: 110px; text-align: center; padding: 1.5rem; }
     .display-logo-container { height: 95px; margin-bottom: 0.5rem; display:flex; justify-content:center; align-items:center; }
     #selected-brand-display-logo { max-height: 95px; width: 100%; object-fit: contain; transition: opacity 0.3s ease; }
     #selected-brand-display h3 { font-size: 1.1rem; margin-top: 0.5rem; font-weight: 700; color:var(--color-text-primary); text-transform:uppercase; }
@@ -103,12 +112,13 @@
     
     .btn-form-action { width: fit-content; border: none; padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
     .btn-form-action:hover:not(:disabled) { transform: translateY(-2px); }
-    .btn-form-action img { width: 16px; height: 16px; object-fit: contain;}
+    .btn-form-action img { width: 24px; height: 24px; object-fit: contain;}
     #btn-assistant-form { margin-top: 1rem; background-color: var(--color-surface); border: 1px solid var(--color-accent-blue); color: var(--color-accent-blue); }
     #btn-assistant-form:hover { background-color: var(--color-accent-blue); color: white; }
     #submit-button-whatsapp { margin-top: 1rem; background-color: #25D366; color: white; width:100%; }
     #submit-button-whatsapp:hover:not(:disabled) { background-color: #1DAE51; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.2); }
     #submit-button-whatsapp:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
+    #submit-button-whatsapp img { width: 24px; height: 24px; }
     #submit-helper-text { font-size: 0.75rem; text-align: center; color: var(--color-accent-warm); margin-top: 0.5rem; font-weight: 500; height: 1em; }
 
     #vertical-carousel { position: fixed; left: 1.5rem; top: 0; width: 80px; height: 100vh; pointer-events: none; z-index: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); }
@@ -127,12 +137,11 @@
 
     .otro-input-container { display: none; margin-top: 0.5rem; }
 
-    /* === CHAT WIDGET === */
     .chat-widget { position: fixed; bottom: 2rem; right: 2rem; width: 370px; max-width: calc(100% - 2rem); height: 600px; max-height: calc(100vh - 4rem); background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); transform: translateY(0); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease; z-index: 10001; opacity: 1; overflow: hidden; }
     .chat-widget.hidden { opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none; }
     .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
     .chat-header .title-group { display: flex; align-items: center; gap: 0.75rem; }
-    .chat-header .title-group img { width: 24px; height: 24px; }
+    .chat-header .title-group img { width: 36px; height: 36px; /* CORREGIDO */ }
     .chat-header h4 { margin: 0; color: var(--color-text-primary); font-weight: 600; font-size: 1rem; }
     .chat-header-buttons { display: flex; align-items: center; gap: 0.5rem; }
     .chat-header-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; }
@@ -145,20 +154,9 @@
     .assistant-message { background-color: #f1f3f5; color: var(--color-text-primary); align-self: flex-start; border-bottom-left-radius: 6px; }
     .chat-input-container { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-surface); flex-shrink: 0; }
     #chat-input { flex-grow: 1; background: var(--color-background); border-color: var(--color-border); }
-    #chat-mic-btn {
-        background-color: transparent; border: 1px solid var(--color-border); border-radius: 10px;
-        width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.2s ease; color: var(--color-text-secondary); flex-shrink: 0;
-        -webkit-user-select: none; user-select: none;
-    }
-    /* CORRECCIÓN: Estilos :hover y .is-listening explícitos para el botón del micrófono */
+    #chat-mic-btn { background-color: transparent; border: 1px solid var(--color-border); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; color: var(--color-text-secondary); flex-shrink: 0; -webkit-user-select: none; user-select: none; }
     #chat-mic-btn:hover { color: var(--color-text-primary); background-color: #f1f3f5; }
-    #chat-mic-btn.is-listening, #chat-mic-btn:active {
-        color: white !important;
-        background-color: var(--color-danger) !important;
-        transform: scale(1.1);
-        animation: pulse 1.5s infinite;
-    }
+    #chat-mic-btn.is-listening, #chat-mic-btn:active { color: white !important; background-color: var(--color-danger) !important; transform: scale(1.1); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 73, 55, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 73, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 73, 55, 0); } }
     #chat-send-btn { background-color: var(--color-accent-blue); border: none; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease; color: white; flex-shrink: 0; }
     #chat-send-btn:hover { background-color: var(--color-accent-blue-light); }
@@ -181,6 +179,7 @@
     }
     @media (max-width: 768px) {
       .header-title { display: block; }
+      .logo { height: 35px; }
       .header-buttons { gap: 0.5rem; }
       .btn-header { width: 40px; height: 40px; }
       .btn-header img { width: 20px; height: 20px; }
