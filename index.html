@@ -4,24 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AGN AutoPartes -  Cotización Inteligente</title>
-  
-  <!-- Descripción general de la página para SEO -->
   <meta name="description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
-  
-  <!-- ======================================================= -->
-  <!-- == INICIO: ETIQUETAS OPEN GRAPH PARA WHATSAPP/REDES SOCIALES == -->
-  <!-- ======================================================= -->
-  <meta property="og:title" content="AGN AutoPartes - Cotización Inteligente">
-  <meta property="og:description" content="Importamos el repuesto que necesitas. Usa nuestro asistente IA para una cotización inmediata.">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="https://agnautopartes.github.io/images/post.png">
-  <meta property="og:url" content="https://agnautopartes.github.io/">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://agnautopartes.github.io/images/post.png">
-  <!-- ======================================================= -->
-  <!-- == FIN: ETIQUETAS OPEN GRAPH == -->
-  <!-- ======================================================= -->
-
   <link rel="icon" href="reeccaja.png" type="image/png">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -166,11 +149,17 @@
         background-color: transparent; border: 1px solid var(--color-border); border-radius: 10px;
         width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; transition: all 0.2s ease; color: var(--color-text-secondary); flex-shrink: 0;
-        -webkit-user-select: none; user-select: none; /* Evita seleccionar texto al mantener presionado */
+        -webkit-user-select: none; user-select: none;
     }
+    /* CORRECCIÓN: Estilos :hover y .is-listening explícitos para el botón del micrófono */
     #chat-mic-btn:hover { color: var(--color-text-primary); background-color: #f1f3f5; }
-    #chat-mic-btn.is-listening { color: white; background-color: var(--color-danger); transform: scale(1.1); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 57, 70, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); } }
+    #chat-mic-btn.is-listening, #chat-mic-btn:active {
+        color: white !important;
+        background-color: var(--color-danger) !important;
+        transform: scale(1.1);
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 73, 55, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 73, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 73, 55, 0); } }
     #chat-send-btn { background-color: var(--color-accent-blue); border: none; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease; color: white; flex-shrink: 0; }
     #chat-send-btn:hover { background-color: var(--color-accent-blue-light); }
     #chat-send-btn:disabled { background-color: var(--color-border); cursor: not-allowed; }
@@ -294,7 +283,7 @@
             </form>
             
             <div id="selected-brand-display" class="fade-in">
-              <div class="display-logo-container"><img id="selected-brand-display-logo" src="docs.png" alt="Logo por defecto"></div>
+              <div class="display-logo-container"><img id="selected-brand-display-logo" src="reeccaja.png" alt="Logo por defecto"></div>
               <h3 id="selected-brand-name">RESUMEN DE COTIZACIÓN</h3>
               <div id="live-data-display">
                   <p id="display-modelo" style="display:none;"><strong>Modelo:</strong> <span></span></p>
