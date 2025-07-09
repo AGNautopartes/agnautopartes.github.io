@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba de API de Gemini</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: #eee; padding: 20px; }
+        textarea { width: 100%; height: 80px; margin-bottom: 10px; }
+        button { padding: 10px 15px; cursor: pointer; }
+        #response { margin-top: 20px; padding: 15px; background: #333; border-radius: 5px; white-space: pre-wrap; }
+        .error { color: #ff8a80; }
+    </style>
+</head>
+<body>
+
+    <h1>Prueba Directa a la API de Google Gemini</h1>
+    
+    <textarea id="prompt" placeholder="Escribe tu pregunta aquí... (ej: Hola, ¿cómo estás?)"></textarea>
+    <button id="sendButton">Enviar a Gemini</button>
+    
+    <h2>Respuesta:</h2>
+    <pre id="response">Esperando pregunta...</pre>
+
+    <script>
+        const apiKey = 'AIzaSyCoSJrU2POi_8pFHzgro5XlCIIPsa1lt5M'; // <--- ¡¡¡REEMPLAZA ESTO!!!
+        const model = 'gemini-1.5-flash-latest';
+
+        const sendButton = document.getElementById('sendButton');
+        const promptInput = document.getElementById('prompt');
+        const responseDiv = document.getElementById('response');
+
+        sendButton.addEventListener('click', async () => {
+            const userPrompt = promptInput.value;
+            if (!userPrompt) {
+                responseDiv.textContent = "Por favor, escribe una pregunta.";
+                return;
+            }
+
+            responseDiv.textContent = "Llamando a la API, por favor espera...";
+            sendButton.disabled = true;
+
+            try {
+                // Preparamos la conversación como lo hace el script principal
+                const conversation = [
+                    { role: "user", parts: [{ text: "Eres un bot de prueba." }] },
+                    { role: "model", parts: [{ text: "Entendido." }] },
+                    { role: "user", parts: [{ text: userPrompt }] }
+                ];
+
+                const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: conversation })
+                });
+
+                const data = await apiResponse.json();
+
+                if (!apiResponse.ok) {
+                    // Si la API devuelve un error, lo mostramos
+                    throw new Error(data.error.message);
+                }
+                
+                // Extraemos y mostramos la respuesta
+                const assistantResponse = data.candidates[0].content.parts[0].text;
+                responseDiv.textContent = assistantResponse;
+                responseDiv.classList.remove('error');
+
+            } catch (error) {
+                console.error("Detalle del error:", error);
+                responseDiv.textContent = `Hubo un error: ${error.message}`;
+                responseDiv.classList.add('error');
+            } finally {
+                sendButton.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>

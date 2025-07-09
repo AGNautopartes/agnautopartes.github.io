@@ -1,10 +1,336 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>CUENCA ECUADOR,... Hola Mundo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autopartes Express Cuenca - Cotización Inteligente</title>
+  <meta name="description" content="Importamos el repuesto que necesitas. Cotiza con nosotros usando tu voz o el formulario. Originales y alternativos para todas las marcas.">
+  <link rel="icon" href="reeccaja.png" type="image/png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --color-background: #F8F9FA; --color-surface: #FFFFFF; --color-border: #E9ECEF;
+      --color-text-primary: #181A1C; --color-text-secondary: #5A6169;
+      --color-accent-blue: #3A5F8A; --color-accent-blue-light: #6F8DAF;
+      --color-accent-warm: #8B5E3C; --color-danger: #e63946;
+      --shadow-soft: 0 8px 25px rgba(0, 0, 0, 0.06);
+      --font-body: 'Inter', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body); background-color: var(--color-background);
+      color: var(--color-text-primary); line-height: 1.45; overflow-x: hidden;
+    }
+    
+    .video-container { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; z-index: -2; -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30%); mask-image: linear-gradient(to right, transparent 0%, black 30%); }
+    .video-container video { width: 100%; height: 100%; object-fit: cover; opacity: 0.25; }
+    .left-gradient-overlay { position: fixed; top: 0; left: 0; width: 40vw; height: 100vh; z-index: -2; background: linear-gradient(to right, rgba(13, 17, 23, 0.05), transparent); pointer-events: none; }
+    .page-wrapper { max-width: 1280px; margin: 0 auto; }
+
+    header {
+      background: rgba(248, 249, 250, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border); padding: 0.75rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo-container { display:flex; align-items:center; gap: 0.75rem; text-decoration:none; }
+    .logo { height: 40px; }
+    .header-title .main-title { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); }
+    .header-title .subtitle-text { font-size: 0.8rem; font-weight: 400; color: var(--color-text-secondary); }
+    
+    .header-buttons { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-header {
+      background-color: #e9ecef; border: 1px solid var(--color-border); color: var(--color-text-primary);
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s ease-out; text-decoration: none;
+    }
+    .btn-header:hover { transform: scale(0.95); background-color: #ced4da; }
+    .btn-header img { width: 26px; height: 26px; object-fit: contain; }
+    
+    .hero { text-align: center; padding: 4rem 2rem 3rem; }
+    .hero-title-wrapper { display: flex; justify-content: center; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+    .hero h1 {
+      font-weight: 800; font-size: clamp(2.2rem, 5vw, 3rem);
+      margin-bottom: 0.75rem; letter-spacing: -0.04em; line-height: 1.1;
+      color: var(--color-text-primary);
+    }
+    .hero h1 .highlight { color: var(--color-accent-warm); }
+    .hero .title-logo { height: 75px; }
+    .hero p { font-size: 1.05rem; color: var(--color-text-secondary); max-width: 650px; margin: 0.5rem auto 0 auto; font-weight: 400; }
+    
+    main { padding: 0 2rem 2rem 2rem; }
+    .main-content-wrapper { position: relative; }
+    .form-container { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: flex-start; }
+    #sparePartsForm, #selected-brand-display { background: var(--color-surface); border-radius: 16px; padding: 2rem; border: 1px solid var(--color-border); box-shadow: var(--shadow-soft); }
+    
+    .fade-in { opacity: 0; transform: translateY(15px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+    .fade-in.is-visible { opacity: 1; transform: translateY(0); }
+    
+    .form-section-header { border-left: 3px solid var(--color-accent-blue); padding-left: 1rem; margin-bottom: 1.25rem; }
+    .form-section-header h2 { font-size: 1.2rem; font-weight: 700; }
+    .form-section-header p { font-size: 0.85rem; color: var(--color-text-secondary); }
+    
+    .two-column-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; }
+    
+    label { display: block; margin-top: 0.75rem; font-weight: 500; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    input, select, textarea { padding: 0.8rem; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary); font-family: var(--font-body); transition: all 0.3s ease; width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent-blue); box-shadow: 0 0 0 3px rgba(58, 95, 138, 0.15); }
+    
+    #logos-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 0.75rem; padding: 0.5rem 0; }
+    .logo-wrapper { height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; padding: 0.5rem; border-radius: 8px; border: 1px solid transparent; }
+    .logo-wrapper:hover { background-color: #f1f3f5; }
+    .logo-wrapper.selected { background-color: var(--color-surface); border-color: var(--color-accent-blue-light); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .logo-wrapper img { width: 100%; max-width: 40px; height: 40px; object-fit: contain; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s, opacity 0.3s; filter: grayscale(1); opacity: 0.6; margin-bottom: 0.3rem; }
+    .logo-wrapper.selected img { transform: scale(2); filter: none; opacity: 1; }
+    .logo-wrapper span { font-size: 0.7rem; color: var(--color-text-secondary); font-weight: 500; text-align: center; }
+    
+    #selected-brand-display { position: sticky; top: 95px; text-align: center; padding: 1.5rem; }
+    .display-logo-container { height: 95px; margin-bottom: 0.5rem; display:flex; justify-content:center; align-items:center; }
+    #selected-brand-display-logo { max-height: 95px; width: 100%; object-fit: contain; transition: opacity 0.3s ease; }
+    #selected-brand-display h3 { font-size: 1.1rem; margin-top: 0.5rem; font-weight: 700; color:var(--color-text-primary); text-transform:uppercase; }
+    #live-data-display { margin: 1.25rem 0; text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+    #live-data-display p { margin-bottom: 0.5rem; font-size: 0.8rem; line-height: 1.4; word-break: break-word; }
+    #live-data-display strong { font-weight: 600; color: var(--color-text-primary); }
+    #live-data-display span { display: block; color: var(--color-text-secondary); margin-top: 2px; white-space: pre-wrap; }
+    #display-descripcion, #display-vin { grid-column: 1 / -1; }
+    
+    .btn-form-action { width: fit-content; border: none; padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+    .btn-form-action:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn-form-action img { width: 16px; height: 16px; object-fit: contain;}
+    #btn-assistant-form { margin-top: 1rem; background-color: var(--color-surface); border: 1px solid var(--color-accent-blue); color: var(--color-accent-blue); }
+    #btn-assistant-form:hover { background-color: var(--color-accent-blue); color: white; }
+    #submit-button-whatsapp { margin-top: 1rem; background-color: #25D366; color: white; width:100%; }
+    #submit-button-whatsapp:hover:not(:disabled) { background-color: #1DAE51; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.2); }
+    #submit-button-whatsapp:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
+    #submit-helper-text { font-size: 0.75rem; text-align: center; color: var(--color-accent-warm); margin-top: 0.5rem; font-weight: 500; height: 1em; }
+
+    #vertical-carousel { position: fixed; left: 1.5rem; top: 0; width: 80px; height: 100vh; pointer-events: none; z-index: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); }
+    .carousel-track { width: 100%; display: flex; flex-direction: column; align-items: center; animation: scroll-vertical 40s linear infinite; }
+    .carousel-track img { width: 100%; max-width: 60px; height: auto; margin-bottom: 2rem; opacity: 0.7; transition: opacity 0.3s ease; }
+    .carousel-track:hover img { opacity: 1; }
+    @keyframes scroll-vertical { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+
+    .image-collage { position: relative; width: 100%; height: 200px; margin-top: 2rem; }
+    .collage-img { position: absolute; height: 120px; width: auto; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+    .collage-img:hover { transform: scale(1.1) !important; z-index: 10 !important; }
+    .collage-img-1 { top: 0; left: 10%; transform: rotate(-8deg); z-index: 1; }
+    .collage-img-2 { top: 30%; left: 45%; transform: rotate(5deg); z-index: 2; }
+    .collage-img-3 { top: 10%; left: 80%; transform: rotate(10deg); z-index: 1; }
+    .collage-img-4 { top: 50%; left: 20%; transform: rotate(3deg); z-index: 3; }
+
+    .otro-input-container { display: none; margin-top: 0.5rem; }
+
+    /* === CHAT WIDGET === */
+    .chat-widget { position: fixed; bottom: 2rem; right: 2rem; width: 370px; max-width: calc(100% - 2rem); height: 600px; max-height: calc(100vh - 4rem); background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); transform: translateY(0); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease; z-index: 10001; opacity: 1; overflow: hidden; }
+    .chat-widget.hidden { opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none; }
+    .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+    .chat-header .title-group { display: flex; align-items: center; gap: 0.75rem; }
+    .chat-header .title-group img { width: 24px; height: 24px; }
+    .chat-header h4 { margin: 0; color: var(--color-text-primary); font-weight: 600; font-size: 1rem; }
+    .chat-header-buttons { display: flex; align-items: center; gap: 0.5rem; }
+    .chat-header-btn { background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; }
+    .chat-header-btn svg { width: 20px; height: 20px; }
+    .chat-header-btn:hover { color: var(--color-text-primary); }
+    .chat-close-btn { font-size: 1.8rem; line-height: 1; }
+    .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .chat-message { padding: 0.75rem 1.25rem; border-radius: 18px; max-width: 85%; line-height: 1.5; word-wrap: break-word; font-size: 0.95rem; }
+    .user-message { background-color: var(--color-accent-blue); color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
+    .assistant-message { background-color: #f1f3f5; color: var(--color-text-primary); align-self: flex-start; border-bottom-left-radius: 6px; }
+    .chat-input-container { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-surface); flex-shrink: 0; }
+    #chat-input { flex-grow: 1; background: var(--color-background); border-color: var(--color-border); }
+    #chat-mic-btn {
+        background-color: transparent; border: 1px solid var(--color-border); border-radius: 10px;
+        width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s ease; color: var(--color-text-secondary); flex-shrink: 0;
+        -webkit-user-select: none; user-select: none; /* Evita seleccionar texto al mantener presionado */
+    }
+    #chat-mic-btn:hover { color: var(--color-text-primary); background-color: #f1f3f5; }
+    #chat-mic-btn.is-listening { color: white; background-color: var(--color-danger); transform: scale(1.1); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 57, 70, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); } }
+    #chat-send-btn { background-color: var(--color-accent-blue); border: none; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s ease; color: white; flex-shrink: 0; }
+    #chat-send-btn:hover { background-color: var(--color-accent-blue-light); }
+    #chat-send-btn:disabled { background-color: var(--color-border); cursor: not-allowed; }
+    #chat-send-btn svg { width: 20px; height: 20px; }
+    .thinking-dots span { display: inline-block; animation: bounce 1.4s infinite ease-in-out both; } .thinking-dots span:nth-of-type(1) { animation-delay: -0.32s; } .thinking-dots span:nth-of-type(2) { animation-delay: -0.16s; } @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+
+    @media (max-width: 1350px) { #vertical-carousel { display: none; } }
+    @media (max-width: 992px) {
+      .video-container, .left-gradient-overlay, .image-collage { display: none; }
+      header { padding: 0.75rem 1rem; }
+      .hero { padding: 3rem 1rem 2rem; }
+      .hero h1 { font-size: clamp(2rem, 8vw, 2.5rem); } .hero p { font-size: 1rem; }
+      main { padding: 0 1rem; }
+      .form-container { grid-template-columns: 1fr; gap: 1.5rem; }
+      #sparePartsForm, #selected-brand-display { padding: 1.5rem; }
+      #selected-brand-display { position: static; margin-top: 1.5rem; order: 2; }
+      #sparePartsForm { order: 1; }
+      .two-column-grid { grid-template-columns: 1fr; gap: 0; }
+    }
+    @media (max-width: 768px) {
+      .header-title { display: block; }
+      .header-buttons { gap: 0.5rem; }
+      .btn-header { width: 40px; height: 40px; }
+      .btn-header img { width: 20px; height: 20px; }
+      #logos-container { grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+      .logo-wrapper { height: 70px; padding: 0.25rem; }
+      .logo-wrapper img { max-width: 30px; height: 30px; }
+      .logo-wrapper span { font-size: 0.6rem; }
+    }
+  </style>
 </head>
 <body>
-  <h1>CUENCA ECUADOR,... Hola Mundo   mundo</h1>
+  
+  <div class="page-wrapper">
+    <div class="content-column">
+      <header>
+        <a href="#" class="logo-container">
+          <img src="reeccaja.png" alt="Autopartes Express Cuenca Logo" class="logo" />
+          <div class="header-title">
+            <span class="main-title">AutopartesExpress</span>
+            <span class="subtitle-text">Cotización Inteligente</span>
+          </div>
+        </a>
+        <div class="header-buttons">
+          <button id="btn-assistant-header" class="btn-header" aria-label="Abrir Alex Asistente IA">
+            <img src="images/logoalex.png" alt="Alex Asistente IA">
+          </button>
+          <a href="https://wa.me/593999115626" class="btn-header" target="_blank" aria-label="Contactar por WhatsApp">
+            <img src="images/logowa.png" alt="WhatsApp">
+          </a>
+        </div>
+      </header>
+      
+      <div class="video-container">
+        <video id="bg-video" autoplay muted playsinline><source src="images/videos/1.mp4" type="video/mp4"></video>
+      </div>
+      <div class="left-gradient-overlay"></div>
+
+      <div class="main-content-wrapper">
+        <div id="vertical-carousel">
+          <div class="carousel-track"></div>
+        </div>
+
+        <section class="hero fade-in">
+          <div class="hero-title-wrapper">
+            <h1>Importamos el repuesto <span class="highlight">que necesitas.</span></h1>
+            <img src="images/arelogo.png" alt="Logo Are" class="title-logo">
+          </div>
+          <p>Usa nuestro asistente IA, Alex,  o llena el formulario para una cotización detallada y precisa con un experto.</p>
+        </section>
+
+        <main>
+          <div class="form-container">
+            <form id="sparePartsForm" novalidate>
+              <div class="form-section-header fade-in">
+                <h2>1. Datos del Vehículo</h2>
+                <p>Comienza con nuestro asistente o selecciona manualmente.</p>
+              </div>
+              <button type="button" id="btn-assistant-form" class="btn-form-action fade-in">
+                <img src="images/logoalex.png" alt="Alex Asistente IA">
+                Alex Asistente IA
+              </button>
+              <label class="fade-in" style="margin-top: 1.5rem;">MARCA:</label>
+              <div id="logos-container"></div>
+              <input type="hidden" id="marca" name="marca" required>
+              <div id="otra-marca-container" class="otro-input-container"><label for="otra-marca">Por favor, especifica la marca:</label><input type="text" id="otra-marca" name="otra-marca"></div>
+              
+              <div class="two-column-grid">
+                  <div>
+                    <label for="modelo" class="fade-in">MODELO:</label>
+                    <select id="modelo" name="modelo" required disabled class="fade-in"><option value="">Primero selecciona una marca</option></select>
+                    <div id="otro-modelo-container" class="otro-input-container"><label for="otro-modelo">Por favor, especifica el modelo:</label><input type="text" id="otro-modelo" name="otro-modelo"></div>
+                  </div>
+                  <div>
+                    <label for="anio" class="fade-in">AÑO:</label>
+                    <select id="anio" name="anio" required disabled class="fade-in"><option value="">Primero selecciona un modelo</option></select>
+                    <div id="otro-anio-container" class="otro-input-container"><label for="otro-anio">Por favor, especifica el año:</label><input type="text" id="otro-anio" name="otro-anio"></div>
+                  </div>
+              </div>
+
+              <hr style="border-color: var(--color-border); margin: 2rem 0;" class="fade-in">
+              
+              <div class="two-column-grid">
+                <div class="form-column">
+                  <div class="form-section-header fade-in"><h2>2. Datos del Repuesto</h2></div>
+                  <label for="descripcion" class="fade-in">DESCRIPCIÓN Y OBSERVACIONES:</label>
+                  <textarea id="descripcion" name="descripcion" required rows="5" placeholder="Ej: Amortiguadores, pastillas..." class="fade-in"></textarea>
+                  <label for="vin" class="fade-in">VIN (OPCIONAL):</label>
+                  <input type="text" id="vin" name="vin" placeholder="17 dígitos" class="fade-in"/>
+                </div>
+                <div class="form-column">
+                  <div class="form-section-header fade-in"><h2>3. Datos de Contacto</h2></div>
+                  <label for="nombre" class="fade-in">NOMBRE COMPLETO:</label>
+                  <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre" class="fade-in"/>
+                  <label for="telefono" class="fade-in">NÚMERO DE WHATSAPP:</label>
+                  <input type="tel" id="telefono" name="telefono" required placeholder="0991234567" class="fade-in"/>
+                  <label for="ubicacion" class="fade-in">CIUDAD (OPCIONAL):</label>
+                  <input type="text" id="ubicacion" name="ubicacion" placeholder="Cuenca" class="fade-in">
+                </div>
+              </div>
+            </form>
+            
+            <div id="selected-brand-display" class="fade-in">
+              <div class="display-logo-container"><img id="selected-brand-display-logo" src="reeccaja.png" alt="Logo por defecto"></div>
+              <h3 id="selected-brand-name">RESUMEN DE COTIZACIÓN</h3>
+              <div id="live-data-display">
+                  <p id="display-modelo" style="display:none;"><strong>Modelo:</strong> <span></span></p>
+                  <p id="display-anio" style="display:none;"><strong>Año:</strong> <span></span></p>
+                  <p id="display-nombre" style="display:none;"><strong>Cliente:</strong> <span></span></p>
+                  <p id="display-telefono" style="display:none;"><strong>Teléfono:</strong> <span></span></p>
+                  <p id="display-vin" style="display:none;"><strong>VIN:</strong> <span></span></p>
+                  <p id="display-descripcion" style="display:none;"><strong>Solicitud:</strong> <span></span></p>
+              </div>
+              <button type="button" id="submit-button-whatsapp" class="btn-form-action" disabled>
+                 <img src="images/logowa.png" alt="WhatsApp">
+                 Enviar por WhatsApp
+              </button>
+              <p id="submit-helper-text" class="form-notice"></p>
+              
+              <div class="image-collage fade-in">
+                <img src="images/varias1.png" alt="Repuesto 1" class="collage-img collage-img-1">
+                <img src="images/varias2.png" alt="Repuesto 2" class="collage-img collage-img-2">
+                <img src="images/varias3.png" alt="Repuesto 3" class="collage-img collage-img-3">
+                <img src="images/varias4.png" alt="Repuesto 4" class="collage-img collage-img-4">
+              </div>
+
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  
+  <div id="chat-widget" class="chat-widget hidden">
+    <div class="chat-header">
+      <div class="title-group">
+        <img src="images/logoalex.png" alt="Alex Asistente IA">
+        <h4>Alex, su Asistente</h4>
+      </div>
+      <div class="chat-header-buttons">
+          <button id="chat-mute-btn" class="chat-header-btn" aria-label="Silenciar asistente">
+              <svg id="icon-unmuted" fill="currentColor" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              <svg id="icon-muted" fill="currentColor" viewBox="0 0 24 24" width="20" height="20" style="display: none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+          </button>
+          <button id="chat-close-btn" class="chat-header-btn chat-close-btn" aria-label="Cerrar chat">×</button>
+      </div>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-container">
+      <input type="text" id="chat-input" placeholder="Escribe o presiona el micrófono...">
+      <button id="chat-mic-btn" aria-label="Mantén presionado para hablar">
+        <svg fill="currentColor" viewBox="0 0 24 24" width="20" height="20"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+      </button>
+      <button id="chat-send-btn" aria-label="Enviar mensaje">
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script>
 </body>
 </html>

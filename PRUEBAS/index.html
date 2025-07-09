@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autopartes Express Cuenca</title>
+  <meta name="description" content="Importamos repuestos originales y alternativos para todas las marcas en Cuenca. Lo que no hay aquí, lo traemos por ti. El mejor soporte para el usuario y el taller.">
+  <meta property="og:title" content="Autopartes Express Cuenca">
+  <meta property="og:description" content="No dejes que un repuesto detenga tu reparación. Importamos para todas las marcas.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://repuestosexpresscuenca.github.io/reeccaja.png">
+  <meta property="og:url" content="https://repuestosexpresscuenca.github.io/">
+  <link rel="icon" href="reeccaja.png" type="image/png">
+  <style>
+    :root {
+      --color-background: #F5F5F5;
+      --color-surface: #FFFFFF;
+      --color-border: #E0E0E0;
+      --color-text-primary: #212121;
+      --color-text-secondary: #757575;
+      --color-accent: #1B263B;
+      --color-accent-dark: #415A77;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-family);
+      background-color: var(--color-background);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 1rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-container { display: flex; align-items: center; gap: 1rem; text-decoration: none; }
+    .logo { height: 45px; cursor: pointer; }
+    .header-title .main-title { font-size: 1.3rem; font-weight: 700; }
+    .header-title .subtitle-text { font-size: 0.85rem; color: var(--color-text-secondary); }
+    .header-buttons { display: flex; align-items: center; gap: 1rem; }
+    .btn-assistant-header {
+      background-color: var(--color-accent);
+      color: #FFF;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .btn-assistant-header:hover { background-color: var(--color-accent-dark); }
+    .btn-whatsapp-header { display: none; } /* moved to form */
+    .hero { text-align: center; padding: 4rem 2rem; }
+    .hero-logo { height: 120px; margin-bottom: 1rem; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 0.5rem; }
+    .hero p { font-size: 1.2rem; color: var(--color-text-secondary); }
+    main { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    .form-container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    /* vehicle form */
+    #sparePartsForm { background: var(--color-surface); padding: 2rem; border: 1px solid var(--color-border); border-radius: 12px; }
+    .progress-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .progress-step { flex: 1; height: 6px; background: var(--color-border); border-radius: 3px; }
+    .progress-step.active { background: var(--color-accent); }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    h2.step-title { margin-bottom: 0.5rem; }
+    label { display: block; margin-top: 1rem; margin-bottom: 0.5rem; }
+    select, input, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; font-family: var(--font-family); }
+    .form-navigation { display: flex; justify-content: space-between; margin-top: 1.5rem; }
+    .btn-next, .btn-prev { background: var(--color-accent); color: #FFF; border: none; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; }
+    .btn-prev { background: var(--color-border); color: var(--color-text-primary); }
+    /* WhatsApp send button in form */
+    #btn-send-data {
+      display: none;
+      background-color: #25D366;
+      color: #FFF;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 700;
+      text-align: center;
+      margin: 1rem 0;
+    }
+    #btn-send-data:hover { opacity: 0.9; }
+    /* logos grid */
+    #logos-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 1rem; }
+    .logo-wrapper { padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 8px; text-align: center; cursor: pointer; }
+    .logo-wrapper img { max-width: 50px; height: 50px; }
+    /* selected brand display */
+    #selected-brand-display { background: var(--color-surface); padding: 1rem; border: 1px solid var(--color-border); border-radius: 12px; position: sticky; top: 120px; }
+    /* mobile styles */
+    @media (max-width: 992px) {
+      .form-container { grid-template-columns: 1fr; }
+      header { padding: 1rem; }
+      .hero { padding: 2rem 1rem; }
+      .hero-logo { height: 100px; }
+      #logos-container { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .logo-wrapper img { max-width: 40px; height: 40px; }
+      /* reorder: assistant, form drop-downs, send button, then panel */
+      .btn-assistant-header { order: -1; margin-bottom: 1rem; width: 100%; text-align: center; }
+      #btn-send-data { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="#" class="logo-container">
+      <img src="reeccaja.png" alt="Logo" class="logo" />
+      <div class="header-title">
+        <div class="main-title">AutopartesExpress - Cuenca.Ec.</div>
+        <div class="subtitle-text">Cotiza con nuestro asistente o personalízalo manual</div>
+      </div>
+    </a>
+    <div class="header-buttons">
+      <button id="btn-assistant-header" class="btn-assistant-header">Asistente</button>
+    </div>
+  </header>
+  <section class="hero">
+    <img src="reecwhite.png" alt="Icon" class="hero-logo" />
+    <h1>Cotización Inteligente. Soluciones Reales.</h1>
+    <p>Usa nuestro asistente o completa tu vehículo manualmente.</p>
+  </section>
+  <main>
+    <div class="form-container">
+      <form id="sparePartsForm" novalidate>
+        <div class="progress-bar">
+          <div class="progress-step active"></div>
+          <div class="progress-step"></div>
+          <div class="progress-step"></div>
+        </div>
+        <!-- PASO 1: Vehículo -->
+        <div class="form-step active">
+          <h2 class="step-title">Paso 1: Vehículo</h2>
+          <label>Marca:</label>
+          <div id="logos-container"></div>
+          <input type="hidden" id="marca" name="marca" required>
+          <label for="modelo">Modelo:</label>
+          <select id="modelo" name="modelo" disabled required>
+            <option value="">Seleccione marca primero</option>
+          </select>
+          <label for="anio">Año:</label>
+          <select id="anio" name="anio" disabled required>
+            <option value="">Seleccione modelo primero</option>
+          </select>
+          <div class="form-navigation">
+            <div></div>
+            <button type="button" class="btn-next">Siguiente</button>
+          </div>
+        </div>
+        <!-- PASO 2: Repuesto -->
+        <div class="form-step">
+          <h2 class="step-title">Paso 2: Repuesto</h2>
+          <label for="descripcion">Descripción y observaciones:</label>
+          <textarea id="descripcion" name="descripcion" rows="4" required placeholder="Ej: Pastillas de freno."></textarea>
+          <div class="form-navigation">
+            <button type="button" class="btn-prev">Anterior</button>
+            <button type="button" class="btn-next">Siguiente</button>
+          </div>
+        </div>
+        <!-- PASO 3: Contacto -->
+        <div class="form-step">
+          <h2 class="step-title">Paso 3: Contacto</h2>
+          <label for="nombre">Nombre completo:</label>
+          <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre" />
+          <label for="telefono">WhatsApp:</label>
+          <input type="tel" id="telefono" name="telefono" required placeholder="0991234567" />
+          <div class="form-navigation">
+            <button type="button" class="btn-prev">Anterior</button>
+            <button type="submit" class="btn-next">Enviar solicitud</button>
+          </div>
+        </div>
+        <!-- Envío WhatsApp de vehículo -->
+        <a id="btn-send-data" target="_blank">Enviar los datos del vehículo</a>
+      </form>
+      <!-- Panel de datos seleccionados -->
+      <div id="selected-brand-display">
+        <div id="live-data-display">
+          <p id="display-marca"><strong>Marca:</strong> <span></span></p>
+          <p id="display-modelo"><strong>Modelo:</strong> <span></span></p>
+          <p id="display-anio"><strong>Año:</strong> <span></span></p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="script.js" defer></script>
+</body>
+</html>
