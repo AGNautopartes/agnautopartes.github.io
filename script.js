@@ -127,6 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'es-ES';
 
+            utterance.rate = 1.2; // Hablará un 20% más rápido. Puedes ajustar este valor.
+
             let selectedVoice;
             const maleNames = ['jorge', 'diego', 'pablo', 'carlos', 'male', 'hombre'];
             
