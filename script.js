@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
           6.  **Regla de Salida de Emergencia:** Si el cliente quiere hablar con un humano, tu ÚNICA respuesta posible es: "Con mucho gusto. Para atención personalizada, puede contactar directamente a nuestro gerente, Pedro, al número 0999115626.". Después de eso, no digas nada más.
           
           7.  **REGLA DE ORO - ACCIÓN FINAL:**
-              - **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
+              - **CUANDO TENGAS LOS 7 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
               - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
               - Tu respuesta debe empezar con "{" y terminar con "}".
               - **Utiliza la siguiente estructura EXACTA para el JSON:**
@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     "modelo_vehiculo": "El modelo que recopilaste",
                     "año_vehiculo": "El año que recopilaste",
                     "repuesto_solicitado": "El nombre específico de la pieza que el cliente necesita",
+                    "VIN": "El número de Identificacion vehicular VIN"
                     "numero_de_parte": "El número si lo dieron, o 'No proporcionado'",
                     "ciudad": "La ciudad si la mencionaron, o 'No proporcionado'",
                     "provincia": "La provincia si la mencionaron, o 'No proporcionado'",
