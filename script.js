@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const AI_MODEL = 'gemini-1.5-flash-latest';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
+    // ... (El resto de las declaraciones de constantes del DOM no cambian)
     const chatWidget = document.getElementById('chat-widget');
     const chatCloseBtn = document.getElementById('chat-close-btn');
     const chatMuteBtn = document.getElementById('chat-mute-btn');
@@ -32,21 +33,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
+
     let conversationHistory = [
         { role: "user", parts: [{ text: `
           REGLAS ESTRICTAS DEL SISTEMA:
-          1.  **Rol y Tono:** Eres "Alex", un asistente de "A N G AutoRepuestos en Ecuador". Tu tono es profesional y siempre usas "usted".
-          2.  **Misión Principal:** Despues de presentarte rápidamente,  Tu único objetivo es recopilar la información para una cotización. Eres un bot recolector de datos.
-          3.  **Datos Obligatorios:** Debes conseguir sí o sí: Nombre del cliente, Marca del vehículo, Modelo del vehículo, Año del vehículo, Repuesto necesitado, numero de identificacion vehicular VIN  y Número de teléfono.
+          1.  **Rol y Tono:** Eres "Alex", un asistente de "ANG AutoRepuestos Cuenca". Tu tono es profesional y siempre usas "usted".
+          2.  **Misión Principal:** Tu único objetivo es recopilar la información para una cotización. Eres un bot recolector de datos.
+          3.  **Datos Obligatorios:** Debes conseguir sí o sí: Nombre del cliente, Marca del vehículo, Modelo del vehículo, Año del vehículo, VIN del vehículo, Repuesto necesitado y Número de teléfono.
           4.  **Datos Opcionales:** Intenta obtener de forma conversacional si el cliente los menciona: Ciudad, Provincia.
           5.  **Flujo de Conversación:**
-              - Saluda cortamente, presentarte a ti y a la empresa y pregunta por la información del vehículo y el repuesto.
-              - A medida que conversas, si no obtienes todos los datos obligatorios, en tu siguiente respuesta, DEBES volver a preguntar amablemente por la información que falta. Por ejemplo: "Entendido, es un Chevrolet Spark. ¿Podría indicarme el año y su número de teléfono para completar la cotización?". Sé persistente pero amable.
-              - Una vez tengas los 6 datos obligatorios, indicar al cliente que nos comunicaremos con el para enviarle la cotización posiblemente hoy o mañana (decir el día, ejemplo Lunes, Martes), pero si es Viernes , decir "hoy o el lunes, una vez indicado esto, tu trabajo está hecho.
+              - Saluda cortamente y pregunta por la información del vehículo y el repuesto.
+              - A medida que conversas, si no obtienes todos los datos obligatorios, en tu siguiente respuesta, DEBES volver a preguntar amablemente por la información que falta. Por ejemplo: "Entendido, es un Chevrolet Spark 2018. ¿Podría indicarme el número VIN de su vehículo y su número de teléfono para completar la cotización?". Sé persistente pero amable.
+              - Una vez tengas todos los datos obligatorios, tu trabajo está hecho.
           6.  **Regla de Salida de Emergencia:** Si el cliente quiere hablar con un humano, tu ÚNICA respuesta posible es: "Con mucho gusto. Para atención personalizada, puede contactar directamente a nuestro gerente, Pedro, al número 0999115626.". Después de eso, no digas nada más.
           
           7.  **REGLA DE ORO - ACCIÓN FINAL:**
-              - **CUANDO TENGAS LOS 7 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
+              - **CUANDO TENGAS TODOS LOS DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
               - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
               - Tu respuesta debe empezar con "{" y terminar con "}".
               - **Utiliza la siguiente estructura EXACTA para el JSON:**
@@ -58,8 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     "marca_vehiculo": "La marca que recopilaste",
                     "modelo_vehiculo": "El modelo que recopilaste",
                     "año_vehiculo": "El año que recopilaste",
+                    "vin_vehiculo": "El VIN que recopilaste",
                     "repuesto_solicitado": "El nombre específico de la pieza que el cliente necesita",
-                    "VIN": "El número de Identificacion vehicular VIN"
                     "numero_de_parte": "El número si lo dieron, o 'No proporcionado'",
                     "ciudad": "La ciudad si la mencionaron, o 'No proporcionado'",
                     "provincia": "La provincia si la mencionaron, o 'No proporcionado'",
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   }
                 }
         `}]},
-        { role: "model", parts: [{ text: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo y año de su vehículo, y el repuesto que necesita." }]}
+        { role: "model", parts: [{ text: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo, año y VIN de su vehículo, y el repuesto que necesita." }]}
     ];
     
     const marcasPopulares = ["Chevrolet", "Kia", "Toyota", "Hyundai", "Suzuki", "Renault", "Great Wall", "Mazda", "Nissan", "Ford", "Volkswagen", "Mitsubishi"];
@@ -154,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(chatMicBtn) {
                 chatMicBtn.addEventListener('mousedown', () => {
                     try {
-                        this.synth.cancel(); 
+                        this.synth.cancel();
                         this.recognition.start();
                     } catch(e) { console.error("Error al iniciar reconocimiento:", e); }
                 });
@@ -211,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const voiceAssistant = new VoiceAssistant();
+
 
     // ==================================================================
     // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
@@ -384,11 +387,23 @@ document.addEventListener('DOMContentLoaded', function() {
                  if (anioSelect.value === data.año_vehiculo) { anioSelect.dispatchEvent(new Event('change')); } else { anioSelect.value = "Otro"; anioSelect.dispatchEvent(new Event('change')); document.getElementById('otro-anio').value = data.año_vehiculo; updateLiveData('anio', data.año_vehiculo); }
             }, 300);
         }, 300);
+        
+        // Rellenar campos adicionales
         const fullDescription = `Repuesto solicitado: ${data.repuesto_solicitado}\n\nObservaciones/Resumen:\n${data.observaciones_resumen}`;
         descripcionTextarea.value = fullDescription;
         updateLiveData('descripcion', fullDescription);
-        telefonoInput.value = data.contacto_cliente.replace(/\D/g, ''); updateLiveData('telefono', telefonoInput.value);
-        if (data.nombre_cliente && data.nombre_cliente !== 'No proporcionado') { nombreInput.value = data.nombre_cliente; updateLiveData('nombre', data.nombre_cliente); }
+        
+        vinInput.value = data.vin_vehiculo;
+        updateLiveData('vin', vinInput.value);
+
+        telefonoInput.value = data.contacto_cliente.replace(/\D/g, ''); 
+        updateLiveData('telefono', telefonoInput.value);
+        
+        if (data.nombre_cliente && data.nombre_cliente !== 'No proporcionado') { 
+            nombreInput.value = data.nombre_cliente; 
+            updateLiveData('nombre', data.nombre_cliente); 
+        }
+
         nombreInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         nombreInput.focus();
         checkFormCompleteness();
