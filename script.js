@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
             message += `  - Nombre: ${formData.get('nombre')}\n`;
             message += `  - Teléfono: ${formData.get('telefono')}\n`;
             message += `  - Ubicación: ${formData.get('ubicacion') || 'No proporcionada'}\n`;
-            const whatsappURL = `https://wa.me/593999115626?text=${encodeURIComponent(message)}`;
+            const whatsappURL = `https://wa.me/593994177709?text=${encodeURIComponent(message)}`;
             window.open(whatsappURL, '_blank');
         });
     }
