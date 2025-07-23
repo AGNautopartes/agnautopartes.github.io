@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const AI_MODEL = 'gemini-1.5-flash-latest';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
-    // ... (El resto de las declaraciones de constantes del DOM no cambian)
     const chatWidget = document.getElementById('chat-widget');
+    // ... (El resto de las declaraciones de constantes del DOM no cambian)
     const chatCloseBtn = document.getElementById('chat-close-btn');
     const chatMuteBtn = document.getElementById('chat-mute-btn');
     const chatMessages = document.getElementById('chat-messages');
@@ -33,22 +33,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
-
     let conversationHistory = [
         { role: "user", parts: [{ text: `
           REGLAS ESTRICTAS DEL SISTEMA:
-          1.  **Rol y Tono:** Eres "Alex", un asistente de "ANG AutoRepuestos Cuenca". Tu tono es profesional y siempre usas "usted".
-          2.  **Misión Principal:** Tu único objetivo es recopilar la información para una cotización. Eres un bot recolector de datos.
-          3.  **Datos Obligatorios:** Debes conseguir sí o sí: Nombre del cliente, Marca del vehículo, Modelo del vehículo, Año del vehículo, VIN del vehículo, Repuesto necesitado y Número de teléfono.
-          4.  **Datos Opcionales:** Intenta obtener de forma conversacional si el cliente los menciona: Ciudad, Provincia.
-          5.  **Flujo de Conversación:**
-              - Saluda cortamente y pregunta por la información del vehículo y el repuesto.
-              - A medida que conversas, si no obtienes todos los datos obligatorios, en tu siguiente respuesta, DEBES volver a preguntar amablemente por la información que falta. Por ejemplo: "Entendido, es un Chevrolet Spark 2018. ¿Podría indicarme el número VIN de su vehículo y su número de teléfono para completar la cotización?". Sé persistente pero amable.
-              - Una vez tengas todos los datos obligatorios, tu trabajo está hecho.
-          6.  **Regla de Salida de Emergencia:** Si el cliente quiere hablar con un humano, tu ÚNICA respuesta posible es: "Con mucho gusto. Para atención personalizada, puede contactar directamente a nuestro gerente, Pedro, al número 0999115626.". Después de eso, no digas nada más.
+          1.  **Rol y Tono:** Eres "Alex", un asistente de "ANG AutoRepuestos Cuenca". Tu tono es amable, servicial y profesional. Usa siempre "usted".
+
+          2.  **Misión Principal:** Tu misión es ayudar al cliente a identificar y cotizar el repuesto que necesita, recopilando la información necesaria de manera conversacional.
+
+          3.  **Datos Obligatorios para Cotizar:** Tu objetivo final es obtener los siguientes 6 datos:
+              - Nombre del cliente.
+              - Marca del vehículo.
+              - Modelo del vehículo.
+              - Año del vehículo.
+              - Repuesto necesitado.
+              - Número de teléfono.
+              - VIN del vehículo (intenta obtenerlo, pero si el cliente no lo tiene, puedes proceder sin él).
+
+          4.  **Flujo de Conversación Mejorado:**
+              a. **Inicio:** Saluda amablemente y pregunta por la información inicial. Ej: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudaré a cotizar su repuesto. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?"
+              b. **Persistencia Amable:** Si el cliente no proporciona todos los datos, en tu siguiente respuesta, insiste amablemente por la información faltante. Ej: "Perfecto, tenemos un Chevrolet Spark 2018. Para continuar, ¿cuál es su nombre y su número de teléfono, por favor?"
+              c. **Manejo de Desvíos:** Si el cliente se desvía del tema, responde a su comentario de forma breve y amable, y luego redirige suavemente la conversación. Ej: Cliente: "Qué día tan lluvioso". Tú: "Sí, esperemos que mejore pronto. Para continuar con su cotización, ¿podría indicarme el modelo de su vehículo?"
+          
+          5.  **NUEVA CAPACIDAD - Ayuda para Identificar Repuestos:**
+              a. **Activación:** Si el cliente dice "no sé el nombre del repuesto", "no estoy seguro", o describe un problema (ej. "la cosa que rechina al frenar"), activa este modo de ayuda.
+              b. **Proceso de Guía:** Haz preguntas sencillas para ayudarle a identificar la pieza. Usa preguntas como:
+                 - "No se preocupe, le ayudo a identificarlo. ¿El problema ocurre en la parte delantera o trasera del auto?"
+                 - "¿Está relacionado con el motor, las ruedas, las luces o el interior?"
+                 - "¿Puede describir qué función dejó de hacer el auto o qué ruido escucha?"
+              c. **Objetivo de la Guía:** Basado en sus respuestas, deduce el nombre probable del repuesto (ej. "Parece que lo que necesita son las pastillas de freno delanteras. ¿Es correcto?") y úsalo para la cotización una vez que el cliente confirme.
+
+          6.  **Regla de Salida:** Si el cliente pide hablar con un humano, tu ÚNICA respuesta posible es: "Por supuesto. Para atención personalizada, puede contactar directamente a nuestro experto, Pedro, al número 0999115626.". Después de eso, no digas nada más.
           
           7.  **REGLA DE ORO - ACCIÓN FINAL:**
-              - **CUANDO TENGAS TODOS LOS DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
+              - **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
               - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
               - Tu respuesta debe empezar con "{" y terminar con "}".
               - **Utiliza la siguiente estructura EXACTA para el JSON:**
@@ -60,18 +77,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     "marca_vehiculo": "La marca que recopilaste",
                     "modelo_vehiculo": "El modelo que recopilaste",
                     "año_vehiculo": "El año que recopilaste",
-                    "vin_vehiculo": "El VIN que recopilaste",
+                    "vin_vehiculo": "El VIN que recopilaste, o 'No proporcionado'",
                     "repuesto_solicitado": "El nombre específico de la pieza que el cliente necesita",
-                    "numero_de_parte": "El número si lo dieron, o 'No proporcionado'",
-                    "ciudad": "La ciudad si la mencionaron, o 'No proporcionado'",
-                    "provincia": "La provincia si la mencionaron, o 'No proporcionado'",
-                    "observaciones_resumen": "Un resumen muy breve y profesional de la solicitud completa del cliente.",
-                    "texto_chat_completo": "TODO el historial de la conversación entre el usuario y tú, formateado como un solo bloque de texto con saltos de línea \\n."
+                    "observaciones_resumen": "Un resumen muy breve y profesional de la solicitud, incluyendo la descripción del problema si el cliente necesitó ayuda para identificar la pieza.",
+                    "texto_chat_completo": "TODO el historial de la conversación entre el usuario y tú, formateado como un solo bloque de texto."
                   }
                 }
         `}]},
-        { role: "model", parts: [{ text: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo, año y VIN de su vehículo, y el repuesto que necesita." }]}
+        { role: "model", parts: [{ text: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudaré a cotizar su repuesto. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?" }]}
     ];
+    
+    // ... (El resto del código: constantes de marcas, clase VoiceAssistant, y todas las funciones permanecen sin cambios)
     
     const marcasPopulares = ["Chevrolet", "Kia", "Toyota", "Hyundai", "Suzuki", "Renault", "Great Wall", "Mazda", "Nissan", "Ford", "Volkswagen", "Mitsubishi"];
     const marcasFullList = { "Chevrolet": ["Onix", "Onix RS", "Onix Turbo Sedán", "Joy HB", "Joy Sedán", "Aveo", "Spark GT", "Spark Life", "Beat", "Sail", "Cavalier", "Cruze", "Bolt", "Bolt-EUV", "Groove", "Tracker", "Captiva", "Captiva XL", "Equinox-EV", "Blazer-RS-EV", "Tahoe", "Trailblazer", "Montana", "D-Max (varias gen.)", "Colorado", "Silverado", "Blazer (hist.)", "Trooper", "LUV", "Luv-D-Max", "Rodeo", "Gemini", "Corsa", "Esteem", "Forsa", "Vitara (3 puertas)", "Vitara (5 puertas)", "Grand Vitara", "Blue-Bird", "chasis MR-buses"], "Kia": ["Picanto", "Rio", "Rio-5", "Soluto", "Cerato", "K3", "Carens", "Carnival", "Stonic", "Stonic Hybrid", "Seltos", "Sonet", "Sportage", "Sorento", "Niro", "Niro-EV", "EV6", "EV5", "EV9", "Soul-EV"], "Toyota": ["Agya", "Yaris", "Yaris Sport", "Yaris Cross", "Corolla", "Corolla Híbrido", "Corolla Cross Híbrido", "C-HR", "Raize", "RAV4", "Rush", "Prius", "Prius-C", "Innova", "Hilux", "Tacoma", "Fortuner", "Land Cruiser Prado", "Land Cruiser 200", "Land Cruiser 300", "4Runner", "FJ Cruiser", "Starlet", "Tercel", "Celica"], "Hyundai": ["Accent", "Grand i10", "Elantra", "Sonata", "Venue", "Kona", "Kona Hybrid", "Tucson", "Santa Fe", "Creta", "Staria"], "Chery": ["QQ3", "QQ6", "Nice-A1", "Van-Pass", "XCross", "Arrizo-3", "Arrizo-5", "Tiggo", "Tiggo-2", "Tiggo-2 Pro", "Tiggo-3", "Tiggo-4", "Tiggo-5", "Tiggo-7", "Tiggo-7 Pro", "Tiggo-8", "Tiggo-8 Pro"], "Suzuki": ["Swift", "Baleno", "Celerio", "Ignis", "Vitara", "Grand Vitara", "Jimny", "XL7", "Ertiga", "S-Cross", "SX4"], "Renault": ["Kwid", "Sandero", "Logan", "Stepway", "Duster", "Captur", "Koleos", "Oroch", "Kangoo", "Symbol", "Megane", "Fluence"], "Great Wall": ["Wingle-1", "Wingle-2", "Wingle-3", "Poer", "Haval H2", "Haval H6", "Haval H9", "Haval Jolion", "Haval F7", "M4", "ORA Good-Cat", "Tank-300"], "JAC": ["J2", "J4", "J5", "S2", "S3", "S5", "S7", "T40", "T60", "V7", "HFC-1037"], "DFSK": ["Glory-500", "Glory-560", "Glory-580", "F5", "Mini Truck", "C31", "C52", "EC35", "K05", "K07"], "Volkswagen": ["Gol", "Escarabajo (Tipo-1)", "Voyage", "Polo", "Virtus", "T-Cross", "Tiguan", "Taigo", "Jetta", "Passat", "Amarok"], "Nissan": ["March", "Versa", "Sentra", "Kicks", "X-Trail", "Frontier", "NV350", "Pathfinder", "Note", "Micra"], "Mazda": ["Mazda2", "Mazda3", "Mazda6", "CX-3", "CX-30", "CX-5", "CX-9", "CX-50", "CX-90", "BT-50"], "Dongfeng": ["Rich-6", "Rich-7", "Rich-12", "S30", "Husky", "EQ2030", "EQ2050", "580", "580 Pro", "mini-van Q30"], "Sinotruk": ["Howo-7", "Howo-9", "A7", "G7", "T5G", "ZZ1257", "ZZ1325", "ZZ1507", "ZZ3317", "ZZ4251"], "Jetour": ["X70", "X90", "X95", "T1", "T5", "T8", "Dasheng", "Cruiser", "XC", "Cooler"], "Ford": ["Fiesta", "EcoSport", "Ranger", "Explorer", "Mustang", "Transit", "Everest", "Bronco", "F-150", "Edge"], "Changan": ["CS35", "CS55", "CS75", "CS85", "Alsvin", "UNI-T", "Eado", "Eado Xt", "Benni", "CS15"], "BYD": ["Atto-3", "Dolphin", "Seal", "Song-Plus", "Tang", "Yuan-EV", "Qin", "e1", "e2", "Han"], "Subaru": ["Impreza", "XV", "Forester", "Outback", "WRX", "Crosstrek", "Legacy", "BRZ", "Solterra", "Ascent"], "Citroen": ["C3", "C3 Aircross", "C4", "C5 Aircross", "Berlingo", "C-Elysée", "C4 Cactus", "Spacetourer", "Jumpy", "Jumper"], "Fiat": ["500", "Panda", "Punto", "Tipo", "Toro", "Strada", "Argo", "Uno", "Ducato", "Fiorino"], "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Gladiator", "Avenger", "Commander", "Wagoneer", "Patriot"], "Honda": ["Fit", "City", "Civic", "Accord", "CR-V", "HR-V", "Pilot", "BR-V", "Ridgeline", "Insight"], "BMW": ["Serie 1", "Serie 2", "Serie 3", "Serie 4", "Serie 5", "Serie 7", "X1", "X3", "X5", "Z4"], "Audi": ["A3", "A4", "A6", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "TT"], "Mercedes-Benz": ["A-Class", "C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "GLS", "CLA", "G-Class"], "Porsche": ["911", "Cayman", "Boxster", "Macan", "Cayenne", "Taycan", "Panamera", "718", "924", "928"] };
@@ -126,8 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'es-ES';
-
-            utterance.rate = 1.2; // Hablará un 20% más rápido. Puedes ajustar este valor.
+            utterance.rate = 1.2;
 
             let selectedVoice;
             const maleNames = ['jorge', 'diego', 'pablo', 'carlos', 'male', 'hombre'];
@@ -221,22 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
     // ==================================================================
     
-    function addMessage(sender, text, isThinking = false) { 
-        if (!chatMessages) return; 
-        const existingThinkingMessage = document.getElementById('thinking-message'); 
-        if (existingThinkingMessage) existingThinkingMessage.remove(); 
-        const messageElement = document.createElement('div'); 
-        messageElement.classList.add('chat-message', `${sender}-message`); 
-        if (isThinking) { 
-            messageElement.innerHTML = '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>'; 
-            messageElement.id = 'thinking-message'; 
-        } else { 
-            messageElement.textContent = text; 
-        } 
-        chatMessages.appendChild(messageElement); 
-        chatMessages.scrollTop = chatMessages.scrollHeight; 
-        return messageElement; 
-    }
+    function addMessage(sender, text, isThinking = false) { if (!chatMessages) return; const existingThinkingMessage = document.getElementById('thinking-message'); if (existingThinkingMessage) existingThinkingMessage.remove(); const messageElement = document.createElement('div'); messageElement.classList.add('chat-message', `${sender}-message`); if (isThinking) { messageElement.innerHTML = '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>'; messageElement.id = 'thinking-message'; } else { messageElement.textContent = text; } chatMessages.appendChild(messageElement); chatMessages.scrollTop = chatMessages.scrollHeight; return messageElement; }
     
     async function handleSendMessage() {
         const messageText = chatInput.value.trim();
@@ -390,7 +390,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 300);
         
-        // Rellenar campos adicionales
         const fullDescription = `Repuesto solicitado: ${data.repuesto_solicitado}\n\nObservaciones/Resumen:\n${data.observaciones_resumen}`;
         descripcionTextarea.value = fullDescription;
         updateLiveData('descripcion', fullDescription);
@@ -431,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
             message += `  - Nombre: ${formData.get('nombre')}\n`;
             message += `  - Teléfono: ${formData.get('telefono')}\n`;
             message += `  - Ubicación: ${formData.get('ubicacion') || 'No proporcionada'}\n`;
-            const whatsappURL = `https://wa.me/593994177709?text=${encodeURIComponent(message)}`;
+            const whatsappURL = `https://wa.me/593999115626?text=${encodeURIComponent(message)}`;
             window.open(whatsappURL, '_blank');
         });
     }
