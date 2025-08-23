@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==================================================================
-    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES (MODIFICADO PARA GROQ) ==
+    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES (AJUSTADO PARA GROQ) ==
     // ==================================================================
     // ¡¡ADVERTENCIA!! No subas este archivo con tu clave a un repositorio público.
-    // Tu clave será visible para todos y podrían usarla sin tu permiso.
     const GROQ_API_KEY = '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'; 
-    const GROQ_MODEL = 'llama3-8b-8192'; // Modelo rápido y potente de Groq
+    const GROQ_MODEL = 'llama3-8b-8192';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
     const chatWidget = document.getElementById('chat-widget');
@@ -34,101 +33,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
-    // MODIFICADO: Adaptado al formato de OpenAI/Groq (roles system/assistant y propiedad "content")
+    // FIX: Prompt mejorado y simplificado para Llama 3, con reglas más estrictas.
     let conversationHistory = [
         { 
             role: "system", 
             content: `
               REGLAS ESTRICTAS DEL SISTEMA:
-                1. Rol y Personalidad:
-                Eres “Alex”, asistente virtual de AGN AutoRepuestos Cuenca.
-                Tono: amable, empático y profesional, con toques de humor ligero para generar confianza.
-
-                Regla clave: Habla como un amigo experto en autos, pero con respeto y uso constante de “usted”.
-
-                2. Misión Principal:
-                Tu objetivo es ayudar al cliente a cotizar un repuesto consiguiendo los datos necesarios, sin sonar mecánico ni insistente.
-                Si el cliente no da toda la información, la obtienes con preguntas suaves y conversacionales.
-
-                3. Datos Necesarios para Cotizar:
-                Nombre del cliente.
-                Marca del vehículo.
-                Modelo.
-                Año.
-                Repuesto solicitado.
-                Número de teléfono.
-                VIN (opcional si no lo tiene).
-
-                4. Flujo Conversacional Inteligente:
-                Inicio:
-                “¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo con su repuesto. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?”
-                Si falta información:
-                “Perfecto, tenemos un Toyota Hilux 2017. ¿Me comparte su número de teléfono para continuar con la cotización?”
-                Redirección Suave:
-                Si el cliente habla de otra cosa:
-                “¡Sí, el clima está raro! Volviendo a su auto, ¿me dice el modelo exacto?”
-
-                5. Identificación de Repuestos:
-                Si el cliente no sabe el nombre:
-                “No se preocupe, lo resolvemos juntos. ¿Está en la parte delantera o trasera del auto?”
-                “¿Es del motor, frenos, luces o interior?”
-                “¿Qué dejó de funcionar o qué ruido escucha?”
-
-                Luego confirmas:
-                “Por lo que me dice, parece que es la bomba de agua. ¿Es correcto?”
-
-                6. Manejo de Estados de Ánimo:
-                Cliente apurado:
-                “Para hacerlo rápido, ¿marca, modelo y año del auto?”
-
-                Cliente molesto:
-                “Entiendo su frustración, conseguir repuestos puede ser un lío… pero yo lo haré fácil. ¿Qué pieza buscamos?”
-
-                Cliente indeciso:
-                “No pasa nada, lo hacemos paso a paso. Dígame lo que sabe y le guío.”
-
-                7. Uso de Humor Natural:
-                Pequeñas frases para relajar:
-
-                “Esto no es una carrera de Fórmula 1, pero vamos a conseguir su pieza rápido.”
-                “¡Buscar repuestos no tiene que ser una misión imposible, para eso estoy yo!”
-                Nunca uses humor si el cliente está molesto, salvo algo empático como:
-
-                “Sí, entiendo, buscar repuestos a veces es tan complicado como encontrar un tornillo en el piso… ¡pero lo haremos fácil!”
-                8. Regla SUMARIO:
-                Si el cliente pide hablar con un humano:
-
-                “Por supuesto. Puede contactar directamente a nuestro experto Pedro al 0999115626.” (No digas nada más después de esto).
-
-                3 GUIONES DE EJEMPLO
-                        1. Cliente Apurado
-                        Cliente: “Hola, necesito un repuesto pero tengo prisa.”
-                        Alex: “¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?”
-                        Cliente: “Toyota Hilux 2017.”
-                        Alex: “Perfecto. ¿Qué pieza necesita?”
-                        Cliente: “Las pastillas de freno delanteras.”
-                        Alex: “Anotado. Solo me confirma su nombre y número para enviarle la cotización. ¡Prometo que no tardo más que un semáforo en verde!”
-
-                        2. Cliente Indeciso
-                        Cliente: “No sé bien qué pieza es, suena algo raro.”
-                        Alex: “¡No pasa nada! Para eso estoy. ¿El ruido es adelante o atrás?”
-                        Cliente: “Adelante.”
-                        Alex: “¿Se siente cuando frena o cuando arranca?”
-                        Cliente: “Cuando frena.”
-                        Alex: “Entonces parece que son pastillas de freno. ¿Le suena correcto?”
-                        Cliente: “Sí, creo que sí.”
-                        Alex: “¡Perfecto! ¿Marca, modelo y año de su auto para armar la cotización?”
-
-                        3. Cliente Conversador
-                        Cliente: “Qué calor hace hoy.”
-                        Alex: “¡Ni que lo diga! Los autos deben sentirlo también. Hablando de su auto, ¿me dice qué modelo tiene para su repuesto?”
-                        Cliente: “Es un Chevrolet Spark.”
-                        Alex: “¡Un clásico! ¿Qué año es y qué pieza busca?”
-              9.  **REGLA DE ORO - ACCIÓN FINAL:**
-                  - **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
-                  - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
-                  - Tu respuesta debe empezar con "{" y terminar con "}".
-                  - **Utiliza la siguiente estructura EXACTA para el JSON:**
+              1.  **Tu Rol:** Eres "Alex", un asistente virtual amable, profesional y experto en repuestos de AGN AutoRepuestos Cuenca. Usa siempre el trato de "usted".
+              2.  **Misión Principal:** Tu único objetivo es recolectar 6 datos para una cotización: Nombre, Teléfono, Marca, Modelo, Año y Repuesto solicitado. Debes ser conversacional y guiar al usuario si no sabe algo.
+              3.  **PROHIBIDO USAR MARKDOWN:** Nunca, bajo ninguna circunstancia, uses formato markdown como \`\`\`json, \`\`\`, o cualquier otro. Todas tus respuestas deben ser texto plano.
+              4.  **Flujo de Conversación:**
+                  *   **Inicio:** Preséntate y pide los datos iniciales. "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?"
+                  *   **Recolección:** Si faltan datos, pídelos amablemente. "Perfecto, tenemos un Toyota Hilux 2017. ¿Me comparte su número de teléfono para continuar?"
+                  *   **Guía al Usuario:** Si el cliente no sabe el nombre del repuesto, ayúdalo con preguntas: "¿El problema está adelante o atrás? ¿Ocurre al frenar, al arrancar, o es un ruido constante?". Luego sugiere una pieza: "Por lo que me dice, parece que es la bomba de agua. ¿Es correcto?".
+              5.  **Manejo de Tono:** Adáptate al cliente.
+                  *   **Apurado:** "¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?"
+                  *   **Molesto:** "Entiendo su frustración, conseguir repuestos puede ser un lío. Yo lo haré fácil para usted. ¿Qué pieza buscamos?"
+              6.  **Contacto Humano:** Si el cliente pide hablar con una persona, tu única respuesta será: "Por supuesto. Puede contactar directamente a nuestro experto Pedro al 0999115626." No digas nada más.
+              7.  **REGLA DE ORO - ACCIÓN FINAL:**
+                  *   **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
+                  *   NO escribas texto introductorio. NO uses bloques de código.
+                  *   Tu respuesta debe empezar con "{" y terminar con "}".
+                  *   Usa esta estructura EXACTA:
                     {
                       "accion": "registrar_cotizacion",
                       "datos": {
@@ -149,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         { 
             role: "assistant", 
-            content: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo y año de su vehículo, y el repuesto que necesita." 
+            content: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?"
         }
     ];
     
@@ -159,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const marcasOrdenadas = [...marcasPopulares, ...marcasOtras];
 
     // ==================================================================
-    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (PUSH-TO-TALK MEJORADO) ==
+    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (CON CORRECCIÓN) ==
     // ==================================================================
     class VoiceAssistant {
         constructor() {
@@ -213,12 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const maleNames = ['jorge', 'diego', 'pablo', 'carlos', 'male', 'hombre'];
             
             selectedVoice = this.voices.find(voice => voice.name.includes('Google') && maleNames.some(name => voice.name.toLowerCase().includes(name)));
-            if (!selectedVoice) {
-                selectedVoice = this.voices.find(voice => maleNames.some(name => voice.name.toLowerCase().includes(name)));
-            }
-            if (!selectedVoice) {
-                selectedVoice = this.voices.find(voice => voice.lang === 'es-ES') || this.voices[0];
-            }
+            if (!selectedVoice) selectedVoice = this.voices.find(voice => maleNames.some(name => voice.name.toLowerCase().includes(name)));
+            if (!selectedVoice) selectedVoice = this.voices.find(voice => voice.lang === 'es-ES') || this.voices[0];
             
             if (selectedVoice) utterance.voice = selectedVoice;
             
@@ -231,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         setupRecognition() {
-            this.recognition.lang = 'es-ES';
+            this.recognition.lang = 'es-ES'; // Mantenemos español como idioma principal para el reconocimiento.
             this.recognition.continuous = true;
             this.recognition.interimResults = true;
 
@@ -239,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 if (chatMicBtn.classList.contains('is-listening')) return;
                 this.synth.cancel();
-                this.finalTranscript = '';
+                this.finalTranscript = ''; // Limpiar el transcript al iniciar una nueva grabación
                 try {
                     this.recognition.start();
                 } catch(err) {
@@ -264,8 +186,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.recognition.onstart = () => chatMicBtn.classList.add('is-listening');
             this.recognition.onend = () => {
                 chatMicBtn.classList.remove('is-listening');
-                if (this.finalTranscript) {
-                    chatInput.value = this.finalTranscript;
+                if (this.finalTranscript.trim()) {
+                    chatInput.value = this.finalTranscript.trim();
                     chatSendBtn.click();
                 }
             };
@@ -279,10 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.speak(errorMessage);
             };
 
+            // FIX: Lógica de reconocimiento de voz corregida para evitar repeticiones.
             this.recognition.onresult = (event) => {
                 let interimTranscript = '';
-                this.finalTranscript = '';
-                for (let i = 0; i < event.results.length; ++i) {
+                // Iteramos desde el último resultado procesado para evitar acumular texto viejo.
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         this.finalTranscript += event.results[i][0].transcript;
                     } else {
@@ -310,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // ==================================================================
-    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (MODIFICADO PARA GROQ)==
+    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (CON CORRECCIONES) ==
     // ==================================================================
     
     function addMessage(sender, text, isThinking = false) { 
@@ -330,19 +253,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return messageElement; 
     }
     
-    // MODIFICADO: Esta función ahora se comunica con la API de Groq.
     async function handleSendMessage() {
         const messageText = chatInput.value.trim();
         if (!messageText || chatSendBtn.disabled) return;
         
         addMessage('user', messageText);
-        // Formato para Groq: { role: 'user', content: '...' }
         conversationHistory.push({ role: 'user', content: messageText });
         chatInput.value = '';
         chatSendBtn.disabled = true;
         addMessage('assistant', '', true);
         
         try {
+            // FIX: Se añaden parámetros a la API de Groq para controlar el comportamiento.
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -351,7 +273,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     messages: conversationHistory,
-                    model: GROQ_MODEL
+                    model: GROQ_MODEL,
+                    temperature: 0.5, // Más enfocado, menos creativo
+                    max_tokens: 1024, // Limita la longitud de la respuesta
+                    top_p: 1
                 }),
             });
             
@@ -360,15 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Error de API de Groq: ${errorData.error.message}`);
+                throw new Error(`Error de API de Groq: ${errorData.error.message || response.statusText}`);
             }
             
             const data = await response.json();
-            if (!data.choices || data.choices.length === 0) {
-                throw new Error("Respuesta de API de Groq inválida.");
+            if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
+                throw new Error("Respuesta de API de Groq inválida o vacía.");
             }
             
-            // La respuesta de Groq está en un lugar diferente a la de Gemini
             const aiResponseText = data.choices[0].message.content;
             
             let isJsonResponse = false;
@@ -383,13 +307,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     voiceAssistant.speak(confirmationMessage, () => {
                         setTimeout(() => chatWidget.classList.add('hidden'), 1000);
                     });
-                    // Formato para Groq: { role: 'assistant', content: '...' }
                     conversationHistory.push({ role: 'assistant', content: confirmationMessage });
                 }
             } catch (e) { /* No es JSON, se maneja abajo */ }
 
             if (!isJsonResponse) {
-                // Formato para Groq: { role: 'assistant', content: '...' }
                 conversationHistory.push({ role: 'assistant', content: aiResponseText });
                 addMessage('assistant', aiResponseText);
                 voiceAssistant.speak(aiResponseText);
@@ -397,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('Error en handleSendMessage con Groq:', error);
-            const errorMsg = 'Lo siento, hubo un problema de conexión. Intente de nuevo.';
+            const errorMsg = 'Lo siento, hubo un problema de conexión. Por favor, intente de nuevo.';
             addMessage('assistant', errorMsg);
             voiceAssistant.speak(errorMsg);
         } finally {
@@ -510,7 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
         descripcionTextarea.value = fullDescription;
         updateLiveData('descripcion', fullDescription);
         
-        // La IA ahora devuelve "numero_de_parte", lo asignamos al campo VIN.
         vinInput.value = data.numero_de_parte;
         updateLiveData('vin', vinInput.value);
 
