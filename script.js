@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES (AJUSTADO PARA GROQ) ==
     // ==================================================================
-    // ¡¡ADVERTENCIA!! No subas este archivo con tu clave a un repositorio público.
     const GROQ_API_KEY = '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'; 
     const GROQ_MODEL = 'llama3-8b-8192';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
@@ -33,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
-    // FIX: Prompt mejorado y simplificado para Llama 3, con reglas más estrictas.
     let conversationHistory = [
         { 
             role: "system", 
@@ -85,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const marcasOrdenadas = [...marcasPopulares, ...marcasOtras];
 
     // ==================================================================
-    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (CON CORRECCIÓN) ==
+    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (CON CORRECCIÓN FINAL) ==
     // ==================================================================
     class VoiceAssistant {
         constructor() {
@@ -153,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         setupRecognition() {
-            this.recognition.lang = 'es-ES'; // Mantenemos español como idioma principal para el reconocimiento.
+            this.recognition.lang = 'es-ES';
             this.recognition.continuous = true;
             this.recognition.interimResults = true;
 
@@ -161,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 if (chatMicBtn.classList.contains('is-listening')) return;
                 this.synth.cancel();
-                this.finalTranscript = ''; // Limpiar el transcript al iniciar una nueva grabación
+                this.finalTranscript = '';
                 try {
                     this.recognition.start();
                 } catch(err) {
@@ -186,8 +184,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.recognition.onstart = () => chatMicBtn.classList.add('is-listening');
             this.recognition.onend = () => {
                 chatMicBtn.classList.remove('is-listening');
-                if (this.finalTranscript.trim()) {
-                    chatInput.value = this.finalTranscript.trim();
+                const finalResult = this.finalTranscript.trim();
+                if (finalResult) {
+                    chatInput.value = finalResult;
                     chatSendBtn.click();
                 }
             };
@@ -201,11 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.speak(errorMessage);
             };
 
-            // FIX: Lógica de reconocimiento de voz corregida para evitar repeticiones.
+            // FIX 1: Lógica de reconocimiento de voz completamente reescrita para evitar repeticiones.
             this.recognition.onresult = (event) => {
                 let interimTranscript = '';
-                // Iteramos desde el último resultado procesado para evitar acumular texto viejo.
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                this.finalTranscript = ''; // Se limpia para reconstruir desde cero
+                for (let i = 0; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         this.finalTranscript += event.results[i][0].transcript;
                     } else {
@@ -233,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // ==================================================================
-    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (CON CORRECCIONES) ==
+    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (CON CORRECCIÓN FINAL) ==
     // ==================================================================
     
     function addMessage(sender, text, isThinking = false) { 
@@ -264,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
         addMessage('assistant', '', true);
         
         try {
-            // FIX: Se añaden parámetros a la API de Groq para controlar el comportamiento.
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -274,8 +272,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     messages: conversationHistory,
                     model: GROQ_MODEL,
-                    temperature: 0.5, // Más enfocado, menos creativo
-                    max_tokens: 1024, // Limita la longitud de la respuesta
+                    temperature: 0.5,
+                    max_tokens: 1024,
                     top_p: 1
                 }),
             });
@@ -295,23 +293,35 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const aiResponseText = data.choices[0].message.content;
             
+            // FIX 2: Lógica robusta para extraer el JSON de la respuesta de la IA.
             let isJsonResponse = false;
-            try {
-                const responseObject = JSON.parse(aiResponseText);
-                if (responseObject.accion === 'registrar_cotizacion' && responseObject.datos) {
-                    isJsonResponse = true;
-                    const confirmationMessage = "¡Excelente! He rellenado los datos en el formulario. Por favor, revísalos y presiona el botón de WhatsApp para finalizar.";
-                    await logDataToMake(responseObject.datos);
-                    populateFormFromAI(responseObject.datos);
-                    addMessage('assistant', confirmationMessage);
-                    voiceAssistant.speak(confirmationMessage, () => {
-                        setTimeout(() => chatWidget.classList.add('hidden'), 1000);
-                    });
-                    conversationHistory.push({ role: 'assistant', content: confirmationMessage });
+            const jsonRegex = /\{[\s\S]*\}/; // Expresión regular para encontrar un bloque JSON
+            const jsonMatch = aiResponseText.match(jsonRegex);
+
+            if (jsonMatch) {
+                try {
+                    const jsonObject = JSON.parse(jsonMatch[0]);
+                    if (jsonObject.accion === 'registrar_cotizacion' && jsonObject.datos) {
+                        isJsonResponse = true;
+                        const confirmationMessage = "¡Excelente! He rellenado los datos en el formulario. Por favor, revísalos y presiona el botón de WhatsApp para finalizar.";
+                        
+                        await logDataToMake(jsonObject.datos);
+                        populateFormFromAI(jsonObject.datos);
+                        
+                        addMessage('assistant', confirmationMessage);
+                        voiceAssistant.speak(confirmationMessage, () => {
+                            setTimeout(() => chatWidget.classList.add('hidden'), 1000);
+                        });
+                        conversationHistory.push({ role: 'assistant', content: confirmationMessage });
+                    }
+                } catch (e) {
+                    console.warn("Se encontró un bloque parecido a JSON, pero falló al parsear.", e);
+                    isJsonResponse = false; // El parseo falló, trátalo como texto normal.
                 }
-            } catch (e) { /* No es JSON, se maneja abajo */ }
+            }
 
             if (!isJsonResponse) {
+                // Si no se encontró un JSON válido, simplemente muestra la respuesta de texto.
                 conversationHistory.push({ role: 'assistant', content: aiResponseText });
                 addMessage('assistant', aiResponseText);
                 voiceAssistant.speak(aiResponseText);
