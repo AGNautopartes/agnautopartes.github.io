@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES ==
     // ==================================================================
-    const GROQ_API_KEY = ''; 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
+    const GROQ_API_KEY = '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'; 
     const GROQ_MODEL = 'llama3-8b-8192';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
