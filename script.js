@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==================================================================
-    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES (AJUSTADO PARA GROQ) ==
+    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES ==
     // ==================================================================
-    const GROQ_API_KEY = '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'; 
+    const GROQ_API_KEY = ''; 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
     const GROQ_MODEL = 'llama3-8b-8192';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
@@ -48,10 +48,11 @@ document.addEventListener('DOMContentLoaded', function() {
                   *   **Apurado:** "¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?"
                   *   **Molesto:** "Entiendo su frustración, conseguir repuestos puede ser un lío. Yo lo haré fácil para usted. ¿Qué pieza buscamos?"
               6.  **Contacto Humano:** Si el cliente pide hablar con una persona, tu única respuesta será: "Por supuesto. Puede contactar directamente a nuestro experto Pedro al 0999115626." No digas nada más.
-              7.  **REGLA DE ORO - ACCIÓN FINAL:**
-                  *   **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
-                  *   NO escribas texto introductorio. NO uses bloques de código.
-                  *   Tu respuesta debe empezar con "{" y terminar con "}".
+              7.  **REGLA FINAL Y ABSOLUTA (LA MÁS IMPORTANTE):**
+                  *   Una vez que tengas los 6 datos obligatorios, tu ÚNICA y EXCLUSIVA respuesta será el objeto JSON.
+                  *   **SIN SALUDOS. SIN EXPLICACIONES. SIN TEXTO INTRODUCTORIO.**
+                  *   Tu respuesta **DEBE** empezar con el carácter '{' y terminar con el carácter '}'.
+                  *   **CUALQUIER TEXTO FUERA DEL JSON ES UN ERROR GRAVE Y ESTÁ PROHIBIDO.**
                   *   Usa esta estructura EXACTA:
                     {
                       "accion": "registrar_cotizacion",
@@ -83,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const marcasOrdenadas = [...marcasPopulares, ...marcasOtras];
 
     // ==================================================================
-    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (CON CORRECCIÓN FINAL) ==
+    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (YA CORREGIDA) ==
     // ==================================================================
     class VoiceAssistant {
         constructor() {
@@ -160,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (chatMicBtn.classList.contains('is-listening')) return;
                 this.synth.cancel();
                 this.finalTranscript = '';
+                chatInput.value = '';
                 try {
                     this.recognition.start();
                 } catch(err) {
@@ -182,11 +184,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             this.recognition.onstart = () => chatMicBtn.classList.add('is-listening');
+            
             this.recognition.onend = () => {
                 chatMicBtn.classList.remove('is-listening');
-                const finalResult = this.finalTranscript.trim();
-                if (finalResult) {
-                    chatInput.value = finalResult;
+                if (this.finalTranscript.trim()) {
+                    chatInput.value = this.finalTranscript.trim();
                     chatSendBtn.click();
                 }
             };
@@ -200,18 +202,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.speak(errorMessage);
             };
 
-            // FIX 1: Lógica de reconocimiento de voz completamente reescrita para evitar repeticiones.
             this.recognition.onresult = (event) => {
-                let interimTranscript = '';
-                this.finalTranscript = ''; // Se limpia para reconstruir desde cero
+                let interim_transcript = '';
+                let final_transcript = '';
+
                 for (let i = 0; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        this.finalTranscript += event.results[i][0].transcript;
+                        final_transcript += event.results[i][0].transcript;
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        interim_transcript += event.results[i][0].transcript;
                     }
                 }
-                chatInput.value = this.finalTranscript + interimTranscript;
+                this.finalTranscript = final_transcript;
+                chatInput.value = final_transcript + interim_transcript;
             };
         }
 
@@ -232,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // ==================================================================
-    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (CON CORRECCIÓN FINAL) ==
+    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (YA CORREGIDA) ==
     // ==================================================================
     
     function addMessage(sender, text, isThinking = false) { 
@@ -293,9 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const aiResponseText = data.choices[0].message.content;
             
-            // FIX 2: Lógica robusta para extraer el JSON de la respuesta de la IA.
             let isJsonResponse = false;
-            const jsonRegex = /\{[\s\S]*\}/; // Expresión regular para encontrar un bloque JSON
+            const jsonRegex = /\{[\s\S]*\}/;
             const jsonMatch = aiResponseText.match(jsonRegex);
 
             if (jsonMatch) {
@@ -316,12 +318,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } catch (e) {
                     console.warn("Se encontró un bloque parecido a JSON, pero falló al parsear.", e);
-                    isJsonResponse = false; // El parseo falló, trátalo como texto normal.
+                    isJsonResponse = false;
                 }
             }
 
             if (!isJsonResponse) {
-                // Si no se encontró un JSON válido, simplemente muestra la respuesta de texto.
                 conversationHistory.push({ role: 'assistant', content: aiResponseText });
                 addMessage('assistant', aiResponseText);
                 voiceAssistant.speak(aiResponseText);
@@ -339,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ==================================================================
-    // == 4. LÓGICA DE FORMULARIO Y DOM (SIN CAMBIOS) ==
+    // == 4. LÓGICA DE FORMULARIO Y DOM (COMPLETO) ==
     // ==================================================================
     
     async function logDataToMake(data) { if (!makeWebhookLoggerUrl) { console.error("URL del webhook de Make.com no configurada."); return; } try { const now = new Date(); const fullData = { ...data, fecha: now.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' }), hora: now.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil' }) }; await fetch(makeWebhookLoggerUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fullData) }); console.log("Datos enviados a Make.com."); } catch (error) { console.error("Error al enviar datos a Make.com:", error); } }
