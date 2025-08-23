@@ -1,12 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==================================================================
-    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES (MODIFICADO PARA GROQ) ==
+    // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES ==
     // ==================================================================
-    // ¡¡ADVERTENCIA!! No subas este archivo con tu clave a un repositorio público.
-    // Tu clave será visible para todos y podrían usarla sin tu permiso.
-    const GROQ_API_KEY = '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'; 
-    const GROQ_MODEL = 'llama3-8b-8192'; // Modelo rápido y potente de Groq
+    const GOOGLE_API_KEY = 'AIzaSyCoSJrU2POi_8pFHzgro5XlCIIPsa1lt5M';
+    const AI_MODEL = 'gemini-1.5-flash-latest';
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
     const chatWidget = document.getElementById('chat-widget');
@@ -34,123 +32,116 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
-    // MODIFICADO: Adaptado al formato de OpenAI/Groq (roles system/assistant y propiedad "content")
     let conversationHistory = [
-        { 
-            role: "system", 
-            content: `
-              REGLAS ESTRICTAS DEL SISTEMA:
-                1. Rol y Personalidad:
-                Eres “Alex”, asistente virtual de AGN AutoRepuestos Cuenca.
-                Tono: amable, empático y profesional, con toques de humor ligero para generar confianza.
+        { role: "user", parts: [{ text: `
+          REGLAS ESTRICTAS DEL SISTEMA:
+            1. Rol y Personalidad:
+            Eres “Alex”, asistente virtual de AGN AutoRepuestos Cuenca.
+            Tono: amable, empático y profesional, con toques de humor ligero para generar confianza.
 
-                Regla clave: Habla como un amigo experto en autos, pero con respeto y uso constante de “usted”.
+            Regla clave: Habla como un amigo experto en autos, pero con respeto y uso constante de “usted”.
 
-                2. Misión Principal:
-                Tu objetivo es ayudar al cliente a cotizar un repuesto consiguiendo los datos necesarios, sin sonar mecánico ni insistente.
-                Si el cliente no da toda la información, la obtienes con preguntas suaves y conversacionales.
+            2. Misión Principal:
+            Tu objetivo es ayudar al cliente a cotizar un repuesto consiguiendo los datos necesarios, sin sonar mecánico ni insistente.
+            Si el cliente no da toda la información, la obtienes con preguntas suaves y conversacionales.
 
-                3. Datos Necesarios para Cotizar:
-                Nombre del cliente.
-                Marca del vehículo.
-                Modelo.
-                Año.
-                Repuesto solicitado.
-                Número de teléfono.
-                VIN (opcional si no lo tiene).
+            3. Datos Necesarios para Cotizar:
+            Nombre del cliente.
+            Marca del vehículo.
+            Modelo.
+            Año.
+            Repuesto solicitado.
+            Número de teléfono.
+            VIN (opcional si no lo tiene).
 
-                4. Flujo Conversacional Inteligente:
-                Inicio:
-                “¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo con su repuesto. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?”
-                Si falta información:
-                “Perfecto, tenemos un Toyota Hilux 2017. ¿Me comparte su número de teléfono para continuar con la cotización?”
-                Redirección Suave:
-                Si el cliente habla de otra cosa:
-                “¡Sí, el clima está raro! Volviendo a su auto, ¿me dice el modelo exacto?”
+            4. Flujo Conversacional Inteligente:
+            Inicio:
+            “¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo con su repuesto. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?”
+            Si falta información:
+            “Perfecto, tenemos un Toyota Hilux 2017. ¿Me comparte su número de teléfono para continuar con la cotización?”
+            Redirección Suave:
+            Si el cliente habla de otra cosa:
+            “¡Sí, el clima está raro! Volviendo a su auto, ¿me dice el modelo exacto?”
 
-                5. Identificación de Repuestos:
-                Si el cliente no sabe el nombre:
-                “No se preocupe, lo resolvemos juntos. ¿Está en la parte delantera o trasera del auto?”
-                “¿Es del motor, frenos, luces o interior?”
-                “¿Qué dejó de funcionar o qué ruido escucha?”
+            5. Identificación de Repuestos:
+            Si el cliente no sabe el nombre:
+            “No se preocupe, lo resolvemos juntos. ¿Está en la parte delantera o trasera del auto?”
+            “¿Es del motor, frenos, luces o interior?”
+            “¿Qué dejó de funcionar o qué ruido escucha?”
 
-                Luego confirmas:
-                “Por lo que me dice, parece que es la bomba de agua. ¿Es correcto?”
+            Luego confirmas:
+            “Por lo que me dice, parece que es la bomba de agua. ¿Es correcto?”
 
-                6. Manejo de Estados de Ánimo:
-                Cliente apurado:
-                “Para hacerlo rápido, ¿marca, modelo y año del auto?”
+            6. Manejo de Estados de Ánimo:
+            Cliente apurado:
+            “Para hacerlo rápido, ¿marca, modelo y año del auto?”
 
-                Cliente molesto:
-                “Entiendo su frustración, conseguir repuestos puede ser un lío… pero yo lo haré fácil. ¿Qué pieza buscamos?”
+            Cliente molesto:
+            “Entiendo su frustración, conseguir repuestos puede ser un lío… pero yo lo haré fácil. ¿Qué pieza buscamos?”
 
-                Cliente indeciso:
-                “No pasa nada, lo hacemos paso a paso. Dígame lo que sabe y le guío.”
+            Cliente indeciso:
+            “No pasa nada, lo hacemos paso a paso. Dígame lo que sabe y le guío.”
 
-                7. Uso de Humor Natural:
-                Pequeñas frases para relajar:
+            7. Uso de Humor Natural:
+            Pequeñas frases para relajar:
 
-                “Esto no es una carrera de Fórmula 1, pero vamos a conseguir su pieza rápido.”
-                “¡Buscar repuestos no tiene que ser una misión imposible, para eso estoy yo!”
-                Nunca uses humor si el cliente está molesto, salvo algo empático como:
+            “Esto no es una carrera de Fórmula 1, pero vamos a conseguir su pieza rápido.”
+            “¡Buscar repuestos no tiene que ser una misión imposible, para eso estoy yo!”
+            Nunca uses humor si el cliente está molesto, salvo algo empático como:
 
-                “Sí, entiendo, buscar repuestos a veces es tan complicado como encontrar un tornillo en el piso… ¡pero lo haremos fácil!”
-                8. Regla SUMARIO:
-                Si el cliente pide hablar con un humano:
+            “Sí, entiendo, buscar repuestos a veces es tan complicado como encontrar un tornillo en el piso… ¡pero lo haremos fácil!”
+            8. Regla SUMARIO:
+            Si el cliente pide hablar con un humano:
 
-                “Por supuesto. Puede contactar directamente a nuestro experto Pedro al 0999115626.” (No digas nada más después de esto).
+            “Por supuesto. Puede contactar directamente a nuestro experto Pedro al 0999115626.” (No digas nada más después de esto).
 
-                3 GUIONES DE EJEMPLO
-                        1. Cliente Apurado
-                        Cliente: “Hola, necesito un repuesto pero tengo prisa.”
-                        Alex: “¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?”
-                        Cliente: “Toyota Hilux 2017.”
-                        Alex: “Perfecto. ¿Qué pieza necesita?”
-                        Cliente: “Las pastillas de freno delanteras.”
-                        Alex: “Anotado. Solo me confirma su nombre y número para enviarle la cotización. ¡Prometo que no tardo más que un semáforo en verde!”
+            3 GUIONES DE EJEMPLO
+                    1. Cliente Apurado
+                    Cliente: “Hola, necesito un repuesto pero tengo prisa.”
+                    Alex: “¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?”
+                    Cliente: “Toyota Hilux 2017.”
+                    Alex: “Perfecto. ¿Qué pieza necesita?”
+                    Cliente: “Las pastillas de freno delanteras.”
+                    Alex: “Anotado. Solo me confirma su nombre y número para enviarle la cotización. ¡Prometo que no tardo más que un semáforo en verde!”
 
-                        2. Cliente Indeciso
-                        Cliente: “No sé bien qué pieza es, suena algo raro.”
-                        Alex: “¡No pasa nada! Para eso estoy. ¿El ruido es adelante o atrás?”
-                        Cliente: “Adelante.”
-                        Alex: “¿Se siente cuando frena o cuando arranca?”
-                        Cliente: “Cuando frena.”
-                        Alex: “Entonces parece que son pastillas de freno. ¿Le suena correcto?”
-                        Cliente: “Sí, creo que sí.”
-                        Alex: “¡Perfecto! ¿Marca, modelo y año de su auto para armar la cotización?”
+                    2. Cliente Indeciso
+                    Cliente: “No sé bien qué pieza es, suena algo raro.”
+                    Alex: “¡No pasa nada! Para eso estoy. ¿El ruido es adelante o atrás?”
+                    Cliente: “Adelante.”
+                    Alex: “¿Se siente cuando frena o cuando arranca?”
+                    Cliente: “Cuando frena.”
+                    Alex: “Entonces parece que son pastillas de freno. ¿Le suena correcto?”
+                    Cliente: “Sí, creo que sí.”
+                    Alex: “¡Perfecto! ¿Marca, modelo y año de su auto para armar la cotización?”
 
-                        3. Cliente Conversador
-                        Cliente: “Qué calor hace hoy.”
-                        Alex: “¡Ni que lo diga! Los autos deben sentirlo también. Hablando de su auto, ¿me dice qué modelo tiene para su repuesto?”
-                        Cliente: “Es un Chevrolet Spark.”
-                        Alex: “¡Un clásico! ¿Qué año es y qué pieza busca?”
-              9.  **REGLA DE ORO - ACCIÓN FINAL:**
-                  - **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
-                  - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
-                  - Tu respuesta debe empezar con "{" y terminar con "}".
-                  - **Utiliza la siguiente estructura EXACTA para el JSON:**
-                    {
-                      "accion": "registrar_cotizacion",
-                      "datos": {
-                        "nombre_cliente": "El nombre que recopilaste",
-                        "contacto_cliente": "El teléfono que recopilaste",
-                        "marca_vehiculo": "La marca que recopilaste",
-                        "modelo_vehiculo": "El modelo que recopilaste",
-                        "año_vehiculo": "El año que recopilaste",
-                        "repuesto_solicitado": "El nombre específico de la pieza que el cliente necesita",
-                        "numero_de_parte": "El número si lo dieron, o 'No proporcionado'",
-                        "ciudad": "La ciudad si la mencionaron, o 'No proporcionado'",
-                        "provincia": "La provincia si la mencionaron, o 'No proporcionado'",
-                        "observaciones_resumen": "Un resumen muy breve y profesional de la solicitud completa del cliente.",
-                        "texto_chat_completo": "TODO el historial de la conversación entre el usuario y tú, formateado como un solo bloque de texto con saltos de línea \\n."
-                      }
-                    }
-            `
-        },
-        { 
-            role: "assistant", 
-            content: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo y año de su vehículo, y el repuesto que necesita." 
-        }
+                    3. Cliente Conversador
+                    Cliente: “Qué calor hace hoy.”
+                    Alex: “¡Ni que lo diga! Los autos deben sentirlo también. Hablando de su auto, ¿me dice qué modelo tiene para su repuesto?”
+                    Cliente: “Es un Chevrolet Spark.”
+                    Alex: “¡Un clásico! ¿Qué año es y qué pieza busca?”
+          9.  **REGLA DE ORO - ACCIÓN FINAL:**
+              - **CUANDO TENGAS LOS 6 DATOS OBLIGATORIOS**, tu siguiente y ÚLTIMA respuesta debe ser NADA MÁS QUE EL OBJETO JSON.
+              - **NO ESCRIBAS TEXTO INTRODUCTORIO NI USES BLOQUES DE CÓDIGO.**
+              - Tu respuesta debe empezar con "{" y terminar con "}".
+              - **Utiliza la siguiente estructura EXACTA para el JSON:**
+                {
+                  "accion": "registrar_cotizacion",
+                  "datos": {
+                    "nombre_cliente": "El nombre que recopilaste",
+                    "contacto_cliente": "El teléfono que recopilaste",
+                    "marca_vehiculo": "La marca que recopilaste",
+                    "modelo_vehiculo": "El modelo que recopilaste",
+                    "año_vehiculo": "El año que recopilaste",
+                    "repuesto_solicitado": "El nombre específico de la pieza que el cliente necesita",
+                    "numero_de_parte": "El número si lo dieron, o 'No proporcionado'",
+                    "ciudad": "La ciudad si la mencionaron, o 'No proporcionado'",
+                    "provincia": "La provincia si la mencionaron, o 'No proporcionado'",
+                    "observaciones_resumen": "Un resumen muy breve y profesional de la solicitud completa del cliente.",
+                    "texto_chat_completo": "TODO el historial de la conversación entre el usuario y tú, formateado como un solo bloque de texto con saltos de línea \\n."
+                  }
+                }
+        `}]},
+        { role: "model", parts: [{ text: "Entendido. Soy Alex. Para iniciar su cotización, por favor, indíqueme su nombre, la marca, modelo y año de su vehículo, y el repuesto que necesita." }]}
     ];
     
     const marcasPopulares = ["Chevrolet", "Kia", "Toyota", "Hyundai", "Suzuki", "Renault", "Great Wall", "Mazda", "Nissan", "Ford", "Volkswagen", "Mitsubishi"];
@@ -310,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // ==================================================================
-    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (MODIFICADO PARA GROQ)==
+    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
     // ==================================================================
     
     function addMessage(sender, text, isThinking = false) { 
@@ -330,46 +321,24 @@ document.addEventListener('DOMContentLoaded', function() {
         return messageElement; 
     }
     
-    // MODIFICADO: Esta función ahora se comunica con la API de Groq.
     async function handleSendMessage() {
         const messageText = chatInput.value.trim();
         if (!messageText || chatSendBtn.disabled) return;
         
         addMessage('user', messageText);
-        // Formato para Groq: { role: 'user', content: '...' }
-        conversationHistory.push({ role: 'user', content: messageText });
+        conversationHistory.push({ role: 'user', parts: [{ text: messageText }] });
         chatInput.value = '';
         chatSendBtn.disabled = true;
         addMessage('assistant', '', true);
         
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: conversationHistory,
-                    model: GROQ_MODEL
-                }),
-            });
-            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${GOOGLE_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: conversationHistory }), });
             const existingThinkingMessage = document.getElementById('thinking-message');
             if (existingThinkingMessage) existingThinkingMessage.remove();
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Error de API de Groq: ${errorData.error.message}`);
-            }
-            
+            if (!response.ok) throw new Error(`Error de API: ${response.statusText}`);
             const data = await response.json();
-            if (!data.choices || data.choices.length === 0) {
-                throw new Error("Respuesta de API de Groq inválida.");
-            }
-            
-            // La respuesta de Groq está en un lugar diferente a la de Gemini
-            const aiResponseText = data.choices[0].message.content;
+            if (!data.candidates || data.candidates.length === 0) throw new Error("Respuesta de API inválida.");
+            const aiResponseText = data.candidates[0].content.parts[0].text;
             
             let isJsonResponse = false;
             try {
@@ -383,20 +352,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     voiceAssistant.speak(confirmationMessage, () => {
                         setTimeout(() => chatWidget.classList.add('hidden'), 1000);
                     });
-                    // Formato para Groq: { role: 'assistant', content: '...' }
-                    conversationHistory.push({ role: 'assistant', content: confirmationMessage });
+                    conversationHistory.push({ role: 'model', parts: [{ text: confirmationMessage }] });
                 }
             } catch (e) { /* No es JSON, se maneja abajo */ }
 
             if (!isJsonResponse) {
-                // Formato para Groq: { role: 'assistant', content: '...' }
-                conversationHistory.push({ role: 'assistant', content: aiResponseText });
+                conversationHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 addMessage('assistant', aiResponseText);
                 voiceAssistant.speak(aiResponseText);
             }
 
         } catch (error) {
-            console.error('Error en handleSendMessage con Groq:', error);
+            console.error('Error en handleSendMessage:', error);
             const errorMsg = 'Lo siento, hubo un problema de conexión. Intente de nuevo.';
             addMessage('assistant', errorMsg);
             voiceAssistant.speak(errorMsg);
@@ -407,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ==================================================================
-    // == 4. LÓGICA DE FORMULARIO Y DOM (SIN CAMBIOS) ==
+    // == 4. LÓGICA DE FORMULARIO Y DOM ==
     // ==================================================================
     
     async function logDataToMake(data) { if (!makeWebhookLoggerUrl) { console.error("URL del webhook de Make.com no configurada."); return; } try { const now = new Date(); const fullData = { ...data, fecha: now.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' }), hora: now.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil' }) }; await fetch(makeWebhookLoggerUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fullData) }); console.log("Datos enviados a Make.com."); } catch (error) { console.error("Error al enviar datos a Make.com:", error); } }
@@ -510,8 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
         descripcionTextarea.value = fullDescription;
         updateLiveData('descripcion', fullDescription);
         
-        // La IA ahora devuelve "numero_de_parte", lo asignamos al campo VIN.
-        vinInput.value = data.numero_de_parte;
+        vinInput.value = data.vin_vehiculo;
         updateLiveData('vin', vinInput.value);
 
         telefonoInput.value = data.contacto_cliente.replace(/\D/g, ''); 
