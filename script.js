@@ -124,7 +124,7 @@ STRICT SYSTEM RULES:
                          }
                     }
             `
-        },
+       
       //  { 
         //    role: "assistant", 
         //    content: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?"
@@ -215,9 +215,9 @@ STRICT SYSTEM RULES:
                 • If the part cannot be found: request VIN or engine code and retry.
                 • Never invent part numbers or links.
 
-                `
+         `
 
-
+         },
             
 
 
