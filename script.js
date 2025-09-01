@@ -3,8 +3,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES ==
     // ==================================================================
-    const GROQ_API_KEY = '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'; 
-    const GROQ_MODEL = 'llama3-8b-8192';
+    //const GROQ_API_KEY = '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'; 
+    //const GROQ_MODEL = 'llama3-8b-8192';
+
+
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
     const chatWidget = document.getElementById('chat-widget');
@@ -266,36 +268,37 @@ document.addEventListener('DOMContentLoaded', function() {
         addMessage('assistant', '', true);
         
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            // --- CAMBIO IMPORTANTE ---
+            // Ahora llamamos a nuestro propio backend seguro en Vercel
+            const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    messages: conversationHistory,
-                    model: GROQ_MODEL,
-                    temperature: 0.5,
-                    max_tokens: 1024,
-                    top_p: 1
+                    conversationHistory: conversationHistory // Enviamos el historial completo
                 }),
             });
             
-            const existingThinkingMessage = document.getElementById('thinking-message');
+             const existingThinkingMessage = document.getElementById('thinking-message');
             if (existingThinkingMessage) existingThinkingMessage.remove();
             
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Error de API de Groq: ${errorData.error.message || response.statusText}`);
+                throw new Error(`Error de API: ${errorData.error.message || response.statusText}`);
             }
             
             const data = await response.json();
-            if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
-                throw new Error("Respuesta de API de Groq inválida o vacía.");
+            
+            // El resto del código para procesar la respuesta de Gemini ya es correcto.
+            // Lo dejamos como estaba.
+            if (!data.candidates || data.candidates.length === 0) {
+                throw new Error("Respuesta de API de Gemini inválida.");
             }
-            
-            const aiResponseText = data.choices[0].message.content;
-            
+                    
+            const aiResponseText = data.candidates[0].content.parts[0].text;
+
+            // ... el resto de la función `handleSendMessage` sigue igual ...
             let isJsonResponse = false;
             const jsonRegex = /\{[\s\S]*\}/;
             const jsonMatch = aiResponseText.match(jsonRegex);
