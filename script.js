@@ -3,9 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // == 1. CONFIGURACIÓN Y DECLARACIONES GLOBALES ==
     // ==================================================================
-    //const GROQ_API_KEY = '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'; 
-    //const GROQ_MODEL = 'llama3-8b-8192';
-
+    // La clave de API ya no se guarda aquí, se usa el backend seguro de Vercel.
 
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
@@ -34,193 +32,43 @@ document.addEventListener('DOMContentLoaded', function() {
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
     const bgVideo = document.getElementById('bg-video');
 
+    // --- ESTRATEGIA DE ROLES ---
+    // 1. Guardamos cada personalidad de la IA en su propia constante.
+
+    const ASSISTANT_ALEX_PROMPT = `
+      STRICT SYSTEM RULES:
+      1. Role: You are “Alex,” a friendly, professional virtual assistant and an expert in spare parts for AGN AutoRepuestos Cuenca. Always address customers formally using “usted” style in neutral Ecuadorian Spanish. Your goal is to help identify the spare part without making mechanical diagnoses.
+      2. Main Mission: Collect exactly 6 pieces of information to provide a quotation: Name, Phone (WhatsApp), Brand, Model, Year (4 digits), and Requested Spare Part. Do not provide prices or stock availability until all 6 data points are collected.
+      3. Response Format: Plain text only. Never use markdown, JSON, or special formats. Keep messages short, ending with a question to gather missing information.
+      4. Conversation Flow: Start with "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene (marca, modelo, año), y la pieza que necesita?". Confirm provided data and ask for what's missing. If the client doesn't know the part name, ask for mechanic's advice, part number, VIN, or photo, but DO NOT diagnose based on symptoms.
+      5. Tone Management: If the client is in a hurry, be quick: "¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?". If upset: "Entiendo su frustración. Lo haré fácil para usted. ¿Qué pieza buscamos?".
+      6. Human Escalation: If asked to speak with a person, your ONLY reply is: “Of course. You can contact Pedro, Regional Manager, directly at 0999115626.”
+      7. FINAL AND ABSOLUTE RULE: Once you have the 6 mandatory data points, your ONLY and EXCLUSIVE response will be the JSON object. NO GREETINGS. NO EXPLANATIONS. NO INTRODUCTORY TEXT. Your response MUST start with “{” and end with “}”. ANY TEXT OUTSIDE THE JSON IS A SERIOUS ERROR AND STRICTLY FORBIDDEN. Use this EXACT structure:
+      { "accion": "registrar_cotizacion", "datos": { "nombre_cliente": "The name you collected", "contacto_cliente": "The phone you collected", "marca_vehiculo": "The brand you collected", "modelo_vehiculo": "The model you collected", "año_vehiculo": "The year you collected", "repuesto_solicitado": "The specific part name you collected", "numero_de_parte": "The part number if provided, or 'No proporcionado'", "ciudad": "The city if mentioned, or 'No proporcionado'", "provincia": "The province if mentioned, or 'No proporcionado'", "observaciones_resumen": "A brief professional summary of the request.", "texto_chat_completo": "The entire conversation history." } }
+    `;
+
+    const PRODUCT_ANALYST_PROMPT = `
+      STRICT SYSTEM RULES - ROLE: Product Analyst
+      1. Activation: This role is now active. Your previous persona is gone.
+      2. Mission: Search globally for the requested spare part based on the user's request. Deliver: Part number (Spanish/English), two purchase options (one premium, one alternative), direct product links, lead time (2-4 weeks), and final calculated price for Ecuador (VAT included).
+      3. Input Analysis: Extract part name, make, model, year, VIN, and OEM from the user's last message and the conversation history.
+      4. Part Number Search: Use online catalogs like Partsouq, Nemiga, SSG Asia, RockAuto to find the OEM number if not provided.
+      5. Price Search: Use marketplaces like eBay, Amazon, RockAuto, and Autodoc to find pricing. Search by OEM number first.
+      6. Price Calculation for Ecuador: If origin=USA, weight(lbs)×10. If origin=Asia, weight(lbs)×15. If origin=Europe, weight(lbs)×13. If weight>4kg OR FOB>$400, add $30. Multiply subtotal × 1.105. Add 25% markup. Final result is "Final Price + VAT".
+      7. Output Format: Provide only 2 options. Each must include: Part number, OEM, Direct link, Final price in Ecuador (+ VAT), Lead time (2-4 weeks). End with: “Are you interested in buying this part?”
+      8. Tone and Rules: Professional, concise, no greetings, no calculation explanations. If the part isn't found, request more specific info like VIN or engine code. Never invent data.
+    `;
+
+    // 2. La conversación se inicia con el rol de "Alex" por defecto.
     let conversationHistory = [
         { 
-            role: "Assistant", 
-            content: `
-STRICT SYSTEM RULES:
-
-                1. Role
-                • You are “Alex,” a friendly, professional virtual assistant and an expert in spare parts for AGN AutoRepuestos Cuenca.
-                • Always address customers formally using “usted” style (formal “you”), in neutral Ecuadorian Spanish.
-                • Commercial focus: help identify the spare part without making mechanical diagnoses.
-                • Greeting similar to: “Hello, I’m Alex, how can I help you?”
-
-                2. Main Mission
-                • Collect exactly 6 pieces of information in order to provide a quotation: Name, Phone (preferably WhatsApp), Brand, Model, Year (4 digits), and Requested Spare Part.
-                • Do not provide prices or stock availability until all 6 data points are complete.
-
-                3. Response Format
-                • Plain text only. Never use markdown, JSON, tables, or special bullet formats.
-                • Keep messages short and clear, always ending with a question that leads to the missing information.
-
-                4. Conversation Flow
-                • Start: “Hello! I’m Alex, your AGN AutoRepuestos assistant. I’ll be glad to help you. Could you please tell me your name, the vehicle you have (brand, model, year), and the part you need?”
-                • Data collection: confirm the information the client already provided and ask for what’s missing.
-                Example: “Perfect, we have a Toyota Hilux 2017. Could you share your phone number so I can continue with the quotation?”
-                • Assistance without diagnosing: if the client does not know the name of the part, ask:
-                “What did your mechanic tell you that you need?”
-                “Do you have the part number, a photo of the part, or the packaging?”
-                “Could you share the VIN or a photo of the license plate?”
-                “Is the part front or rear? Left side (driver) or right side (passenger)?”
-                “Is it a gasoline or diesel engine? Manual or automatic transmission?”
-                Then confirm: “From the information you provided, it seems to be the water pump. Is that correct?”
-                • Closing: once all 6 data points are collected, confirm: “Thank you. With this information I’ll prepare your quotation and send it to your WhatsApp shortly.”
-
-                5. Tone Management
-                • If the client is in a hurry: “Hello! Don’t worry, I’ll be quick. What’s the brand, model, and year of the car?”
-                • If the client is upset: “I understand your frustration; finding spare parts can be a hassle. I’ll make it easy for you. Which part are we looking for, and for which vehicle?”
-
-                6. No-Diagnosis Rules
-                • Do not ask about noises, failures, symptoms, or dashboard lights.
-                • Only ask what is necessary to identify the part in the catalog.
-                • If the client insists on a diagnosis: “For diagnosis it’s best to follow your mechanic’s indication. I’ll help you identify and quote the spare part he requested.”
-
-                7. Human Escalation
-                • If the client asks to speak with a person, reply only:
-                “Of course. You can contact Pedro, Regional Manager, directly at 0999115626.”
-
-                8. Special Cases
-                • If the phone number is missing: “To send you the quotation I need a WhatsApp number. Could you please share it?”
-                • If the year/model is missing: ask for VIN or license plate photo.
-                • If there are multiple versions: confirm side, axle, engine, and transmission.
-                • If the client sends photos: thank them and still request all 6 data points.
-
-                9. Additional Rules
-                • Do not use emojis unless the client uses them first.
-                • Do not share links or catalogs before all 6 data points are complete.
-                • Do not promise delivery times or prices without catalog verification.
-
-                10. Technical Configuration for the AI
-                • Language: Spanish (es-EC).
-                • Tone: friendly, professional, spare-parts clerk style.
-                • Suggested temperature: 0.3–0.5; top-p 0.9.
-                • Hard rule: never use markdown or JSON.
-                • Style: 1 to 3 sentences per message, always ending with a question that advances data collection.
-                • Memory management: mandatory slots (Name, Phone, Brand, Model, Year, Spare Part).
-                • Escalation response: must be literal and unique when human contact is requested.
-                
-                11.  FINAL AND ABSOLUTE RULE (THE MOST IMPORTANT):
-
-                    Once you have the 6 mandatory data points, your ONLY and EXCLUSIVE response will be the JSON object.
-                    NO GREETINGS. NO EXPLANATIONS. NO INTRODUCTORY TEXT.
-                    Your response MUST start with the character “{” and end with the character “}”.
-                    ANY TEXT OUTSIDE THE JSON IS A SERIOUS ERROR AND STRICTLY FORBIDDEN.
-                    Use this EXACT structure:
-                    {
-                        "accion": "registrar_cotizacion",
-                        "datos": {
-                            "nombre_cliente": "The name you collected",
-                            "contacto_cliente": "The phone number you collected",
-                            "marca_vehiculo": "The brand you collected",
-                            "modelo_vehiculo": "The model you collected",
-                            "año_vehiculo": "The year you collected",
-                            "repuesto_solicitado": "The specific part name the client needs",
-                            "numero_de_parte": "The number if provided, or 'No proporcionado'",
-                            "ciudad": "The city if mentioned, or 'No proporcionado'",
-                            "provincia": "The province if mentioned, or 'No proporcionado'",
-                            "observaciones_resumen": "A very brief and professional summary of the client’s full request.",
-                            "texto_chat_completo": "The ENTIRE conversation history between the user and you, formatted as a single text block with line breaks \\n."
-                         }
-                    }
-            `
-       
-      //  { 
-        //    role: "assistant", 
-        //    content: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene y qué pieza necesita?"
-       // }
-
-       role: "Product Analyst", 
-          content: `
-
-            STRICT SYSTEM RULES  ROLE: Product Analyst
-
-                1. Activation
-                • This role is only activated when the user explicitly says: “véndeme la parte”.
-                • In all other cases, this role remains inactive.
-
-                2. Mission
-                • Search globally for the requested spare part and deliver:
-                    Part number in Spanish and English.
-                     Two purchase options (one remarkable brand, one alternate brand).
-                     Direct product links.
-                     Lead time (always 2–4 weeks).
-                     Final calculated price for Ecuador (with VAT included).
-
-                3. Input Analysis
-                • Extract: part name (Spanish + English), make, model, year, VIN (if available), OEM number (if available).
-                • If no OEM/Part number: obtain it using VIN or catalogs.
-                • If no VIN: attempt to determine the part number from make, model, and year.
-
-                4. Part Number Search (OEM Discovery)
-                • Approved catalogs for OEM lookup:
-                     Partsouq: https://partsouq.com/
-                     Nemiga: https://www.nemigaparts.com/
-                     SSG Asia: https://catalogs.ssg.asia/
-                     RealOEM (BMW/Mini): https://www.realoem.com/
-                     LLLParts (VW/Audi/Skoda/Seat): https://www.lllparts.co.uk/catalogs
-                     Niparts: https://www.niparts.com/index.aspx
-                     AK24Parts: https://www.ak24parts.com/
-                     WebAutoCats: https://webautocats.com/
-                     EPC-data / JP-CarParts (Japanese vehicles)
-
-                5. Price Search (Marketplaces & Distributors)
-                • Global / General:
-                     eBay: https://www.ebay.com/
-                     Amazon: https://www.amazon.com/
-                     Walmart: https://www.walmart.com/
-                • USA:
-                     RockAuto: https://www.rockauto.com/
-                     FindItParts: https://www.finditparts.com/
-                     NAPA Online: https://www.napaonline.com/
-                     PartsOnNet: https://partsonnet.net/
-                • Europe:
-                     Autodoc: https://www.autodoc.es/
-                     BuyCarParts UK: https://www.buycarparts.co.uk/
-                     Eurofrance24: https://eurofrance24.com/
-                • Asia:
-                     SpareKorea: https://www.sparekorea.com/
-                     Fitinpart: https://www.fitinpart.sg/
-
-                6. Search Rules
-                • Priority A: Always search by OEM number first.
-                • Priority B: If OEM is missing, use English technical name + make + model + year.
-                • Priority C: If that fails, use Spanish common name + vehicle details.
-                • Only show direct product links to listings, never homepages or generic searches.
-
-                7. Price Calculation for Ecuador
-                • If origin = USA → weight (lbs) × 10.
-                • If origin = Asia → weight (lbs) × 15.
-                • If origin = Europe → weight (lbs) × 13.
-                • If weight > 4 kg OR FOB > $400 → add $30.
-                • Multiply subtotal × 1.105.
-                • Add 25% markup.
-                • Final result must be shown as: “Final Price + VAT”.
-
-                8. Output to Customer
-                • Provide only 2 options:
-                     Option 1: Remarkable brand.
-                     Option 2: Alternate brand.
-                • Each option must include:
-                     Part number (Spanish + English).
-                     OEM reference.
-                     Direct product link.
-                     Final price in Ecuador (+ VAT).
-                     Lead time: 2–4 weeks.
-                • Always end with: “Are you interested in buying this part?”
-
-                9. Tone and Operational Rules
-                • Professional, concise, no explanations of calculation.
-                • No greetings or introductory text.
-                • If the part cannot be found: request VIN or engine code and retry.
-                • Never invent part numbers or links.
-
-         `
-
-         },
-            
-
-
+            role: "system", 
+            content: ASSISTANT_ALEX_PROMPT
+        },
+        { 
+            role: "assistant", 
+            content: "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene (marca, modelo, año), y la pieza que necesita?"
+        }
     ];
     
     const marcasPopulares = ["Chevrolet", "Kia", "Toyota", "Hyundai", "Suzuki", "Renault", "Great Wall", "Mazda", "Nissan", "Ford", "Volkswagen", "Mitsubishi"];
@@ -229,7 +77,7 @@ STRICT SYSTEM RULES:
     const marcasOrdenadas = [...marcasPopulares, ...marcasOtras];
 
     // ==================================================================
-    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ (YA CORREGIDA) ==
+    // == 2. CLASE ROBUSTA PARA MANEJO DE VOZ ==
     // ==================================================================
     class VoiceAssistant {
         constructor() {
@@ -350,7 +198,6 @@ STRICT SYSTEM RULES:
             this.recognition.onresult = (event) => {
                 let interim_transcript = '';
                 let final_transcript = '';
-
                 for (let i = 0; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         final_transcript += event.results[i][0].transcript;
@@ -378,9 +225,8 @@ STRICT SYSTEM RULES:
 
     const voiceAssistant = new VoiceAssistant();
 
-
     // ==================================================================
-    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA (YA CORREGIDA) ==
+    // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
     // ==================================================================
     
     function addMessage(sender, text, isThinking = false) { 
@@ -405,25 +251,30 @@ STRICT SYSTEM RULES:
         if (!messageText || chatSendBtn.disabled) return;
         
         addMessage('user', messageText);
-        conversationHistory.push({ role: 'user', content: messageText });
+        
+        const triggerPhrase = 'véndeme la parte';
+        if (messageText.toLowerCase().includes(triggerPhrase)) {
+            conversationHistory[0].content = PRODUCT_ANALYST_PROMPT;
+            conversationHistory.push({ role: 'user', content: messageText });
+            const modeChangeMessage = "Entendido. Cambiando a modo de análisis de producto para buscar su repuesto. Un momento por favor...";
+            addMessage('assistant', modeChangeMessage);
+            conversationHistory.push({ role: 'assistant', content: modeChangeMessage });
+        } else {
+            conversationHistory.push({ role: 'user', content: messageText });
+        }
+
         chatInput.value = '';
         chatSendBtn.disabled = true;
         addMessage('assistant', '', true);
         
         try {
-            // --- CAMBIO IMPORTANTE ---
-            // Ahora llamamos a nuestro propio backend seguro en Vercel
             const response = await fetch('/api/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    conversationHistory: conversationHistory // Enviamos el historial completo
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conversationHistory: conversationHistory }),
             });
             
-             const existingThinkingMessage = document.getElementById('thinking-message');
+            const existingThinkingMessage = document.getElementById('thinking-message');
             if (existingThinkingMessage) existingThinkingMessage.remove();
             
             if (!response.ok) {
@@ -433,38 +284,34 @@ STRICT SYSTEM RULES:
             
             const data = await response.json();
             
-            // El resto del código para procesar la respuesta de Gemini ya es correcto.
-            // Lo dejamos como estaba.
             if (!data.candidates || data.candidates.length === 0) {
                 throw new Error("Respuesta de API de Gemini inválida.");
             }
                     
             const aiResponseText = data.candidates[0].content.parts[0].text;
 
-            // ... el resto de la función `handleSendMessage` sigue igual ...
             let isJsonResponse = false;
-            const jsonRegex = /\{[\s\S]*\}/;
-            const jsonMatch = aiResponseText.match(jsonRegex);
+            if (conversationHistory[0].content !== PRODUCT_ANALYST_PROMPT) {
+                const jsonRegex = /\{[\s\S]*\}/;
+                const jsonMatch = aiResponseText.match(jsonRegex);
 
-            if (jsonMatch) {
-                try {
-                    const jsonObject = JSON.parse(jsonMatch[0]);
-                    if (jsonObject.accion === 'registrar_cotizacion' && jsonObject.datos) {
-                        isJsonResponse = true;
-                        const confirmationMessage = "¡Excelente! He rellenado los datos en el formulario. Por favor, revísalos y presiona el botón de WhatsApp para finalizar.";
-                        
-                        await logDataToMake(jsonObject.datos);
-                        populateFormFromAI(jsonObject.datos);
-                        
-                        addMessage('assistant', confirmationMessage);
-                        voiceAssistant.speak(confirmationMessage, () => {
-                            setTimeout(() => chatWidget.classList.add('hidden'), 1000);
-                        });
-                        conversationHistory.push({ role: 'assistant', content: confirmationMessage });
+                if (jsonMatch) {
+                    try {
+                        const jsonObject = JSON.parse(jsonMatch[0]);
+                        if (jsonObject.accion === 'registrar_cotizacion' && jsonObject.datos) {
+                            isJsonResponse = true;
+                            const confirmationMessage = "¡Excelente! He rellenado los datos en el formulario. Por favor, revísalos y presiona el botón de WhatsApp para finalizar.";
+                            await logDataToMake(jsonObject.datos);
+                            populateFormFromAI(jsonObject.datos);
+                            addMessage('assistant', confirmationMessage);
+                            voiceAssistant.speak(confirmationMessage, () => {
+                                setTimeout(() => chatWidget.classList.add('hidden'), 1000);
+                            });
+                            conversationHistory.push({ role: 'assistant', content: confirmationMessage });
+                        }
+                    } catch (e) {
+                        isJsonResponse = false;
                     }
-                } catch (e) {
-                    console.warn("Se encontró un bloque parecido a JSON, pero falló al parsear.", e);
-                    isJsonResponse = false;
                 }
             }
 
@@ -475,7 +322,7 @@ STRICT SYSTEM RULES:
             }
 
         } catch (error) {
-            console.error('Error en handleSendMessage con Groq:', error);
+            console.error('Error en handleSendMessage:', error);
             const errorMsg = 'Lo siento, hubo un problema de conexión. Por favor, intente de nuevo.';
             addMessage('assistant', errorMsg);
             voiceAssistant.speak(errorMsg);
