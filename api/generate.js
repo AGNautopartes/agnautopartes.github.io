@@ -34,7 +34,7 @@ export default async function handler(request, response) {
     };
   });
   
-  const model = 'gemini-1.5-flash-latest';
+  const model = 'gemini-2.0-flash';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
 
   try {
