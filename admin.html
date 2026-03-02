@@ -1366,20 +1366,26 @@
                 const data = await res.json();
                 thinking.remove();
 
-                const responseText = data.response || data.error || 'Error de conexión';
+                if (!res.ok) {
+                    addAiMsg('assistant', `⚠️ Error: ${data.error || 'Problema en el servidor'}`);
+                    return;
+                }
+
+                const responseText = data.response || 'No recibí respuesta inteligible.';
                 addAiMsg('assistant', responseText);
                 ariaHistory.push({ role: 'assistant', content: responseText });
 
-                // Ejecutar la acción si Aria la determinó
                 if (data.action) {
                     await executeAriaAction(data.action);
                 }
             } catch (e) {
-                thinking.remove();
-                addAiMsg('assistant', 'Error de conexión. Intente de nuevo.');
+                console.error('Aria Error:', e);
+                if (document.body.contains(thinking)) thinking.remove();
+                addAiMsg('assistant', '❌ Error de red o tiempo de espera agotado. Verifique su conexión.');
             } finally {
                 ariaSend.disabled = false;
             }
+
         }
 
         async function executeAriaAction(action) {
@@ -1414,11 +1420,15 @@
                         found.status = action.data.new_status;
                         renderOrders(allOrders);
                         updateStats(allOrders);
-                        addAiMsg('system', `✅ [${found.readable_id}] Estado actualizado a: ${action.data.new_status}`);
+                        addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                        if (selectedOrder?.id === found.id) renderDetail(found);
+                    } else {
+                        addAiMsg('system', '❌ No se pudo actualizar en la base de datos.');
                     }
                 } else {
-                    addAiMsg('system', '⚠️ No encontré esa orden para actualizar.');
+                    addAiMsg('system', `⚠️ No encontré la orden "${orderId}".`);
                 }
+
             } else if (action.type === 'DELETE_ORDER') {
                 const orderId = action.data.order_id;
                 const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
