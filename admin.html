@@ -458,7 +458,8 @@
 
         /* ══ DETAIL PANEL ══ */
         .detail-panel {
-            width: 420px;
+            width: 380px;
+            /* Tamaño similar a Aria */
             border-left: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -468,6 +469,7 @@
             flex-shrink: 0;
             position: relative;
         }
+
 
         .detail-panel.collapsed {
             width: 50px;
@@ -874,15 +876,19 @@
 
         .page {
             display: none;
+            flex: 1;
+            overflow: hidden;
         }
 
         .page.active {
-            display: grid;
+            display: flex;
         }
 
         #page-reports.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
+
 
         /* REPORTS PAGE */
         .reports-container {
