@@ -9,8 +9,8 @@ export default async function handler(request, response) {
   // 2. Tomar el historial de chat que envió el frontend
   const { conversationHistory } = request.body;
 
-  // 3. Obtener la clave API de Gemini de forma SEGURA desde las variables de entorno de Vercel
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+  // 3. Obtener la clave API de Gemini de forma SEGURA desde las variables de entorno
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
   if (!GOOGLE_API_KEY) {
     return response.status(500).json({ error: { message: 'La clave de API de Google no está configurada en el servidor.' } });

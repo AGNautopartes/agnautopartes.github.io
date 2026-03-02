@@ -42,12 +42,14 @@
       --color-border: #E9ECEF;
       --color-text-primary: #181A1C;
       --color-text-secondary: #5A6169;
-      --color-accent-red: #E64937; /* Nuevo color de acento principal */
-      --color-accent-red-hover: #D04533; /* Tono más oscuro para hover */
+      --color-accent-red: #E64937;
+      --color-accent-red-hover: #D04533;
       --color-accent-warm: #8B5E3C;
+      --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.1);
       --shadow-soft: 0 8px 25px rgba(0, 0, 0, 0.06);
       --font-body: 'Inter', sans-serif;
     }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -139,6 +141,25 @@
     #submit-button-whatsapp:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
     #submit-button-whatsapp img { width: 24px; height: 24px; }
     #submit-helper-text { font-size: 0.75rem; text-align: center; color: var(--color-accent-warm); margin-top: 0.5rem; font-weight: 500; height: 1em; }
+
+    /* Estilos para el Buscador de Pedidos */
+    .tracking-section { margin-top: 4rem; padding: 3rem 2rem; background: var(--color-surface); border-radius: 20px; border: 1px solid var(--color-border); box-shadow: var(--shadow-premium); text-align: center; }
+    .tracking-form { max-width: 500px; margin: 1.5rem auto; display: flex; gap: 0.75rem; }
+    .tracking-results { margin-top: 2rem; display: none; text-align: left; }
+    .order-card { background: var(--color-background); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s ease; }
+    .order-card:hover { transform: translateX(5px); }
+    .order-info h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .order-info p { font-size: 0.8rem; color: var(--color-text-secondary); }
+    .status-badge { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .status-solicitado { background: #E9ECEF; color: #495057; }
+    .status-cotizado { background: #E3F2FD; color: #1976D2; }
+    .status-comprado { background: #FFF3E0; color: #F57C00; }
+    .status-en-transito { background: #E8F5E9; color: #388E3C; }
+    .status-entregado { background: #F3E5F5; color: #7B1FA2; }
+    
+    .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; height: 1rem; width: 100%; }
+    @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
 
     #vertical-carousel { position: fixed; left: 1.5rem; top: 0; width: 80px; height: 100vh; pointer-events: none; z-index: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); }
     .carousel-track { width: 100%; display: flex; flex-direction: column; align-items: center; animation: scroll-vertical 40s linear infinite; }
@@ -356,8 +377,25 @@
               </div>
 
             </div>
+
+            <section class="tracking-section fade-in">
+              <div class="form-section-header" style="border-color: #25D366; text-align: center; border-left: none; border-bottom: 3px solid #25D366; display: inline-block; padding: 0 1rem 0.5rem;">
+                <h2>📦 Seguimiento de Mi Pedido</h2>
+                <p>Ingresa tu número de WhatsApp para ver el estado real de tus repuestos.</p>
+              </div>
+              <div class="tracking-form" id="tracking-form">
+                <input type="tel" id="tracking-phone" placeholder="Ej: 0991234567" required>
+                <button type="button" id="btn-search-order" class="btn-form-action" style="background-color: var(--color-text-primary); color: white; min-width: 120px;">
+                  Buscar
+                </button>
+              </div>
+              <div id="tracking-results" class="tracking-results">
+                <!-- Los resultados se cargarán dinámicamente aquí -->
+              </div>
+            </section>
           </div>
         </main>
+
       </div>
     </div>
   
