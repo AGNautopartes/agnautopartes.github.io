@@ -1426,7 +1426,8 @@
     <div id="toast"></div>
 
     <script>
-        const API = 'https://agnautopartes.vercel.app';
+        const API = window.location.origin;
+
         let adminPass = '', adminName = 'Admin';
         let allOrders = [], selectedOrder = null;
         let ariaHistory = [];
@@ -1840,8 +1841,27 @@
                         addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
                     }
                 }
+            } else if (action.type === 'ADD_NOTE') {
+                const orderId = action.data.order_id;
+                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                if (found) {
+                    const res = await fetch(`${API}/api/add-note`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                        body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` })
+                    });
+                    if (res.ok) {
+                        addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
+                        if (selectedOrder?.id === found.id) loadNotes(found.id);
+                    }
+                } else {
+                    addAiMsg('system', `⚠️ Orden para nota no encontrada (${orderId})`);
+                }
+            } else {
+                console.warn('Unknown Aria action:', action.type);
             }
         }
+
 
 
         // ══ DASHBOARD ══

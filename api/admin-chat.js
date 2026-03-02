@@ -93,7 +93,14 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
             } catch (e) { console.error('JSON Error:', e); }
         }
 
+        if (actionMatch && !displayText) {
+            displayText = "De acuerdo, procedo con esa acción.";
+        } else if (!displayText && !action) {
+            displayText = "Lo siento, no pude procesar esa solicitud.";
+        }
+
         return res.status(200).json({ response: displayText, action: action });
+
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
