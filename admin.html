@@ -1625,9 +1625,10 @@
                 vin: document.getElementById('edit-vin').value,
                 tracking_number: document.getElementById('edit-tracking').value,
                 status: document.getElementById('det-status').value,
-                cost_fob: parseFloat(document.getElementById('edit-fob').value),
-                sale_price: parseFloat(document.getElementById('edit-sale').value)
+                cost_fob: parseFloat(document.getElementById('edit-fob').value) || 0,
+                sale_price: parseFloat(document.getElementById('edit-sale').value) || 0
             };
+
 
             const res = await fetch(`${API}/api/update-order-full`, {
                 method: 'POST',
