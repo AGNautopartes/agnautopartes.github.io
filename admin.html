@@ -1125,7 +1125,12 @@
     <!-- ══════ LOGIN ══════ -->
     <div id="login-screen">
         <div class="login-card">
-            <div class="login-logo">AGN</div>
+            <div class="login-logo">
+                <img src="images/logo-agn.png"
+                    style="height:60px; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;">
+                <span>AGN</span>
+            </div>
+
             <div class="login-subtitle">Panel ERP Administrativo</div>
             <div class="field"><label>Nombre</label><input type="text" id="login-name" placeholder="Tu nombre"
                     autocomplete="name"></div>
@@ -1139,7 +1144,11 @@
     <!-- ══════ APP ══════ -->
     <div id="app">
         <nav>
-            <div class="nav-brand"><span>AGN</span> ERP</div>
+            <div class="nav-brand">
+                <img src="images/logo-agn.png" style="height:24px; margin-right:8px; vertical-align:middle;">
+                <span>AGN</span> ERP
+            </div>
+
             <div class="nav-tabs">
                 <button class="tab-btn active" data-page="orders">📋 Órdenes</button>
                 <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
@@ -1311,9 +1320,10 @@
                 </div>
                 <div class="ai-messages" id="ai-messages">
                     <div class="ai-msg assistant">¡Hola! Soy Aria, su asistente ERP. Puedo crear órdenes, actualizar
-                        estados y registrar notas. Por ejemplo, dígame: <em>"Crea una orden para Juan Pérez, Ford
-                            Focus 2018, necesita un radiador comprado en $45, shipping $30, lo vendí en $200"</em>
+                        estados, <strong>modificar costos o precios</strong> y registrar notas. Por ejemplo, dígame:
+                        <em>"Actualiza el costo de la orden 4 a $45"</em> o <em>"Crea una orden para Juan..."</em>
                     </div>
+
                 </div>
                 <div class="ai-input-area">
                     <div class="ai-input-wrapper">
@@ -1885,6 +1895,48 @@
                     } else {
                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
                     }
+                } else if (action.type === 'UPDATE_FIELDS') {
+                    const orderId = action.data.order_id;
+                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                    if (found) {
+                        // Combinar datos existentes con los nuevos campos de Aria
+                        const updateData = {
+                            orderId: found.id,
+                            part_name: action.data.fields.part_name || found.part_name,
+                            part_number: action.data.fields.part_number || found.part_number,
+                            vin: action.data.fields.vin || found.vin,
+                            vehicle_brand: action.data.fields.vehicle_brand || found.vehicle_brand,
+                            vehicle_model: action.data.fields.vehicle_model || found.vehicle_model,
+                            vehicle_year: action.data.fields.vehicle_year || found.vehicle_year,
+                            supplier_url: action.data.fields.supplier_url || found.supplier_url,
+                            tracking_number: action.data.fields.tracking_number || found.tracking_number,
+                            status: action.data.fields.status || found.status,
+                            cost_fob: action.data.fields.cost_fob !== undefined ? action.data.fields.cost_fob : found.cost_fob,
+                            sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price
+                        };
+
+                        const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                            body: JSON.stringify(updateData),
+                            timeout: 10000
+                        });
+
+                        if (res.ok) {
+                            // Actualizar localmente
+                            Object.assign(found, updateData);
+                            renderOrders(allOrders);
+                            updateStats(allOrders);
+                            addAiMsg('system', `✅ Orden [#${found.readable_id}] actualizada correctamente.`);
+                            if (selectedOrder?.id === found.id) renderDetail(found);
+                        } else {
+                            addAiMsg('system', `❌ Error al actualizar los campos de [#${found.readable_id}].`);
+                        }
+                    } else {
+                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
+                    }
+                } else {
+                    console.warn('Unknown Aria action:', action.type);
                 }
             } catch (err) {
                 console.error('Action execution error:', err);
