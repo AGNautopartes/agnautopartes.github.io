@@ -990,7 +990,11 @@
                             <option>Entregado</option>
                             <option>Cancelado</option>
                         </select>
+                        <button class="btn-add" id="btn-export"
+                            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
+                            Exportar Reporte</button>
                         <button class="btn-add" id="btn-new-order">+ Nueva Orden</button>
+
                     </div>
                     <div class="orders-list" id="orders-list">
                         <div class="empty-state">Cargando órdenes...</div>
@@ -1469,8 +1473,68 @@
             }, 3000);
         }
 
-        // ══ NEW ORDER (via Aria) ══
+        document.getElementById('btn-export').addEventListener('click', () => {
+            if (!allOrders.length) return showToast('No hay datos para exportar', 'error');
+
+            // Filtrar órdenes según la búsqueda y filtro actual si es necesario, 
+            // pero el usuario pidió "Toda la info", así que usaremos allOrders o las filtradas visibles.
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filter = document.getElementById('status-filter').value;
+
+            const toExport = allOrders.filter(o => {
+                const matchSearch = !query ||
+                    (o.customers?.full_name || '').toLowerCase().includes(query) ||
+                    (o.part_name || '').toLowerCase().includes(query) ||
+                    (o.readable_id || '').toLowerCase().includes(query);
+                const matchFilter = !filter || o.status === filter;
+                return matchSearch && matchFilter;
+            });
+
+            if (!toExport.length) return showToast('No hay órdenes visibles para exportar', 'error');
+
+            const headers = [
+                'ID', 'Fecha', 'Cliente', 'Teléfono', 'Vehículo', 'Año', 'Pieza',
+                'Parte #', 'VIN', 'Proveedor URL', 'Tracking', 'Estado',
+                'Costo FOB', 'Venta', 'Margen Est.'
+            ];
+
+            const rows = toExport.map(o => [
+                o.readable_id,
+                new Date(o.created_at).toLocaleDateString(),
+                o.customers?.full_name || '—',
+                o.customers?.phone || '—',
+                `${o.vehicle_brand || ''} ${o.vehicle_model || ''}`.trim(),
+                o.vehicle_year || '—',
+                o.part_name,
+                o.part_number || '—',
+                o.vin || '—',
+                o.supplier_url || '—',
+                o.tracking_number || '—',
+                o.status,
+                o.cost_fob || 0,
+                o.sale_price || 0,
+                (o.sale_price - o.cost_fob).toFixed(2)
+            ]);
+
+            let csvContent = "\uFEFF"; // BOM para Excel
+            csvContent += headers.join(';') + "\n";
+            rows.forEach(r => {
+                csvContent += r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(';') + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `AGN_Reporte_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('✅ Reporte generado');
+        });
+
         document.getElementById('btn-new-order').addEventListener('click', () => {
+
             ariaInput.focus();
             ariaInput.placeholder = 'Ej: "Crea orden para María López, Hyundai Elantra 2019, pastillas de freno, costo $20, shipping $25, venta $120"';
             showToast('💬 Dile a Aria los datos de la nueva orden →', 'info');
