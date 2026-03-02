@@ -524,6 +524,17 @@
             margin-bottom: 0.1rem;
         }
 
+        .info-item .iv input {
+            width: 100%;
+            padding: 0.25rem 0.5rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 0.8rem;
+            margin-top: 0.1rem;
+        }
+
         .info-item .iv {
             font-size: 0.85rem;
             font-weight: 600;
@@ -873,39 +884,41 @@
         /* TOAST */
         .toast {
             position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            padding: 0.85rem 1.25rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
             font-weight: 600;
-            z-index: 9999;
-            transform: translateY(80px);
-            opacity: 0;
-            transition: all 0.3s ease;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
+            z-index: 10000;
+            animation: slideUp 0.3s ease-out;
         }
 
         .toast.success {
-            border-color: var(--green);
-            color: var(--green);
+            background: var(--green);
         }
 
         .toast.error {
-            border-color: var(--accent);
-            color: var(--accent);
+            background: var(--accent);
         }
 
+        /* Assuming var(--red) should be var(--accent) based on existing styles */
         .toast.info {
-            border-color: var(--blue);
-            color: var(--blue);
+            background: var(--blue);
+        }
+
+        /* Added for consistency with showToast function */
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -1037,7 +1050,7 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div id="toast"></div>
 
     <script>
         const API = 'https://agnautopartes.vercel.app';
@@ -1155,49 +1168,53 @@
         function renderDetail(o) {
             const panel = document.getElementById('detail-panel');
             panel.classList.remove('empty');
-            const vehicle = [o.vehicle_brand, o.vehicle_model, o.vehicle_year].filter(Boolean).join(' ') || '—';
             const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Cancelado'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
+
             panel.innerHTML = `
         <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
             <div>
                 <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">PEDIDO #${o.readable_id}</div>
-                <h3>${o.part_name}</h3>
+                <input type="text" id="edit-part-name" value="${o.part_name}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
                 <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
             </div>
-            <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Eliminar</button>
+            <div style="display:flex; gap:0.5rem">
+                <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Guardar</button>
+                <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Eliminar</button>
+            </div>
         </div>
 
         <div class="detail-body">
             <div class="detail-section">
                 <h4>🚗 Vehículo & Pieza</h4>
                 <div class="info-grid">
-                    <div class="info-item"><div class="il">Vehículo</div><div class="iv">${vehicle}</div></div>
-                    <div class="info-item"><div class="il">Número de Parte</div><div class="iv">${o.part_number || '—'}</div></div>
-                    ${o.supplier_url ? `<div class="info-item" style="grid-column:1/-1"><div class="il">Link Proveedor</div><div class="iv"><a href="${o.supplier_url}" target="_blank" style="color:var(--blue); overflow-wrap: break-word; font-size:0.75rem">${o.supplier_url}</a></div></div>` : ''}
-                    <div class="info-item"><div class="il">VIN</div><div class="iv" style="font-family:monospace; font-size:0.8rem">${o.vin || '—'}</div></div>
-                    <div class="info-item"><div class="il">Tracking</div><div class="iv">${o.tracking_number || '—'}</div></div>
+                    <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
+                    <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
+                    <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
+                    <div class="info-item"><div class="il">Número Parte</div><div class="iv"><input type="text" id="edit-part-no" value="${o.part_number || ''}"></div></div>
+                    <div class="info-item" style="grid-column:1/-1"><div class="il">Link Proveedor</div><div class="iv"><input type="text" id="edit-url" value="${o.supplier_url || ''}"></div></div>
+                    <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="edit-vin" value="${o.vin || ''}" style="font-family:monospace"></div></div>
+                    <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" id="edit-tracking" value="${o.tracking_number || ''}"></div></div>
                 </div>
             </div>
             <div class="detail-section">
                 <h4>📦 Estado</h4>
                 <div class="status-changer">
-                    <select id="det-status">${opts}</select>
-                    <button class="btn-action btn-blue" onclick="updateDetailStatus('${o.id}')">Actualizar</button>
+                    <select id="det-status" onchange="updateDetailStatus('${o.id}')">${opts}</select>
                 </div>
             </div>
             <div class="detail-section">
                 <h4>💰 Financieros</h4>
                 <div class="financial-grid">
-                    <div class="fin-item"><div class="fl">FOB</div><div class="fv">$${o.cost_fob || 0}</div></div>
-                    <div class="fin-item"><div class="fl">Venta</div><div class="fv">$${o.sale_price || 0}</div></div>
+                    <div class="fin-item"><div class="fl">Costo FOB</div><div class="fv"><input type="number" id="edit-fob" value="${o.cost_fob || 0}" step="0.01"></div></div>
+                    <div class="fin-item"><div class="fl">Precio Venta</div><div class="fv"><input type="number" id="edit-sale" value="${o.sale_price || 0}" step="0.01"></div></div>
                 </div>
             </div>
             <div class="detail-section">
                 <h4>📝 Notas</h4>
                 <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
                 <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
-                <button class="btn-action btn-blue" style="margin-top:0.5rem;width:100%" onclick="addNote('${o.id}')">Guardar nota</button>
+                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ Añadir Nota</button>
             </div>
             <div class="detail-section">
                 <h4>🕓 Historial</h4>
@@ -1205,6 +1222,41 @@
             </div>
         </div>`;
         }
+
+        async function updateManualOrder(orderId) {
+            const data = {
+                orderId,
+                part_name: document.getElementById('edit-part-name').value,
+                vehicle_brand: document.getElementById('edit-brand').value,
+                vehicle_model: document.getElementById('edit-model').value,
+                vehicle_year: document.getElementById('edit-year').value,
+                part_number: document.getElementById('edit-part-no').value,
+                supplier_url: document.getElementById('edit-url').value,
+                vin: document.getElementById('edit-vin').value,
+                tracking_number: document.getElementById('edit-tracking').value,
+                status: document.getElementById('det-status').value,
+                cost_fob: parseFloat(document.getElementById('edit-fob').value),
+                sale_price: parseFloat(document.getElementById('edit-sale').value)
+            };
+
+            const res = await fetch(`${API}/api/update-order-full`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                showToast('✅ Cambios guardados', 'success');
+                // Actualizar localmente el objeto allOrders
+                const o = allOrders.find(ord => ord.id === orderId);
+                if (o) Object.assign(o, data);
+                renderOrders(allOrders);
+                updateStats(allOrders);
+            } else {
+                showToast('❌ Error al guardar', 'error');
+            }
+        }
+
 
 
         async function updateDetailStatus(orderId) {
@@ -1271,7 +1323,7 @@
                 allOrders = allOrders.filter(o => o.id !== orderId);
                 renderOrders(allOrders);
                 updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = 'Selecciona una orden para ver detalles';
+                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
                 document.getElementById('detail-panel').classList.add('empty');
             } else showToast('❌ Error al eliminar', 'error');
         }
@@ -1394,10 +1446,16 @@
         }
 
         // ══ TOAST ══
-        function showToast(msg, type = 'info') {
-            const t = document.getElementById('toast');
-            t.textContent = msg; t.className = `toast ${type} show`;
-            setTimeout(() => t.className = 'toast', 3000);
+        function showToast(msg, type = 'success') {
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transition = '0.5s';
+                setTimeout(() => t.remove(), 500);
+            }, 3000);
         }
 
         // ══ NEW ORDER (via Aria) ══
@@ -1410,3 +1468,4 @@
 </body>
 
 </html>
+```

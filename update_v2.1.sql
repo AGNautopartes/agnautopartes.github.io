@@ -1,5 +1,5 @@
 -- ============================================================
--- AGN Autopartes ERP — ACTUALIZACIÓN v2.1
+-- AGN Autopartes ERP — ACTUALIZACIÓN v2.1 (CORREGIDA)
 -- OBJETIVO: Añadir IDs legibles (ORD-1, ORD-2...) y corregir visibilidad
 -- ============================================================
 
@@ -27,9 +27,19 @@ CREATE TRIGGER trg_generate_readable_id
     FOR EACH ROW
     EXECUTE FUNCTION generate_readable_id();
 
--- 5. Llenar IDs para órdenes existentes (si hay)
-UPDATE orders SET readable_id = 'ORD-' || (row_number() OVER (ORDER BY created_at)) 
-WHERE readable_id IS NULL;
+-- 5. Llenar IDs para órdenes existentes (CORREGIDO USANDO CTE)
+WITH numbered_orders AS (
+    SELECT id, 'ORD-' || row_number() OVER (ORDER BY created_at) as new_id
+    FROM orders
+    WHERE readable_id IS NULL
+)
+UPDATE orders
+SET readable_id = numbered_orders.new_id
+FROM numbered_orders
+WHERE orders.id = numbered_orders.id;
+
+-- Ajustar la secuencia para que no choque con los IDs ya asignados
+SELECT setval('order_id_seq', (SELECT count(*) FROM orders));
 
 -- 6. Actualizar la vista para incluir el readable_id
 DROP VIEW IF EXISTS order_financial_summary;
