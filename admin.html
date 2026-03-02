@@ -1117,6 +1117,7 @@
                 const vehicle = [o.vehicle_brand, o.vehicle_model, o.vehicle_year].filter(Boolean).join(' ');
                 return `<div class="order-card${selectedOrder?.id === o.id ? ' selected' : ''}" onclick="selectOrder('${o.id}')">
             <div>
+                <div class="order-id" style="font-size:0.65rem; font-weight:800; color:var(--blue); margin-bottom:0.2rem">#${o.readable_id || 'ID'}</div>
                 <div class="order-client">${o.customers?.full_name || 'Sin nombre'} <span style="color:var(--text2);font-weight:400;font-size:0.78rem">${o.customers?.phone || ''}</span></div>
                 <div class="order-part">${o.part_name}${o.part_number ? ` — #${o.part_number}` : ''}</div>
                 ${vehicle ? `<div class="order-vehicle">🚗 ${vehicle}</div>` : ''}
@@ -1128,6 +1129,7 @@
         </div>`;
             }).join('');
         }
+
 
         function updateStats(orders) {
             document.getElementById('s-total').textContent = orders.length;
@@ -1159,11 +1161,13 @@
             panel.innerHTML = `
         <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
             <div>
+                <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">PEDIDO #${o.readable_id}</div>
                 <h3>${o.part_name}</h3>
                 <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
             </div>
             <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Eliminar</button>
         </div>
+
         <div class="detail-body">
             <div class="detail-section">
                 <h4>🚗 Vehículo & Pieza</h4>
@@ -1335,22 +1339,19 @@
                 });
                 if (res.ok) {
                     const result = await res.json();
-                    addAiMsg('system', `✅ Orden creada: ${result.message}`);
+                    addAiMsg('system', `✅ Orden creada con éxito.`);
                     // Recargar órdenes
                     const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
                     allOrders = await ordersRes.json();
                     renderOrders(allOrders);
                     updateStats(allOrders);
                 } else {
-                    addAiMsg('system', '❌ Error al crear la orden en la base de datos.');
+                    addAiMsg('system', '❌ Error al crear la orden.');
                 }
             } else if (action.type === 'UPDATE_STATUS') {
-                addAiMsg('system', `⚙️ Buscando orden de ${action.data.customer_name}...`);
-                // Buscar la orden más reciente de ese cliente con esa parte
-                const found = allOrders.find(o =>
-                    (o.customers?.full_name || '').toLowerCase().includes(action.data.customer_name.toLowerCase()) &&
-                    (o.part_name || '').toLowerCase().includes((action.data.part_name || '').toLowerCase().substring(0, 5))
-                );
+                const orderId = action.data.order_id;
+                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+
                 if (found) {
                     const res = await fetch(`${API}/api/update-order-status`, {
                         method: 'POST',
@@ -1361,13 +1362,30 @@
                         found.status = action.data.new_status;
                         renderOrders(allOrders);
                         updateStats(allOrders);
-                        addAiMsg('system', `✅ Estado actualizado a: ${action.data.new_status}`);
+                        addAiMsg('system', `✅ [${found.readable_id}] Estado actualizado a: ${action.data.new_status}`);
                     }
                 } else {
-                    addAiMsg('system', '⚠️ No se encontró la orden. Verifique el nombre del cliente y la pieza.');
+                    addAiMsg('system', '⚠️ No encontré esa orden para actualizar.');
+                }
+            } else if (action.type === 'DELETE_ORDER') {
+                const orderId = action.data.order_id;
+                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                if (found) {
+                    const res = await fetch(`${API}/api/delete-order`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                        body: JSON.stringify({ orderId: found.id })
+                    });
+                    if (res.ok) {
+                        allOrders = allOrders.filter(o => o.id !== found.id);
+                        renderOrders(allOrders);
+                        updateStats(allOrders);
+                        addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
+                    }
                 }
             }
         }
+
 
         // ══ DASHBOARD ══
         function updateDashboard() {

@@ -29,21 +29,31 @@ export default async function handler(req, res) {
     } = req.body;
 
     try {
-        // 1. Buscar o crear cliente
-        let { data: customer } = await supabase
-            .from('customers')
-            .select('id, full_name')
-            .eq('phone', customer_phone)
-            .maybeSingle();
+        // 1. Buscar cliente por teléfono (si existe y no es N/A) o por nombre
+        let query = supabase.from('customers').select('id, full_name, phone');
+
+        if (customer_phone && customer_phone !== 'N/A' && customer_phone !== '') {
+            query = query.eq('phone', customer_phone);
+        } else {
+            query = query.eq('full_name', customer_name);
+        }
+
+        let { data: customer } = await query.maybeSingle();
 
         if (!customer) {
             const { data: newCustomer, error: createErr } = await supabase
                 .from('customers')
-                .insert([{ full_name: customer_name, phone: customer_phone, email: customer_email, source: 'manual' }])
+                .insert([{
+                    full_name: customer_name,
+                    phone: customer_phone || 'N/A',
+                    email: customer_email || '',
+                    source: 'manual'
+                }])
                 .select().single();
             if (createErr) throw createErr;
             customer = newCustomer;
         }
+
 
         // 2. Crear la orden
         const { data: order, error: orderErr } = await supabase

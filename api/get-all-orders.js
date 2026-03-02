@@ -15,6 +15,7 @@ export default async function handler(req, res) {
             .from('orders')
             .select(`
                 id,
+                readable_id,
                 part_name,
                 part_number,
                 status,
