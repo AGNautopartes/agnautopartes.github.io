@@ -464,8 +464,41 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: width 0.2s;
+            transition: width 0.3s ease;
             flex-shrink: 0;
+            position: relative;
+        }
+
+        .detail-panel.collapsed {
+            width: 50px;
+        }
+
+        .detail-panel.collapsed .detail-header h3,
+        .detail-panel.collapsed .detail-header .detail-sub,
+        .detail-panel.collapsed .detail-body {
+            display: none;
+        }
+
+        .btn-toggle-detail {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .detail-panel.collapsed .btn-toggle-detail {
+            right: 10px;
+            left: 10px;
         }
 
         .detail-panel.empty {
@@ -475,6 +508,7 @@
             color: var(--text2);
             font-size: 0.85rem;
         }
+
 
         .detail-header {
             padding: 1.25rem;
@@ -1162,71 +1196,29 @@
 
                 <!-- Order Detail -->
                 <div class="detail-panel empty" id="detail-panel">
-                    <span>← Selecciona una orden</span>
-                </div>
-
-                <!-- Aria AI Chat -->
-                <div class="ai-sidebar">
-                    <div class="ai-header">
-                        <div class="aria-avatar">🤖</div>
-                        <div style="display:flex; align-items:center">
-                            <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path
-                                        d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-                                </svg>
-                            </button>
-                            <div>
-                                <div class="ai-title">Aria — Asistente ERP</div>
-                                <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
-                            </div>
+                    <button class="btn-toggle-detail" id="toggle-detail" title="Expandir/Colapsar">↔</button>
+                    <div id="detail-content"
+                        style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
+                        <div
+                            style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)">
+                            <span>← Selecciona una orden</span>
                         </div>
                     </div>
-                    <div class="ai-messages" id="ai-messages">
-                        <div class="ai-msg assistant">¡Hola! Soy Aria, su asistente ERP. Puedo crear órdenes, actualizar
-                            estados y registrar notas. Por ejemplo, dígame: <em>"Crea una orden para Juan Pérez, Ford
-                                Focus 2018, necesita un radiador comprado en $45, shipping $30, lo vendí en $200"</em>
-                        </div>
-                    </div>
-                    <div class="ai-input-area">
-                        <div class="ai-input-wrapper">
-                            <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
-                                rows="1"></textarea>
-                            <button id="aria-mic" class="mic-btn" title="Dictar con voz">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                    <path
-                                        d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
-                    </div>
-
                 </div>
             </div>
 
             <!-- ── DASHBOARD PAGE ── -->
             <div class="page" id="page-dashboard">
-                <div class="kpi-grid" id="kpi-grid">
+                <div class="kpi-grid">
                     <div class="kpi-card">
-                        <h3>Ingresos Totales</h3>
-                        <div class="kpi-val" id="kpi-revenue" style="color:var(--green)">—</div>
+                        <h3>Ordenes Activas</h3>
+                        <div class="kpi-val" id="kpi-active">0</div>
                     </div>
                     <div class="kpi-card">
-                        <h3>Ganancia Total</h3>
-                        <div class="kpi-val" id="kpi-profit" style="color:var(--cyan)">—</div>
-                    </div>
-                    <div class="kpi-card">
-                        <h3>Órdenes Activas</h3>
-                        <div class="kpi-val" id="kpi-active" style="color:var(--yellow)">—</div>
-                    </div>
-                    <div class="kpi-card">
-                        <h3>Entregadas</h3>
-                        <div class="kpi-val" id="kpi-delivered" style="color:var(--blue)">—</div>
+                        <h3>Entregadas (Mes)</h3>
+                        <div class="kpi-val" id="kpi-delivered">0</div>
                     </div>
                 </div>
-                <div style="color:var(--text2);font-size:0.85rem;text-align:center;padding:2rem;">Más reportes
-                    próximamente...</div>
             </div>
 
             <!-- ── REPORTS PAGE ── -->
@@ -1234,42 +1226,41 @@
                 <div class="reports-container">
                     <div class="reports-filters">
                         <div class="filter-group">
-                            <label for="rep-date-from">Desde</label>
+                            <label>Desde</label>
                             <input type="date" id="rep-date-from">
                         </div>
                         <div class="filter-group">
-                            <label for="rep-date-to">Hasta</label>
+                            <label>Hasta</label>
                             <input type="date" id="rep-date-to">
                         </div>
                         <div class="filter-group">
-                            <label for="rep-brand">Marca Vehículo</label>
-                            <input type="text" id="rep-brand" placeholder="Ej: Ford">
+                            <label>Marca</label>
+                            <input type="text" id="rep-brand" placeholder="Ej: Toyota">
                         </div>
                         <div class="filter-group">
-                            <label for="rep-model">Modelo Vehículo</label>
-                            <input type="text" id="rep-model" placeholder="Ej: Focus">
+                            <label>Modelo</label>
+                            <input type="text" id="rep-model" placeholder="Ej: Hilux">
                         </div>
                         <div class="filter-group">
-                            <label for="rep-status">Estado</label>
+                            <label>Estado</label>
                             <select id="rep-status">
                                 <option value="">Todos</option>
                                 <option>Solicitado</option>
                                 <option>Cotizado</option>
                                 <option>Comprado</option>
-                                <option>Tránsito 1 (Prov→Log)</option>
-                                <option>Tránsito 2 (Log→EC)</option>
                                 <option>En Aduana</option>
                                 <option>Entregado</option>
                                 <option>Cancelado</option>
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label for="rep-customer">Cliente</label>
-                            <input type="text" id="rep-customer" placeholder="Ej: Juan Pérez">
+                            <label>Cliente</label>
+                            <input type="text" id="rep-customer" placeholder="Nombre...">
                         </div>
-                        <button class="btn-primary" id="btn-export-full" style="grid-column: span 2; margin-top: 1rem;">
-                            📥 Exportar Reporte Completo
-                        </button>
+                        <div class="filter-group" style="justify-content: flex-end;">
+                            <button class="btn-primary" id="btn-export-full" style="padding:0.6rem">Descargar
+                                Excel</button>
+                        </div>
                     </div>
 
                     <div class="reports-table-wrapper">
@@ -1287,13 +1278,143 @@
                                 </tr>
                             </thead>
                             <tbody id="reports-tbody">
-                                <!-- Report rows will be injected here -->
+                                <!-- Filas de reportes -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
+            <!-- Persistent Aria AI Chat -->
+            <div class="ai-sidebar">
+                <div class="ai-header">
+
+                    <div class="aria-avatar">🤖</div>
+                    <div style="display:flex; align-items:center">
+                        <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path
+                                    d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                            </svg>
+                        </button>
+                        <div>
+                            <div class="ai-title">Aria — Asistente ERP</div>
+                            <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-messages" id="ai-messages">
+                    <div class="ai-msg assistant">¡Hola! Soy Aria, su asistente ERP. Puedo crear órdenes, actualizar
+                        estados y registrar notas. Por ejemplo, dígame: <em>"Crea una orden para Juan Pérez, Ford
+                            Focus 2018, necesita un radiador comprado en $45, shipping $30, lo vendí en $200"</em>
+                    </div>
+                </div>
+                <div class="ai-input-area">
+                    <div class="ai-input-wrapper">
+                        <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
+                            rows="1"></textarea>
+                        <button id="aria-mic" class="mic-btn" title="Dictar con voz">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path
+                                    d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
+                </div>
+
+            </div>
         </div>
+
+        <!-- ── DASHBOARD PAGE ── -->
+        <div class="page" id="page-dashboard">
+            <div class="kpi-grid" id="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Ingresos Totales</h3>
+                    <div class="kpi-val" id="kpi-revenue" style="color:var(--green)">—</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Ganancia Total</h3>
+                    <div class="kpi-val" id="kpi-profit" style="color:var(--cyan)">—</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Órdenes Activas</h3>
+                    <div class="kpi-val" id="kpi-active" style="color:var(--yellow)">—</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Entregadas</h3>
+                    <div class="kpi-val" id="kpi-delivered" style="color:var(--blue)">—</div>
+                </div>
+            </div>
+            <div style="color:var(--text2);font-size:0.85rem;text-align:center;padding:2rem;">Más reportes
+                próximamente...</div>
+        </div>
+
+        <!-- ── REPORTS PAGE ── -->
+        <div class="page" id="page-reports">
+            <div class="reports-container">
+                <div class="reports-filters">
+                    <div class="filter-group">
+                        <label for="rep-date-from">Desde</label>
+                        <input type="date" id="rep-date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label for="rep-date-to">Hasta</label>
+                        <input type="date" id="rep-date-to">
+                    </div>
+                    <div class="filter-group">
+                        <label for="rep-brand">Marca Vehículo</label>
+                        <input type="text" id="rep-brand" placeholder="Ej: Ford">
+                    </div>
+                    <div class="filter-group">
+                        <label for="rep-model">Modelo Vehículo</label>
+                        <input type="text" id="rep-model" placeholder="Ej: Focus">
+                    </div>
+                    <div class="filter-group">
+                        <label for="rep-status">Estado</label>
+                        <select id="rep-status">
+                            <option value="">Todos</option>
+                            <option>Solicitado</option>
+                            <option>Cotizado</option>
+                            <option>Comprado</option>
+                            <option>Tránsito 1 (Prov→Log)</option>
+                            <option>Tránsito 2 (Log→EC)</option>
+                            <option>En Aduana</option>
+                            <option>Entregado</option>
+                            <option>Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="rep-customer">Cliente</label>
+                        <input type="text" id="rep-customer" placeholder="Ej: Juan Pérez">
+                    </div>
+                    <button class="btn-primary" id="btn-export-full" style="grid-column: span 2; margin-top: 1rem;">
+                        📥 Exportar Reporte Completo
+                    </button>
+                </div>
+
+                <div class="reports-table-wrapper">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Vehículo</th>
+                                <th>Pieza</th>
+                                <th>Estado</th>
+                                <th>Venta</th>
+                                <th>Ganancia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <!-- Report rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <div id="toast"></div>
@@ -1344,6 +1465,15 @@
                 if (btn.dataset.page === 'reports') renderReports();
             });
         });
+
+        // Toggle Detail Panel
+        document.getElementById('toggle-detail').addEventListener('click', () => {
+            const panel = document.getElementById('detail-panel');
+            panel.classList.toggle('collapsed');
+            const btn = document.getElementById('toggle-detail');
+            btn.textContent = panel.classList.contains('collapsed') ? '🔎' : '↔';
+        });
+
 
         // ══ SEARCH & FILTER ══
         document.getElementById('search-input').addEventListener('input', filterOrders);
@@ -1415,11 +1545,16 @@
 
         function renderDetail(o) {
             const panel = document.getElementById('detail-panel');
+            const content = document.getElementById('detail-content');
             panel.classList.remove('empty');
+            panel.classList.remove('collapsed'); // Expandir al seleccionar nueva orden
+            document.getElementById('toggle-detail').textContent = '↔';
+
             const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Cancelado'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
 
-            panel.innerHTML = `
+            content.innerHTML = `
+
         <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
             <div>
                 <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">PEDIDO #${o.readable_id}</div>
