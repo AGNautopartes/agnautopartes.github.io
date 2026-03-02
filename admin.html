@@ -1737,30 +1737,43 @@
             return el;
         }
 
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 10000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            const response = await fetch(resource, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return response;
+        }
+
         async function sendToAria() {
             const msg = ariaInput.value.trim();
             if (!msg || ariaSend.disabled) return;
             ariaInput.value = '';
             ariaSend.disabled = true;
 
-            addAiMsg('user', msg);
+            const userMsgEl = addAiMsg('user', msg);
             ariaHistory.push({ role: 'user', content: msg });
 
             const thinking = addAiMsg('assistant', '...');
 
             try {
-                const res = await fetch(`${API}/api/admin-chat`, {
+                const res = await fetchWithTimeout(`${API}/api/admin-chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                    body: JSON.stringify({ message: msg, conversationHistory: ariaHistory, adminName })
+                    body: JSON.stringify({ message: msg, conversationHistory: ariaHistory, adminName }),
+                    timeout: 20000 // 20s para IA
                 });
-                const data = await res.json();
-                thinking.remove();
 
                 if (!res.ok) {
-                    addAiMsg('assistant', `⚠️ Error: ${data.error || 'Problema en el servidor'}`);
+                    const errorData = await res.json();
+                    thinking.remove();
+                    addAiMsg('assistant', `⚠️ Error del servidor: ${errorData.error || 'Problema desconocido'}`);
                     return;
                 }
+
+                const data = await res.json();
+                thinking.remove();
 
                 const responseText = data.response;
                 if (responseText) {
@@ -1769,97 +1782,113 @@
                     ariaSpeak(responseText);
                 }
 
-
-
-
                 if (data.action) {
                     await executeAriaAction(data.action);
                 }
             } catch (e) {
                 console.error('Aria Error:', e);
-                if (document.body.contains(thinking)) thinking.remove();
-                addAiMsg('assistant', '❌ Error de red o tiempo de espera agotado. Verifique su conexión.');
+                if (thinking && thinking.parentNode) thinking.remove();
+
+                let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
+                if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
+
+                addAiMsg('assistant', errorMsg);
             } finally {
                 ariaSend.disabled = false;
             }
-
         }
 
         async function executeAriaAction(action) {
-            if (action.type === 'CREATE_ORDER') {
-                const res = await fetch(`${API}/api/create-order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                    body: JSON.stringify({ ...action.data, created_by: adminName })
-                });
-                if (res.ok) {
-                    const result = await res.json();
-                    addAiMsg('system', `✅ Orden creada con éxito.`);
-                    // Recargar órdenes
-                    const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
-                    allOrders = await ordersRes.json();
-                    renderOrders(allOrders);
-                    updateStats(allOrders);
-                } else {
-                    addAiMsg('system', '❌ Error al crear la orden.');
-                }
-            } else if (action.type === 'UPDATE_STATUS') {
-                const orderId = action.data.order_id;
-                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-
-                if (found) {
-                    const res = await fetch(`${API}/api/update-order-status`, {
+            console.log('Executing Aria Action:', action);
+            try {
+                if (action.type === 'CREATE_ORDER') {
+                    const res = await fetchWithTimeout(`${API}/api/create-order`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify({ orderId: found.id, newStatus: action.data.new_status })
+                        body: JSON.stringify({ ...action.data, created_by: adminName }),
+                        timeout: 10000
                     });
                     if (res.ok) {
-                        found.status = action.data.new_status;
+                        const result = await res.json();
+                        addAiMsg('system', `✅ Orden creada con éxito.`);
+                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                        allOrders = await ordersRes.json();
                         renderOrders(allOrders);
                         updateStats(allOrders);
-                        addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
-                        if (selectedOrder?.id === found.id) renderDetail(found);
                     } else {
-                        addAiMsg('system', '❌ No se pudo actualizar en la base de datos.');
+                        addAiMsg('system', '❌ Error al crear la orden en la base de datos.');
                     }
-                } else {
-                    addAiMsg('system', `⚠️ No encontré la orden "${orderId}".`);
-                }
+                } else if (action.type === 'UPDATE_STATUS') {
+                    const orderId = action.data.order_id;
+                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
 
-            } else if (action.type === 'DELETE_ORDER') {
-                const orderId = action.data.order_id;
-                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                if (found) {
-                    const res = await fetch(`${API}/api/delete-order`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify({ orderId: found.id })
-                    });
-                    if (res.ok) {
-                        allOrders = allOrders.filter(o => o.id !== found.id);
-                        renderOrders(allOrders);
-                        updateStats(allOrders);
-                        addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
+                    if (found) {
+                        const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                            body: JSON.stringify({ orderId: found.id, newStatus: action.data.new_status }),
+                            timeout: 10000
+                        });
+                        if (res.ok) {
+                            found.status = action.data.new_status;
+                            renderOrders(allOrders);
+                            updateStats(allOrders);
+                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                            if (selectedOrder?.id === found.id) renderDetail(found);
+                        } else {
+                            addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
+                        }
+                    } else {
+                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
+                    }
+                } else if (action.type === 'DELETE_ORDER') {
+                    const orderId = action.data.order_id;
+                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                    if (found) {
+                        const res = await fetchWithTimeout(`${API}/api/delete-order`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                            body: JSON.stringify({ orderId: found.id }),
+                            timeout: 10000
+                        });
+                        if (res.ok) {
+                            allOrders = allOrders.filter(o => o.id !== found.id);
+                            renderOrders(allOrders);
+                            updateStats(allOrders);
+                            addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
+                            if (selectedOrder?.id === found.id) {
+                                document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+                                document.getElementById('detail-panel').classList.add('empty');
+                            }
+                        } else {
+                            addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
+                        }
+                    } else {
+                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
+                    }
+                } else if (action.type === 'ADD_NOTE') {
+                    const orderId = action.data.order_id;
+                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                    if (found) {
+                        const res = await fetchWithTimeout(`${API}/api/add-note`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                            body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
+                            timeout: 10000
+                        });
+                        if (res.ok) {
+                            addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
+                            if (selectedOrder?.id === found.id) loadNotes(found.id);
+                        } else {
+                            addAiMsg('system', `❌ Error al guardar nota en [#${found.readable_id}].`);
+                        }
+                    } else {
+                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
                     }
                 }
-            } else if (action.type === 'ADD_NOTE') {
-                const orderId = action.data.order_id;
-                const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                if (found) {
-                    const res = await fetch(`${API}/api/add-note`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` })
-                    });
-                    if (res.ok) {
-                        addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
-                        if (selectedOrder?.id === found.id) loadNotes(found.id);
-                    }
-                } else {
-                    addAiMsg('system', `⚠️ Orden para nota no encontrada (${orderId})`);
-                }
-            } else {
-                console.warn('Unknown Aria action:', action.type);
+            } catch (err) {
+                console.error('Action execution error:', err);
+                addAiMsg('system', `❌ Error al ejecutar acción: ${err.message}`);
             }
         }
 
