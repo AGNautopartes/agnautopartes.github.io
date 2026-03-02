@@ -1371,9 +1371,10 @@
                     return;
                 }
 
-                const responseText = data.response || 'No recibí respuesta inteligible.';
+                const responseText = data.response || 'Entendido, procesando...';
                 addAiMsg('assistant', responseText);
                 ariaHistory.push({ role: 'assistant', content: responseText });
+
 
                 if (data.action) {
                     await executeAriaAction(data.action);

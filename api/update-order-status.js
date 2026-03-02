@@ -12,10 +12,19 @@ export default async function handler(req, res) {
 
     const { orderId, newStatus } = req.body;
 
-    const validStatuses = ['Solicitado', 'Cotizado', 'Comprado', 'En Tránsito', 'Entregado', 'Cancelado'];
+    const validStatuses = [
+        'Solicitado', 'Cotizado', 'Comprado',
+        'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)',
+        'En Aduana', 'Entregado', 'Cancelado'
+    ];
     if (!orderId || !newStatus || !validStatuses.includes(newStatus)) {
-        return res.status(400).json({ message: 'Datos inválidos. orderId y newStatus son requeridos.' });
+        return res.status(400).json({
+            message: 'Datos inválidos.',
+            received: { orderId, newStatus },
+            validStatuses
+        });
     }
+
 
     try {
         const { data, error } = await supabase
