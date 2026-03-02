@@ -1862,8 +1862,9 @@
             recognition.onresult = (e) => {
                 const text = e.results[0][0].transcript;
                 document.getElementById('aria-input').value = text;
-                sendAriaMsg(); // Nombre correcto de la función
+                sendToAria(); // Nombre correcto de la función en admin.html
             };
+
 
         }
 
