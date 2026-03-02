@@ -7,6 +7,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const makeWebhookLoggerUrl = 'https://hook.us2.make.com/2jlo910w1h103zmelro36zbqeqadvg10';
 
+    // URL base de la API: si estamos en GitHub Pages, usamos Vercel. Si estamos en Vercel, usamos rutas relativas.
+    const API_BASE_URL = window.location.hostname === 'agnautopartes.github.io'
+        ? 'https://agnautopartes.vercel.app'
+        : '';
+
+
     const chatWidget = document.getElementById('chat-widget');
     const chatCloseBtn = document.getElementById('chat-close-btn');
     const chatMuteBtn = document.getElementById('chat-mute-btn');
@@ -268,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addMessage('assistant', '', true);
 
         try {
-            const response = await fetch('/api/generate', {
+            const response = await fetch(`${API_BASE_URL}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ conversationHistory: conversationHistory }),
@@ -336,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function saveQuotationToSupabase(data) {
         try {
-            const response = await fetch('/api/save-quotation', {
+            const response = await fetch(`${API_BASE_URL}/api/save-quotation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -561,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>`;
 
         try {
-            const response = await fetch(`/api/get-order-status?phone=${encodeURIComponent(phone)}`);
+            const response = await fetch(`${API_BASE_URL}/api/get-order-status?phone=${encodeURIComponent(phone)}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 trackingResults.innerHTML = `<p style="color: var(--color-accent-red); font-weight: 600; padding: 1rem;">${errorData.message}</p>`;

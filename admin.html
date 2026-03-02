@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGN Autopartes — Panel Administrativo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F1117;
+            --surface: #1A1D27;
+            --surface2: #22253A;
+            --border: #2E3250;
+            --text: #EAEAF0;
+            --text-secondary: #8890B0;
+            --accent: #E64937;
+            --green: #22C55E;
+            --yellow: #F59E0B;
+            --blue: #3B82F6;
+            --purple: #A855F7;
+            --gray: #6B7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── LOGIN ── */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-card .logo {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+        }
+
+        .login-card h1 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-login:hover {
+            background: #D04533;
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+
+        #login-error {
+            color: var(--accent);
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            text-align: center;
+            min-height: 1.2em;
+        }
+
+        /* ── MAIN APP ── */
+        #app {
+            display: none;
+        }
+
+        nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .nav-brand span {
+            color: var(--accent);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .badge-count {
+            background: var(--accent);
+            color: white;
+            border-radius: 20px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        main {
+            padding: 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .stat-card h3 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: gap;
+            gap: 1rem;
+        }
+
+        .panel-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .search-input {
+            padding: 0.6rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            width: 260px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .orders-table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background: var(--surface2);
+            padding: 0.85rem 1.25rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .client-name {
+            font-weight: 600;
+        }
+
+        .client-phone {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .part-name {
+            font-weight: 500;
+        }
+
+        .status-select {
+            padding: 0.35rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            min-width: 150px;
+        }
+
+        .status-select:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.65rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .s-solicitado {
+            background: rgba(107, 114, 128, 0.2);
+            color: var(--gray);
+            border: 1px solid var(--gray);
+        }
+
+        .s-cotizado {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--blue);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .s-comprado {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--yellow);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .s-en-transito {
+            background: rgba(168, 85, 247, 0.15);
+            color: var(--purple);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        .s-entregado {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--green);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .s-cancelado {
+            background: rgba(230, 73, 55, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(230, 73, 55, 0.4);
+        }
+
+        .btn-update {
+            padding: 0.4rem 0.8rem;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn-update:hover {
+            background: #2563EB;
+        }
+
+        .btn-update:active {
+            transform: scale(0.97);
+        }
+
+        .btn-update:disabled {
+            background: var(--surface2);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .date-cell {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        #loading-message {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        #empty-message {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            z-index: 9999;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .toast.error {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+            main {
+                padding: 1rem;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th,
+            td {
+                padding: 0.75rem 0.85rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════ LOGIN ═══════════ -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="logo">AGN</div>
+            <h1>Panel Administrativo</h1>
+            <div class="form-group">
+                <label for="admin-password-input">Contraseña</label>
+                <input type="password" id="admin-password-input" placeholder="••••••••" autofocus>
+            </div>
+            <button class="btn-login" id="btn-login-submit">Ingresar al Panel</button>
+            <div id="login-error"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════ APP ═══════════ -->
+    <div id="app">
+        <nav>
+            <div class="nav-brand"><span>AGN</span> Admin ERP</div>
+            <div class="nav-right">
+                <span style="font-size:0.85rem; color:var(--text-secondary);">Pedidos activos</span>
+                <span class="badge-count" id="active-count">0</span>
+                <button class="btn-logout" id="btn-logout">Salir</button>
+            </div>
+        </nav>
+
+        <main>
+            <!-- Estadísticas -->
+            <div class="stats-row" id="stats-row">
+                <div class="stat-card">
+                    <h3>Total Pedidos</h3>
+                    <div class="number" id="stat-total">—</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Solicitados</h3>
+                    <div class="number" style="color:var(--gray)" id="stat-solicitado">—</div>
+                </div>
+                <div class="stat-card">
+                    <h3>En Tránsito</h3>
+                    <div class="number" style="color:var(--purple)" id="stat-transito">—</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Entregados</h3>
+                    <div class="number" style="color:var(--green)" id="stat-entregado">—</div>
+                </div>
+            </div>
+
+            <!-- Tabla de pedidos -->
+            <div class="panel-header">
+                <h2>📋 Gestión de Pedidos</h2>
+                <input type="text" class="search-input" id="search-orders" placeholder="🔍 Buscar cliente, pieza...">
+            </div>
+
+            <div class="orders-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Pieza Solicitada</th>
+                            <th>Estado Actual</th>
+                            <th>Actualizar a</th>
+                            <th></th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <tr id="loading-message">
+                            <td colspan="6" style="text-align:center;padding:3rem;color:var(--text-secondary);">Cargando
+                                pedidos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="empty-message" style="text-align:center;padding:3rem;color:var(--text-secondary);">No hay
+                    pedidos registrados todavía.</div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'https://agnautopartes.vercel.app';
+        let adminPassword = '';
+        let allOrders = [];
+
+        // ══ LOGIN ══
+        const btnLogin = document.getElementById('btn-login-submit');
+        const passInput = document.getElementById('admin-password-input');
+        const loginError = document.getElementById('login-error');
+
+        async function doLogin() {
+            const pwd = passInput.value.trim();
+            if (!pwd) return;
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Verificando...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/get-all-orders`, {
+                    headers: { 'x-admin-password': pwd }
+                });
+                if (res.status === 401) {
+                    loginError.textContent = 'Contraseña incorrecta.';
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = 'Ingresar al Panel';
+                    return;
+                }
+                adminPassword = pwd;
+                allOrders = await res.json();
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                renderOrders(allOrders);
+                updateStats(allOrders);
+            } catch (e) {
+                loginError.textContent = 'Error de conexión. Intente de nuevo.';
+                btnLogin.disabled = false;
+                btnLogin.textContent = 'Ingresar al Panel';
+            }
+        }
+
+        btnLogin.addEventListener('click', doLogin);
+        passInput.addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            adminPassword = '';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            passInput.value = '';
+        });
+
+        // ══ SEARCH ══
+        document.getElementById('search-orders').addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            const filtered = allOrders.filter(o =>
+                (o.customers?.full_name || '').toLowerCase().includes(q) ||
+                (o.customers?.phone || '').toLowerCase().includes(q) ||
+                (o.part_name || '').toLowerCase().includes(q)
+            );
+            renderOrders(filtered);
+        });
+
+        // ══ RENDER ══
+        function renderOrders(orders) {
+            const tbody = document.getElementById('orders-tbody');
+            const emptyMsg = document.getElementById('empty-message');
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '';
+                emptyMsg.style.display = 'block';
+                return;
+            }
+            emptyMsg.style.display = 'none';
+
+            const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'En Tránsito', 'Entregado', 'Cancelado'];
+
+            tbody.innerHTML = orders.map(o => {
+                const statusClass = 's-' + (o.status || 'solicitado').toLowerCase().replace(/\s+/g, '-');
+                const date = o.created_at ? new Date(o.created_at).toLocaleDateString('es-EC') : '—';
+                const options = statuses.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('');
+                return `
+            <tr data-id="${o.id}">
+                <td>
+                    <div class="client-name">${o.customers?.full_name || 'Sin nombre'}</div>
+                    <div class="client-phone">${o.customers?.phone || '—'}</div>
+                </td>
+                <td class="part-name">${o.part_name || '—'}</td>
+                <td><span class="status-badge ${statusClass}">${o.status || '—'}</span></td>
+                <td>
+                    <select class="status-select" data-id="${o.id}">
+                        ${options}
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-update" data-id="${o.id}" onclick="updateStatus('${o.id}', this)">Guardar</button>
+                </td>
+                <td class="date-cell">${date}</td>
+            </tr>`;
+            }).join('');
+        }
+
+        function updateStats(orders) {
+            document.getElementById('stat-total').textContent = orders.length;
+            document.getElementById('stat-solicitado').textContent = orders.filter(o => o.status === 'Solicitado').length;
+            document.getElementById('stat-transito').textContent = orders.filter(o => o.status === 'En Tránsito').length;
+            document.getElementById('stat-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
+            document.getElementById('active-count').textContent = orders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
+        }
+
+        // ══ UPDATE STATUS ══
+        async function updateStatus(orderId, btn) {
+            const row = document.querySelector(`tr[data-id="${orderId}"]`);
+            const select = row.querySelector('.status-select');
+            const newStatus = select.value;
+
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/update-order-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-password': adminPassword
+                    },
+                    body: JSON.stringify({ orderId, newStatus })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+
+                // Actualizar en memoria
+                const order = allOrders.find(o => o.id === orderId);
+                if (order) order.status = newStatus;
+
+                // Actualizar badge en la fila
+                const badge = row.querySelector('.status-badge');
+                const statusClass = 's-' + newStatus.toLowerCase().replace(/\s+/g, '-');
+                badge.className = `status-badge ${statusClass}`;
+                badge.textContent = newStatus;
+
+                updateStats(allOrders);
+                showToast('✅ Estado actualizado: ' + newStatus, 'success');
+
+            } catch (e) {
+                showToast('❌ Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar';
+            }
+        }
+
+        // ══ TOAST ══
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+    </script>
+</body>
+
+</html>
