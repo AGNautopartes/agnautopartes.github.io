@@ -16,8 +16,16 @@ export default async function handler(req, res) {
             .select(`
                 id,
                 part_name,
+                part_number,
                 status,
                 vin,
+                vehicle_brand,
+                vehicle_model,
+                vehicle_year,
+                supplier_url,
+                tracking_number,
+                estimated_delivery_client,
+                notes,
                 created_at,
                 updated_at,
                 customers (
@@ -26,6 +34,7 @@ export default async function handler(req, res) {
                 )
             `)
             .order('created_at', { ascending: false });
+
 
         if (error) throw error;
 

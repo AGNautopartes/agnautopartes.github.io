@@ -596,6 +596,18 @@
             background: #3B73D4;
         }
 
+        .btn-danger {
+            background: rgba(230, 73, 55, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(230, 73, 55, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+
         .notes-list {
             display: flex;
             flex-direction: column;
@@ -1132,7 +1144,11 @@
             document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
             document.querySelector(`.order-card[onclick="selectOrder('${orderId}')"]`)?.classList.add('selected');
             renderDetail(selectedOrder);
+            loadNotes(orderId);
+            loadHistory(orderId);
+            // Financials ya vienen en la vista si usamos la correcta, pero por ahora los mostramos del objeto
         }
+
 
         function renderDetail(o) {
             const panel = document.getElementById('detail-panel');
@@ -1141,9 +1157,12 @@
             const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Cancelado'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
             panel.innerHTML = `
-        <div class="detail-header">
-            <h3>${o.part_name}</h3>
-            <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+        <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div>
+                <h3>${o.part_name}</h3>
+                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+            </div>
+            <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Eliminar</button>
         </div>
         <div class="detail-body">
             <div class="detail-section">
@@ -1151,9 +1170,9 @@
                 <div class="info-grid">
                     <div class="info-item"><div class="il">Vehículo</div><div class="iv">${vehicle}</div></div>
                     <div class="info-item"><div class="il">Número de Parte</div><div class="iv">${o.part_number || '—'}</div></div>
-                    ${o.supplier_url ? `<div class="info-item" style="grid-column:1/-1"><div class="il">Link Proveedor</div><div class="iv"><a href="${o.supplier_url}" target="_blank" style="color:var(--blue)">${o.supplier_url.substring(0, 40)}...</a></div></div>` : ''}
-                    ${o.tracking_number ? `<div class="info-item"><div class="il">Tracking</div><div class="iv">${o.tracking_number}</div></div>` : ''}
-                    ${o.estimated_delivery_client ? `<div class="info-item"><div class="il">Entrega estimada</div><div class="iv">${o.estimated_delivery_client}</div></div>` : ''}
+                    ${o.supplier_url ? `<div class="info-item" style="grid-column:1/-1"><div class="il">Link Proveedor</div><div class="iv"><a href="${o.supplier_url}" target="_blank" style="color:var(--blue); overflow-wrap: break-word; font-size:0.75rem">${o.supplier_url}</a></div></div>` : ''}
+                    <div class="info-item"><div class="il">VIN</div><div class="iv" style="font-family:monospace; font-size:0.8rem">${o.vin || '—'}</div></div>
+                    <div class="info-item"><div class="il">Tracking</div><div class="iv">${o.tracking_number || '—'}</div></div>
                 </div>
             </div>
             <div class="detail-section">
@@ -1165,12 +1184,15 @@
             </div>
             <div class="detail-section">
                 <h4>💰 Financieros</h4>
-                <div style="color:var(--text2);font-size:0.78rem;text-align:center;padding:0.5rem">Cargando...</div>
+                <div class="financial-grid">
+                    <div class="fin-item"><div class="fl">FOB</div><div class="fv">$${o.cost_fob || 0}</div></div>
+                    <div class="fin-item"><div class="fl">Venta</div><div class="fv">$${o.sale_price || 0}</div></div>
+                </div>
             </div>
             <div class="detail-section">
                 <h4>📝 Notas</h4>
                 <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
-                <textarea class="note-input" id="det-note-input" placeholder="Añadir nota interna..."></textarea>
+                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
                 <button class="btn-action btn-blue" style="margin-top:0.5rem;width:100%" onclick="addNote('${o.id}')">Guardar nota</button>
             </div>
             <div class="detail-section">
@@ -1179,6 +1201,7 @@
             </div>
         </div>`;
         }
+
 
         async function updateDetailStatus(orderId) {
             const newStatus = document.getElementById('det-status').value;
@@ -1207,8 +1230,48 @@
             if (res.ok) {
                 document.getElementById('det-note-input').value = '';
                 showToast('📝 Nota guardada', 'success');
+                loadNotes(orderId);
             }
         }
+
+        async function loadNotes(orderId) {
+            const res = await fetch(`${API}/api/get-notes?orderId=${orderId}`, {
+                headers: { 'x-admin-password': adminPass }
+            });
+            if (res.ok) {
+                const notes = await res.json();
+                document.getElementById('det-notes').innerHTML = notes.length
+                    ? notes.map(n => `<div class="note-item">
+                        <div class="note-author">${n.author}</div>
+                        <div class="note-text">${n.content}</div>
+                        <div class="note-date">${new Date(n.created_at).toLocaleString()}</div>
+                      </div>`).join('')
+                    : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aún.</div>';
+            }
+        }
+
+
+        async function loadHistory(orderId) {
+            document.getElementById('det-history').innerHTML = '<div style="color:var(--text2);font-size:0.78rem">Próximamente...</div>';
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
+            const res = await fetch(`${API}/api/delete-order`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                body: JSON.stringify({ orderId })
+            });
+            if (res.ok) {
+                showToast('🗑️ Orden eliminada', 'success');
+                allOrders = allOrders.filter(o => o.id !== orderId);
+                renderOrders(allOrders);
+                updateStats(allOrders);
+                document.getElementById('detail-panel').innerHTML = 'Selecciona una orden para ver detalles';
+                document.getElementById('detail-panel').classList.add('empty');
+            } else showToast('❌ Error al eliminar', 'error');
+        }
+
 
         // ══ ARIA IA CHAT ══
         const ariaInput = document.getElementById('aria-input');
