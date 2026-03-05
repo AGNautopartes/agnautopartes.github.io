@@ -68,10 +68,17 @@ export default async function handler(req, res) {
         }
 
         // 3. Crear la orden base
+        // Determine base order part_name (required by schema)
+        let basePartName = 'Repuestos Varios'; // Default for empty orders
+        if (partsList.length > 0 && partsList[0].part_name) {
+            basePartName = partsList[0].part_name;
+        }
+
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .insert([{
                 customer_id: customer.id,
+                part_name: basePartName,
                 vin,
                 vehicle_brand, vehicle_model, vehicle_year,
                 status, tracking_number,

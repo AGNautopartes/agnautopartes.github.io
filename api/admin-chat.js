@@ -20,27 +20,20 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `Eres Aria, la asistente inteligente de AGN AutoPartes ERP.
-Tu objetivo es ayudar al administrador a gestionar órdenes, clientes y cotizaciones.
+Tu objetivo es ayudar al administrador a gestionar órdenes, clientes y notas en la base de datos financiera.
 
-ESTADO DEL COTIZADOR:
-Usa el cotizador para presupuestos rápidos. No requiere crear orden en DB.
-
-ACCIONES DISPONIBLES (JSON final):
+ACCIONES ERP DISPONIBLES (JSON final):
 - BUSCAR ORDEN: [ACTION:{"type":"SEARCH_ORDER","data":{"query":"..."}}]
-- CREAR ORDEN: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","vehicle_brand":"...","vehicle_model":"...","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
+- CREAR ORDEN: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","vehicle_brand":"...","vehicle_model":"...","items":[]}}] (Puedes crear órdenes vacías con items: []).
 - AGREGAR A ORDEN: [ACTION:{"type":"ADD_ITEMS_TO_ORDER","data":{"order_readable_id":"ORD-X","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
 - ACTUALIZAR ESTADO: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"status":"..."}}}]
 - NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
-- COTIZADOR_ADD: [ACTION:{"type":"ADD_TO_QUOTE","data":{"items":[{"name":"...","description":"...","cost":0,"shipping":0,"brand":"..."}]}}]
-- COTIZADOR_CLEAR: [ACTION:{"type":"CLEAR_QUOTE","data":{}}]
-- COTIZADOR_SET_CLIENT: [ACTION:{"type":"SET_QUOTE_CLIENT","data":{"client_name":"...","vehicle":"..."}}]
 
 REGLAS DE ORO:
-1. Siempre devuelve la acción dentro de [ACTION:{...}]. NO uses bloques de markdown con comillas invertidas.
-2. Si el cliente no existe para una orden, pregunta ANTES de crear.
-3. Si el usuario te habla del cotizador, USA LAS ACCIONES DEL COTIZADOR mencionadas arriba.
-
-IMPORTANTE: El Cotizador es para WhatsApp. La Orden es para el sistema financiero local.
+1. Siempre devuelve la acción dentro de [ACTION:{...}]. NO uses bloques de markdown (\`\`\`json).
+2. Si el cliente no existe para crear una orden, pregunta ANTES de crearla.
+3. El administrador puede pedirte crear una orden inicial sin repuestos. Es válido y normal.
+4. ESTRICTA SEPARACIÓN: Tú gestionas ÓRDENES DEL ERP. No tienes control sobre el "Cotizador". Si el usuario menciona cotizaciones que no son del ERP, son gestiones manuales de él. NUNCA sugieras crear una Orden solo para guardar una cotización.
 `.trim();
 
     // Contexto de órdenes recientes para Aria
@@ -86,7 +79,7 @@ IMPORTANTE: El Cotizador es para WhatsApp. La Orden es para el sistema financier
         function extractJson(text) {
             const tagMatch = text.match(/\[ACTION:\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*\]/);
             if (tagMatch) return { raw: tagMatch[0], json: tagMatch[1] };
-            const mdMatch = text.match(/```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```/i);
+            const mdMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```/i);
             if (mdMatch) return { raw: mdMatch[0], json: mdMatch[1] };
             const looseMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
             if (looseMatch) return { raw: looseMatch[0], json: looseMatch[1] };
@@ -98,7 +91,11 @@ IMPORTANTE: El Cotizador es para WhatsApp. La Orden es para el sistema financier
             try {
                 let parsed = JSON.parse(found.json);
                 action = Array.isArray(parsed) ? parsed[0] : parsed;
-                displayText = responseText.replace(found.raw, '').trim();
+                // Clean the displayText completely from markdown blocks to avoid leaking backticks
+                displayText = responseText
+                    .replace(found.raw, '')
+                    .replace(/```(?:json)?[\s\S]*?```/ig, '')
+                    .trim();
             } catch (e) { console.warn("JSON error:", e); }
         }
 
