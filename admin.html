@@ -1887,7 +1887,7 @@
             <div class="detail-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem">
                     <h4>🛠️ Repuestos (${o.items.length})</h4>
-                    <button class="btn-sm" style="font-size:0.6rem; background:var(--accent)" onclick="openQuoteToolForExisting()">ACTUALIZAR</button>
+                    <button class="btn-sm" style="font-size:0.6rem; background:var(--accent)" onclick="openLinkCotizadorModal()">AÑADIR DESDE COTIZADOR</button>
                 </div>
                 <div class="piece-items-list" style="max-height: 200px; overflow-y: auto;">
                     ${itemsHtml}
@@ -2004,9 +2004,7 @@
         };
 
         window.openQuoteToolForExisting = () => {
-            // Cambiar a la pestaña de cotizador
-            document.querySelector('.tab-btn[data-page="cotizador"]').click();
-            showToast('Usa el cotizador y luego haz clic en "Enlazar a ERP"', 'info');
+            showToast('Para añadir, usa "Enlazar a ERP" en el Cotizador.', 'info');
         };
 
         async function updateManualOrder(orderId) {
@@ -2146,11 +2144,17 @@
 
             const thinking = addAiMsg('assistant', '...');
 
+            // If an order is open in the detail panel, pass it to Aria
+            let contextMsg = msg;
+            if (selectedOrder) {
+                contextMsg = `(ESTOY VIENDO LA ORDEN ID: ${selectedOrder.readable_id}) - ${msg}`;
+            }
+
             try {
                 const res = await fetchWithTimeout(`${API}/api/admin-chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                    body: JSON.stringify({ message: msg, conversationHistory: ariaHistory, adminName }),
+                    body: JSON.stringify({ message: contextMsg, conversationHistory: ariaHistory, adminName }),
                     timeout: 20000 // 20s para IA
                 });
 

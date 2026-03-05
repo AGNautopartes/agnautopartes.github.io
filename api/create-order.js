@@ -67,18 +67,11 @@ export default async function handler(req, res) {
             }];
         }
 
-        // 3. Crear la orden base
-        // Determine base order part_name (required by schema)
-        let basePartName = 'Repuestos Varios'; // Default for empty orders
-        if (partsList.length > 0 && partsList[0].part_name) {
-            basePartName = partsList[0].part_name;
-        }
-
+        // 3. Crear la cabecera de la orden (sin part_name, ya no es requerido)
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .insert([{
                 customer_id: customer.id,
-                part_name: basePartName,
                 vin,
                 vehicle_brand, vehicle_model, vehicle_year,
                 status, tracking_number,
@@ -89,7 +82,23 @@ export default async function handler(req, res) {
 
         if (orderErr) throw orderErr;
 
-        // 4. Insertar ítems
+        // 4. Inicializar registro financiero vacío (Requerido para que la vista sume bien y no se rompa la UI)
+        const { error: finErr } = await supabase
+            .from('financials')
+            .insert([{
+                order_id: order.id,
+                cost_fob: 0,
+                shipping_cost: 0,
+                customs_cost: 0,
+                taxes: 0,
+                other_expenses: 0,
+                sale_price: 0,
+                margin_percent: 20
+            }]);
+
+        if (finErr) throw finErr;
+
+        // 5. Insertar ítems en la tabla order_items usando el order_id recién creado
         if (partsList.length > 0) {
             const itemsToInsert = partsList.map(item => ({
                 order_id: order.id,
