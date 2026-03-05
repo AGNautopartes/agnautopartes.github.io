@@ -217,6 +217,12 @@
             color: var(--accent);
         }
 
+        .detail-body {
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
         .app-body {
             display: flex;
             flex: 1;
@@ -1289,6 +1295,8 @@
                         <button class="btn-add" id="btn-export"
                             style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                             Exportar Reporte</button>
+                        <button class="btn-add" onclick="openNewQuote()"
+                            style="background:var(--accent); margin-right:0.5rem">🛒 Cotizador AI</button>
                         <button class="btn-add" id="btn-new-order">+ Nueva Orden</button>
 
                     </div>
@@ -1747,6 +1755,11 @@
             const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Cancelado'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
 
+            // Cálculos financieros globales
+            const totalFOB = o.items.reduce((acc, i) => acc + (parseFloat(i.cost_fob) || 0) * (parseInt(i.quantity) || 1), 0);
+            const totalSale = o.items.reduce((acc, i) => acc + (parseFloat(i.sale_price) || 0) * (parseInt(i.quantity) || 1), 0);
+            const profit = totalSale - totalFOB;
+
             const itemsHtml = o.items.map(i => `
                 <div class="note-item" style="margin-bottom:0.5rem; border:1px solid var(--border)">
                     <div style="display:flex; justify-content:space-between">
@@ -1784,10 +1797,28 @@
             <div class="detail-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem">
                     <h4>🛠️ Repuestos (${o.items.length})</h4>
-                    <button class="btn-sm" style="font-size:0.6rem" onclick="openQuoteToolForExisting()">ACTUALIZAR</button>
+                    <button class="btn-sm" style="font-size:0.6rem; background:var(--accent)" onclick="openQuoteToolForExisting()">ACTUALIZAR</button>
                 </div>
-                <div class="piece-items-list">
+                <div class="piece-items-list" style="max-height: 200px; overflow-y: auto;">
                     ${itemsHtml}
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>💰 Resumen Financiero</h4>
+                <div class="financial-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:0.5rem">
+                    <div class="fin-item" style="background:var(--surface2); padding:0.5rem; border-radius:8px">
+                        <div class="fl" style="font-size:0.6rem; color:var(--text2)">COSTO TOTAL</div>
+                        <div class="fv" style="font-weight:700; color:white">$${totalFOB.toFixed(2)}</div>
+                    </div>
+                    <div class="fin-item" style="background:var(--surface2); padding:0.5rem; border-radius:8px">
+                        <div class="fl" style="font-size:0.6rem; color:var(--text2)">VENTA TOTAL</div>
+                        <div class="fv" style="font-weight:700; color:var(--green)">$${totalSale.toFixed(2)}</div>
+                    </div>
+                    <div class="fin-item" style="background:var(--surface2); padding:0.5rem; border-radius:8px">
+                        <div class="fl" style="font-size:0.6rem; color:var(--text2)">UTILIDAD</div>
+                        <div class="fv" style="font-weight:700; color:var(--blue)">$${profit.toFixed(2)}</div>
+                    </div>
                 </div>
             </div>
 
@@ -1810,6 +1841,16 @@
         </div>`;
             selectedOrder = o;
         }
+
+        window.openNewQuote = () => {
+            document.getElementById('quote-overlay').style.display = 'flex';
+            document.getElementById('q-cust-name').value = '';
+            document.getElementById('q-vehicle').value = '';
+            currentQuoteItems = [];
+            renderQuoteItems();
+            document.getElementById('btn-link-erp').textContent = '🔗 Enlazar a ERP';
+            document.getElementById('btn-link-erp').onclick = openLinkModal;
+        };
 
         window.openQuoteToolForExisting = () => {
             if (!selectedOrder) return;
