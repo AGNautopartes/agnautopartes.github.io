@@ -1247,6 +1247,7 @@
                 <button class="tab-btn active" data-page="orders">📋 Órdenes</button>
                 <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
                 <button class="tab-btn" data-page="reports">📈 Reportes</button>
+                <button class="tab-btn" data-page="cotizador">🛒 Cotizador</button>
 
             </div>
             <div class="nav-right">
@@ -1295,8 +1296,6 @@
                         <button class="btn-add" id="btn-export"
                             style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                             Exportar Reporte</button>
-                        <button class="btn-add" onclick="openNewQuote()"
-                            style="background:var(--accent); margin-right:0.5rem">🛒 Cotizador AI</button>
                         <button class="btn-add" id="btn-new-order">+ Nueva Orden</button>
 
                     </div>
@@ -1604,6 +1603,65 @@
                 </div>
             </div>
         </div>
+        <!-- ── COTIZADOR PAGE (Pestaña) ── -->
+        <div class="page" id="page-cotizador" style="flex-direction:column; overflow:hidden;">
+            <div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+                <!-- Header -->
+                <div
+                    style="padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                    <div>
+                        <h2 style="font-size:1rem; font-weight:700;">🛒 Cotizador Volátil</h2>
+                        <p class="detail-sub" style="margin:0; font-size:0.75rem;">Los datos no se guardan en la nube
+                            hasta que enlaces a una orden.</p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn-sm" onclick="exportQuoteCSV()">📥 Descargar CSV</button>
+                        <label class="btn-sm" style="cursor:pointer; display:flex; align-items:center;">
+                            📤 Subir CSV <input type="file" id="quote-upload-page" style="display:none"
+                                onchange="importQuoteCSVPage(event)">
+                        </label>
+                        <button class="btn-add" onclick="openLinkModal()" id="btn-link-erp-page">🔗 Enlazar a
+                            ERP</button>
+                    </div>
+                </div>
+                <!-- Body -->
+                <div style="flex:1; display:flex; overflow:hidden;">
+                    <!-- Editor -->
+                    <div style="width:45%; border-right:1px solid var(--border); overflow-y:auto; padding:1.5rem;">
+                        <div class="detail-section">
+                            <h4>Datos del Cliente</h4>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="il">Nombre</div>
+                                    <div class="iv"><input type="text" id="q-cust-name-page" placeholder="Cliente">
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="il">Vehículo</div>
+                                    <div class="iv"><input type="text" id="q-vehicle-page"
+                                            placeholder="Ej: Toyota Hilux"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section" style="margin-top:1.5rem;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h4>Repuestos</h4>
+                                <button class="btn-sm" onclick="addQuoteItemPage()">+ Agregar</button>
+                            </div>
+                            <div id="quote-items-container-page"></div>
+                        </div>
+                    </div>
+                    <!-- Preview -->
+                    <div style="flex:1; overflow-y:auto; padding:1.5rem;">
+                        <h4 style="margin-bottom:1rem;">Vista Previa</h4>
+                        <div id="quote-render-area-page"
+                            style="background:#fff; color:#000; padding:2rem; border-radius:10px; min-height:400px; font-family:sans-serif;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     </div>
 
@@ -1729,8 +1787,6 @@
             document.querySelector(`.order-card[onclick="selectOrder('${orderId}')"]`)?.classList.add('selected');
             renderDetail(selectedOrder);
             loadNotes(orderId);
-            loadHistory(orderId);
-            // Financials ya vienen en la vista si usamos la correcta, pero por ahora los mostramos del objeto
         }
 
 
@@ -1969,9 +2025,7 @@
         }
 
 
-        async function loadHistory(orderId) {
-            document.getElementById('det-history').innerHTML = '<div style="color:var(--text2);font-size:0.78rem">Próximamente...</div>';
-        }
+        async function loadHistory(orderId) { /* placeholder */ }
 
         async function deleteOrder(orderId) {
             if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
@@ -2272,9 +2326,20 @@
         let currentQuoteItems = [];
         let selectedLinkOrder = null;
 
+        // Functions shared between modal and page
         window.addQuoteItem = function () {
             currentQuoteItems.push({ id: Date.now(), part_name: '', quantity: 1, cost_fob: 0, sale_price: 0, image: null });
             renderQuoteItems();
+        };
+
+        window.addQuoteItemPage = function () {
+            currentQuoteItems.push({ id: Date.now(), part_name: '', quantity: 1, cost_fob: 0, sale_price: 0, image: null });
+            renderQuoteItemsPage();
+        };
+
+        window.importQuoteCSVPage = function (event) {
+            importQuoteCSV(event);
+            setTimeout(() => renderQuoteItemsPage(), 300);
         };
 
         window.renderQuoteItems = function () {
@@ -2317,13 +2382,8 @@
             reader.readAsDataURL(file);
         };
 
-        function updateQuoteRender() {
-            const area = document.getElementById('quote-render-area');
-            if (!area) return;
-            const cust = document.getElementById('q-cust-name').value || 'Cliente';
-            const vh = document.getElementById('q-vehicle').value || 'Vehículo';
-
-            let itemsHtml = currentQuoteItems.map(i => `
+        function buildQuoteHTML(cust, vh) {
+            const itemsHtml = currentQuoteItems.map(i => `
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:10px 0;">
                     <div style="display:flex; gap:1rem; align-items:center;">
                         ${i.image ? `<img src="${i.image}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : ''}
@@ -2332,29 +2392,57 @@
                     <strong>$${i.sale_price}</strong>
                 </div>
             `).join('');
-
-            area.innerHTML = `
+            const total = currentQuoteItems.reduce((acc, i) => acc + (parseFloat(i.sale_price) || 0) * (parseInt(i.quantity) || 1), 0).toFixed(2);
+            return `
                 <div style="border-bottom:3px solid #E64937; padding-bottom:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
                     <h1 style="color:#E64937; margin:0; font-size:1.5rem;">AGN Autopartes</h1>
                     <div style="text-align:right; font-size:0.75rem; color:#666;">Cotización Formal</div>
                 </div>
                 <div style="margin-bottom:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div>
-                        <div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Cliente</div>
-                        <div style="font-weight:700;">${cust}</div>
-                    </div>
-                    <div>
-                        <div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Vehículo</div>
-                        <div style="font-weight:700;">${vh}</div>
-                    </div>
+                    <div><div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Cliente</div><div style="font-weight:700;">${cust}</div></div>
+                    <div><div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Vehículo</div><div style="font-weight:700;">${vh}</div></div>
                 </div>
                 <div style="margin-top:1rem;">${itemsHtml || '<p style="color:#888; text-align:center; padding:2rem;">Agregue repuestos para previsualizar...</p>'}</div>
                 <div style="margin-top:2rem; border-top:1px solid #eee; padding-top:1rem; text-align:right;">
                     <div style="font-size:0.8rem; color:#888;">Total Estimado</div>
-                    <div style="font-size:1.5rem; font-weight:800; color:#E64937;">$${currentQuoteItems.reduce((acc, current) => acc + (parseFloat(current.sale_price) || 0) * (parseInt(current.quantity) || 1), 0).toFixed(2)}</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#E64937;">$${total}</div>
                 </div>
             `;
         }
+
+        function updateQuoteRender() {
+            const cust = document.getElementById('q-cust-name')?.value || document.getElementById('q-cust-name-page')?.value || 'Cliente';
+            const vh = document.getElementById('q-vehicle')?.value || document.getElementById('q-vehicle-page')?.value || 'Vehículo';
+            const html = buildQuoteHTML(cust, vh);
+            const areaModal = document.getElementById('quote-render-area');
+            if (areaModal) areaModal.innerHTML = html;
+            const areaPage = document.getElementById('quote-render-area-page');
+            if (areaPage) areaPage.innerHTML = html;
+        }
+
+        window.renderQuoteItemsPage = function () {
+            const container = document.getElementById('quote-items-container-page');
+            if (!container) return;
+            container.innerHTML = '';
+            currentQuoteItems.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'quote-item-row';
+                row.innerHTML = `
+                    <img src="${item.image || 'https://via.placeholder.com/80'}" class="quote-img-preview" onclick="triggerImgUpload(${idx})">
+                    <input type="text" class="search-box" style="width:100%" placeholder="Nombre repuesto" value="${item.part_name}" oninput="updateItemPage(${idx}, 'part_name', this.value)">
+                    <input type="number" class="search-box" style="width:70px" placeholder="Cant" value="${item.quantity}" oninput="updateItemPage(${idx}, 'quantity', this.value)">
+                    <input type="number" class="search-box" style="width:90px" placeholder="Vta $" value="${item.sale_price}" oninput="updateItemPage(${idx}, 'sale_price', this.value)">
+                    <button class="btn-sm btn-danger" onclick="removeQuoteItemPage(${idx})">🗑</button>
+                    <input type="file" id="img-up-page-${idx}" style="display:none" onchange="handleItemImg(${idx}, event)">
+                `;
+                container.appendChild(row);
+            });
+            updateQuoteRender();
+        };
+
+        window.updateItemPage = (idx, field, val) => { currentQuoteItems[idx][field] = val; updateQuoteRender(); };
+        window.removeQuoteItemPage = (idx) => { currentQuoteItems.splice(idx, 1); renderQuoteItemsPage(); };
+
 
         window.exportQuoteCSV = () => {
             if (!currentQuoteItems.length) return showToast('Nada que exportar', 'error');
@@ -2581,4 +2669,3 @@
 </body>
 
 </html>
-```
