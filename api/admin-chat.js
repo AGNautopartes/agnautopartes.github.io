@@ -86,14 +86,27 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, En
         const data = await geminiRes.json();
         const responseText = data.candidates[0].content.parts[0].text;
 
-        const actionMatch = responseText.match(/\[ACTION:(.*?)\]/s);
+        const actionTagStart = responseText.indexOf('[ACTION:');
         let action = null;
         let displayText = responseText;
 
-        if (actionMatch) {
+        if (actionTagStart !== -1) {
             try {
-                action = JSON.parse(actionMatch[1]);
-                displayText = responseText.replace(/\[ACTION:.*?\]/s, '').trim();
+                // Find the matching closing bracket by counting nested brackets
+                let depth = 0;
+                let jsonStart = actionTagStart + '[ACTION:'.length;
+                let jsonEnd = jsonStart;
+                for (let i = jsonStart; i < responseText.length; i++) {
+                    if (responseText[i] === '{') depth++;
+                    else if (responseText[i] === '}') {
+                        depth--;
+                        if (depth === 0) { jsonEnd = i + 1; break; }
+                    }
+                }
+                const jsonStr = responseText.substring(jsonStart, jsonEnd);
+                action = JSON.parse(jsonStr);
+                // Remove the entire [ACTION:{...}] tag from display text
+                displayText = (responseText.substring(0, actionTagStart) + responseText.substring(jsonEnd + 1)).trim();
 
                 // Interceptar búsqueda
                 if (action.type === 'SEARCH_ORDER' && action.data.query) {
@@ -109,19 +122,20 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, En
                     } else {
                         displayText = `No encontré órdenes para "${action.data.query}".`;
                     }
-                    action = null; // No hay action de frontend para esto
+                    action = null;
                 }
 
-                // Interceptar agregar items directamente
+                // Interceptar agregar items directamente a una orden existente
                 if (action && action.type === 'ADD_ITEMS_TO_ORDER' && action.data.order_readable_id) {
+                    const orderId = action.data.order_readable_id.replace(/ord-?/i, 'ORD-').trim().toUpperCase();
                     const { data: orderData } = await supabase
                         .from('orders')
                         .select('id, readable_id, customers(full_name)')
-                        .ilike('readable_id', action.data.order_readable_id.replace(/ord-?/i, 'ORD-').trim())
+                        .eq('readable_id', orderId)
                         .maybeSingle();
 
                     if (!orderData) {
-                        displayText = `No encontré la orden "${action.data.order_readable_id}". Verifique el ID.`;
+                        displayText = `No encontré la orden "${action.data.order_readable_id}". Verifique el ID (ej: ORD-1).`;
                         action = null;
                     } else {
                         const itemsToInsert = (action.data.items || []).map(i => ({
@@ -140,19 +154,25 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, En
                         if (insertErr) {
                             displayText = `Error al insertar los repuestos: ${insertErr.message}`;
                         } else {
-                            displayText = `✅ He agregado ${itemsToInsert.length} repuesto(s) a la orden ${orderData.readable_id} de ${orderData.customers?.full_name}. Recarga la orden para verlos.`;
+                            displayText = `✅ Agregué ${itemsToInsert.length} repuesto(s) a la orden ${orderData.readable_id} de ${orderData.customers?.full_name}. Recarga la orden para verlos.`;
                         }
                         action = null;
                     }
                 }
-            } catch (e) { console.error('JSON Error:', e); }
+            } catch (e) {
+                console.error('JSON Action Parse Error:', e);
+                // If we can't parse the action, at least clean up the display text
+                displayText = responseText.replace(/\[ACTION:[\s\S]*?\}\]/g, '').trim();
+                action = null;
+            }
         }
 
-        if (actionMatch && !displayText) {
+        if (!displayText || displayText.length === 0) {
             displayText = "He procesado tu solicitud correctamente.";
         }
 
         return res.status(200).json({ response: displayText, action: action });
+
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
