@@ -18,8 +18,8 @@ export default async function handler(req, res) {
         // Vehículo
         vehicle_brand, vehicle_model, vehicle_year, vin,
         // Ítems (Legacy support or Array)
-        items, // Esperamos [{ part_name, part_number, quantity, cost_fob, sale_price, vendor_name, buy_link, image_data }]
-        part_name, part_number, cost_fob, sale_price, vendor_name, buy_link, // Legacy single-item fields
+        items, // Esperamos [{ part_name, part_number, quantity, cost_fob, sale_price, vendor_name, supplier_url, image_data }]
+        part_name, part_number, cost_fob, sale_price, vendor_name, supplier_url, // Legacy single-item fields
         // Logística
         status = 'Solicitado', tracking_number,
         estimated_delivery_client, notes,
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
                 cost_fob: parseFloat(cost_fob) || 0,
                 sale_price: parseFloat(sale_price) || 0,
                 vendor_name: vendor_name || '',
-                buy_link: buy_link || ''
+                supplier_url: supplier_url || ''
             }];
         }
 
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
                 cost_fob: parseFloat(item.cost_fob) || 0,
                 sale_price: parseFloat(item.sale_price) || 0,
                 vendor_name: item.vendor_name || '',
-                buy_link: item.buy_link || '',
+                supplier_url: item.supplier_url || '',
                 image_data: item.image_data || ''
             }));
 

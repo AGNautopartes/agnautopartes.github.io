@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     cost_fob DECIMAL(10, 2) DEFAULT 0.00,
     sale_price DECIMAL(10, 2) DEFAULT 0.00,
     vendor_name TEXT,
-    buy_link TEXT,
+    supplier_url TEXT,
     image_data TEXT, -- Base64 encoded image for saved quotes
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -18,14 +18,14 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 -- 2. Migrate existing data from orders to order_items
 -- We assume current cost_fob in financials applies to the first item created
-INSERT INTO order_items (order_id, part_name, cost_fob, sale_price, vendor_name, buy_link)
-SELECT 
-    o.id, 
-    o.part_name, 
-    COALESCE(f.cost_fob, 0),
-    COALESCE(((f.cost_fob + f.shipping_cost + f.taxes + f.other_expenses) * (1 + f.margin_percent / 100)), 0),
-    o.vendor_name, 
-    o.buy_link
+    INSERT INTO order_items (order_id, part_name, cost_fob, sale_price, vendor_name, supplier_url)
+    SELECT 
+        o.id, 
+        o.part_name, 
+        COALESCE(f.cost_fob, 0),
+        COALESCE(((f.cost_fob + f.shipping_cost + f.taxes + f.other_expenses) * (1 + f.margin_percent / 100)), 0),
+        o.vendor_name, 
+        o.supplier_url
 FROM orders o
 LEFT JOIN financials f ON o.id = f.order_id;
 

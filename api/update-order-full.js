@@ -10,7 +10,7 @@ export default async function handler(req, res) {
         orderId,
         vin, vehicle_brand, vehicle_model, vehicle_year,
         tracking_number, status,
-        items, // Array [{ id, part_name, part_number, quantity, cost_fob, sale_price, vendor_name, buy_link, image_data }]
+        items, // Array [{ id, part_name, part_number, quantity, cost_fob, sale_price, vendor_name, supplier_url, image_data }]
         itemsToDelete // Array of IDs to remove
     } = req.body;
 
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
                 cost_fob: parseFloat(item.cost_fob) || 0,
                 sale_price: parseFloat(item.sale_price) || 0,
                 vendor_name: item.vendor_name || '',
-                buy_link: item.buy_link || '',
+                supplier_url: item.supplier_url || '',
                 image_data: item.image_data || ''
             }));
 
