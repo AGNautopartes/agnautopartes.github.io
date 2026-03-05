@@ -1604,65 +1604,41 @@
             </div>
         </div>
         <!-- ── COTIZADOR PAGE (Pestaña) ── -->
-        <div class="page" id="page-cotizador" style="flex-direction:column; overflow:hidden;">
-            <div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
-                <!-- Header -->
-                <div
-                    style="padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                    <div>
-                        <h2 style="font-size:1rem; font-weight:700;">🛒 Cotizador Volátil</h2>
-                        <p class="detail-sub" style="margin:0; font-size:0.75rem;">Los datos no se guardan en la nube
-                            hasta que enlaces a una orden.</p>
-                    </div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button class="btn-sm" onclick="exportQuoteCSV()">📥 Descargar CSV</button>
-                        <label class="btn-sm" style="cursor:pointer; display:flex; align-items:center;">
-                            📤 Subir CSV <input type="file" id="quote-upload-page" style="display:none"
-                                onchange="importQuoteCSVPage(event)">
-                        </label>
-                        <button class="btn-add" onclick="openLinkModal()" id="btn-link-erp-page">🔗 Enlazar a
-                            ERP</button>
-                    </div>
-                </div>
-                <!-- Body -->
-                <div style="flex:1; display:flex; overflow:hidden;">
-                    <!-- Editor -->
-                    <div style="width:45%; border-right:1px solid var(--border); overflow-y:auto; padding:1.5rem;">
-                        <div class="detail-section">
-                            <h4>Datos del Cliente</h4>
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <div class="il">Nombre</div>
-                                    <div class="iv"><input type="text" id="q-cust-name-page" placeholder="Cliente">
-                                    </div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="il">Vehículo</div>
-                                    <div class="iv"><input type="text" id="q-vehicle-page"
-                                            placeholder="Ej: Toyota Hilux"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="detail-section" style="margin-top:1.5rem;">
-                            <div
-                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                                <h4>Repuestos</h4>
-                                <button class="btn-sm" onclick="addQuoteItemPage()">+ Agregar</button>
-                            </div>
-                            <div id="quote-items-container-page"></div>
-                        </div>
-                    </div>
-                    <!-- Preview -->
-                    <div style="flex:1; overflow-y:auto; padding:1.5rem;">
-                        <h4 style="margin-bottom:1rem;">Vista Previa</h4>
-                        <div id="quote-render-area-page"
-                            style="background:#fff; color:#000; padding:2rem; border-radius:10px; min-height:400px; font-family:sans-serif;">
-                        </div>
-                    </div>
-                </div>
+        <div class="page" id="page-cotizador" style="flex-direction:column; overflow:hidden; padding:0;">
+            <!-- ERP Link bar — shown above the iframe -->
+            <div id="cotizador-erp-bar"
+                style="background:var(--surface2); border-bottom:1px solid var(--border); padding:0.6rem 1.2rem; display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; flex-shrink:0;">
+                <span style="font-size:0.8rem; color:var(--text2);">Cotizador independiente. Cuando quieras enviar los
+                    ítems a una orden existente:</span>
+                <button class="btn-add" onclick="openLinkCotizadorModal()"
+                    style="font-size:0.8rem; padding:0.4rem 0.9rem;">🔗 Enlazar a ERP</button>
             </div>
+            <!-- The real cotizador loads as iframe — 100% identical to standalone -->
+            <iframe id="cotizador-iframe" src="11 AGN_Cotizador_v3.4_csv_nav_fix4c_navpicker_samefolder(1).html"
+                style="flex:1; border:none; width:100%; height:100%;" title="AGN Cotizador"></iframe>
         </div>
     </div>
+    </div>
+
+    <!-- ── MODAL: Enlazar Cotizador a Orden ── -->
+    <div id="link-cotizador-modal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div
+            style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem; width:480px; max-width:95vw; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-bottom:1rem; font-size:1rem;">🔗 Enlazar cotización a una orden existente</h3>
+            <p style="font-size:0.8rem; color:var(--text2); margin-bottom:1.25rem;">Los ítems del cotizador se
+                <strong>agregarán</strong> (no reemplazarán) a los repuestos de la orden seleccionada.
+            </p>
+            <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:0.4rem;">Selecciona la
+                orden:</label>
+            <select id="link-order-select"
+                style="width:100%; padding:0.65rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.85rem; margin-bottom:1.25rem;"></select>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button class="btn-sm" onclick="closeLinkCotizadorModal()">Cancelar</button>
+                <button class="btn-add" onclick="doEnlazarCotizadorToOrder()">✅ Enlazar</button>
+            </div>
+            <div id="link-cotizador-status" style="margin-top:0.75rem; font-size:0.8rem;"></div>
+        </div>
     </div>
 
     <div id="toast"></div>
@@ -1898,51 +1874,81 @@
             selectedOrder = o;
         }
 
-        window.openNewQuote = () => {
-            document.getElementById('quote-overlay').style.display = 'flex';
-            document.getElementById('q-cust-name').value = '';
-            document.getElementById('q-vehicle').value = '';
-            currentQuoteItems = [];
-            renderQuoteItems();
-            document.getElementById('btn-link-erp').textContent = '🔗 Enlazar a ERP';
-            document.getElementById('btn-link-erp').onclick = openLinkModal;
+        // ══ LINK COTIZADOR TO ERP ══
+        window.openLinkCotizadorModal = () => {
+            const select = document.getElementById('link-order-select');
+            select.innerHTML = '<option value="">-- Selecciona una orden --</option>' +
+                allOrders.map(o => `<option value="${o.id}">#${o.readable_id} - ${o.customers?.full_name || 'Sin Cliente'} (${o.part_name})</option>`).join('');
+
+            document.getElementById('link-cotizador-modal').style.display = 'flex';
+            document.getElementById('link-cotizador-status').textContent = '';
         };
 
-        window.openQuoteToolForExisting = () => {
-            if (!selectedOrder) return;
-            document.getElementById('quote-overlay').style.display = 'flex';
-            document.getElementById('q-cust-name').value = selectedOrder.customers?.full_name || '';
-            document.getElementById('q-vehicle').value = `${selectedOrder.vehicle_brand} ${selectedOrder.vehicle_model}`;
-            currentQuoteItems = selectedOrder.items.map(i => ({
-                id: i.id,
-                part_name: i.part_name,
-                quantity: i.quantity,
-                sale_price: i.sale_price,
-                image: i.image_data
-            }));
-            renderQuoteItems();
-            document.getElementById('btn-link-erp').textContent = '✅ Actualizar';
-            document.getElementById('btn-link-erp').onclick = finalizeUpdateERP;
+        window.closeLinkCotizadorModal = () => {
+            document.getElementById('link-cotizador-modal').style.display = 'none';
         };
 
-        window.finalizeUpdateERP = async () => {
-            if (!selectedOrder) return;
+        window.doEnlazarCotizadorToOrder = async () => {
+            const orderId = document.getElementById('link-order-select').value;
+            if (!orderId) return alert('Selecciona una orden.');
+
+            const iframe = document.getElementById('cotizador-iframe');
+            if (!iframe || !iframe.contentWindow || !iframe.contentWindow.items) {
+                return alert('No hay ítems en el cotizador o el frame no ha cargado.');
+            }
+
+            const items = iframe.contentWindow.items;
+            if (items.length === 0) return alert('El cotizador está vacío.');
+
+            const statusEl = document.getElementById('link-cotizador-status');
+            statusEl.textContent = 'Enviando repuestos...';
+            statusEl.style.color = 'var(--blue)';
+
             try {
+                // Mapear items del cotizador a items de orden del ERP
+                const erpItems = items.map(i => ({
+                    part_name: i.tit,
+                    part_number: i.refInt || '',
+                    quantity: 1, // En el cotizador standalone suele ser 1 por fila
+                    cost_fob: parseFloat(i.c) || 0,
+                    sale_price: parseFloat(i.p) || 0,
+                    image_data: i.img || null
+                }));
+
                 const res = await fetch(`${API}/api/update-order-full`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                     body: JSON.stringify({
-                        orderId: selectedOrder.id,
-                        status: selectedOrder.status,
-                        items: currentQuoteItems
+                        orderId,
+                        items: erpItems,
+                        appendItems: true // Nuevo flag para el backend si es necesario, o manejamos el merge aquí
                     })
                 });
+
                 if (res.ok) {
-                    showToast('Orden actualizada con éxito', 'success');
-                    document.getElementById('quote-overlay').style.display = 'none';
-                    setTimeout(() => location.reload(), 800);
-                } else throw new Error();
-            } catch (e) { showToast('Error al actualizar', 'error'); }
+                    showToast('✅ Repuestos enlazados con éxito', 'success');
+                    closeLinkCotizadorModal();
+                    // Refrescar si es la orden seleccionada
+                    if (selectedOrder && selectedOrder.id === orderId) {
+                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                        allOrders = await ordersRes.json();
+                        renderOrders(allOrders);
+                        selectOrder(orderId);
+                    }
+                } else {
+                    throw new Error();
+                }
+            } catch (e) {
+                console.error(e);
+                statusEl.textContent = '❌ Error al enlazar items.';
+                statusEl.style.color = 'var(--accent)';
+            }
+        };
+
+        window.openQuoteToolForExisting = () => {
+            // Cambiar a la pestaña de cotizador
+            document.querySelector('.tab-btn[data-page="cotizador"]').click();
+            showToast('Usa el cotizador y luego haz clic en "Enlazar a ERP"', 'info');
         };
 
         async function updateManualOrder(orderId) {
@@ -2126,21 +2132,12 @@
         async function executeAriaAction(action) {
             console.log('Executing Aria Action:', action);
             try {
-                if (action.type === 'CREATE_QUOTE_VOLATILE') {
-                    // Acción para abrir el cotizador con datos de IA
-                    document.getElementById('quote-overlay').style.display = 'flex';
-                    document.getElementById('q-cust-name').value = action.data.customer_name || '';
-                    currentQuoteItems = (action.data.items || []).map(i => ({
-                        id: Date.now() + Math.random(),
-                        part_name: i.part_name,
-                        quantity: i.quantity || 1,
-                        cost_fob: i.cost_fob || 0,
-                        sale_price: i.sale_price || 0,
-                        image: null
-                    }));
-                    renderQuoteItems();
-                    addAiMsg('system', '✨ He preparado la cotización en el cotizador volátil.');
+                if (action.type === 'CONFIRM_CLIENT_CREATION') {
+                    // Aria pregunta si crear cliente
+                    addAiMsg('system', `Aria sugiere crear al cliente: **${action.data.full_name}** (${action.data.phone || 'S/N'})`);
                 } else if (action.type === 'CREATE_ORDER') {
+                    // Si el cliente no existe y Aria no ha confirmado, esta lógica suele ir en admin-chat.js
+                    // Pero aquí ejecutamos la creación real si llega el comando.
                     const res = await fetchWithTimeout(`${API}/api/create-order`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
@@ -2149,13 +2146,30 @@
                     });
                     if (res.ok) {
                         const result = await res.json();
-                        addAiMsg('system', `✅ Orden creada con éxito.`);
+                        addAiMsg('system', `✅ Orden #${result.readable_id} creada con éxito.`);
                         const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
                         allOrders = await ordersRes.json();
                         renderOrders(allOrders);
                         updateStats(allOrders);
                     } else {
-                        addAiMsg('system', '❌ Error al crear la orden en la base de datos.');
+                        const err = await res.json();
+                        addAiMsg('system', `❌ Error: ${err.error || 'No se pudo crear la orden'}`);
+                    }
+                } else if (action.type === 'ADD_ITEMS_TO_ORDER') {
+                    const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                        body: JSON.stringify({ orderId: action.data.order_id, items: action.data.items, appendItems: true }),
+                        timeout: 10000
+                    });
+                    if (res.ok) {
+                        addAiMsg('system', `✅ Repuestos agregados a la orden.`);
+                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                        allOrders = await ordersRes.json();
+                        renderOrders(allOrders);
+                        if (selectedOrder?.id === action.data.order_id) renderDetail(allOrders.find(o => o.id === action.data.order_id));
+                    } else {
+                        addAiMsg('system', `❌ Error al agregar repuestos.`);
                     }
                 } else if (action.type === 'UPDATE_STATUS') {
                     const orderId = action.data.order_id;
@@ -2284,6 +2298,7 @@
         // ══ REPORTS LOGIC ══
         function renderReports() {
             const tbody = document.getElementById('reports-tbody');
+            if (!tbody) return;
             const from = document.getElementById('rep-date-from').value;
             const to = document.getElementById('rep-date-to').value;
             const brand = document.getElementById('rep-brand').value.toLowerCase();
@@ -2292,7 +2307,7 @@
             const customer = document.getElementById('rep-customer').value.toLowerCase();
 
             const filtered = allOrders.filter(o => {
-                const date = o.created_at.split('T')[0];
+                const date = o.created_at ? o.created_at.split('T')[0] : '';
                 const matchDate = (!from || date >= from) && (!to || date <= to);
                 const matchBrand = !brand || (o.vehicle_brand || '').toLowerCase().includes(brand);
                 const matchModel = !model || (o.vehicle_model || '').toLowerCase().includes(model);
@@ -2304,14 +2319,14 @@
             tbody.innerHTML = filtered.map(o => `
                 <tr>
                     <td>#${o.readable_id}</td>
-                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                    <td>${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</td>
                     <td>${o.customers?.full_name || '—'}</td>
                     <td>${o.vehicle_brand || ''} ${o.vehicle_model || ''}</td>
                     <td>${o.part_name}</td>
                     <td><span class="pill">${o.status}</span></td>
                     <td>$${o.sale_price || 0}</td>
                     <td style="color:${(o.sale_price - o.cost_fob) > 0 ? 'var(--green)' : 'var(--red)'}">
-                        $${(o.sale_price - (o.cost_fob || 0)).toFixed(2)}
+                        $${((o.sale_price || 0) - (o.cost_fob || 0)).toFixed(2)}
                     </td>
                 </tr>
             `).join('') || '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text2)">No se encontraron órdenes con estos filtros.</td></tr>';
@@ -2319,206 +2334,21 @@
 
         // Listeners para filtros de reportes
         ['rep-date-from', 'rep-date-to', 'rep-brand', 'rep-model', 'rep-status', 'rep-customer'].forEach(id => {
-            document.getElementById(id).addEventListener('input', renderReports);
+            document.getElementById(id)?.addEventListener('input', renderReports);
         });
 
-        // ══ COTIZADOR VOLÁTIL (LOGIC) ══
-        let currentQuoteItems = [];
-        let selectedLinkOrder = null;
-
-        // Functions shared between modal and page
-        window.addQuoteItem = function () {
-            currentQuoteItems.push({ id: Date.now(), part_name: '', quantity: 1, cost_fob: 0, sale_price: 0, image: null });
-            renderQuoteItems();
-        };
-
-        window.addQuoteItemPage = function () {
-            currentQuoteItems.push({ id: Date.now(), part_name: '', quantity: 1, cost_fob: 0, sale_price: 0, image: null });
-            renderQuoteItemsPage();
-        };
-
-        window.importQuoteCSVPage = function (event) {
-            importQuoteCSV(event);
-            setTimeout(() => renderQuoteItemsPage(), 300);
-        };
-
-        window.renderQuoteItems = function () {
-            const container = document.getElementById('quote-items-container');
-            if (!container) return;
-            container.innerHTML = '';
-            currentQuoteItems.forEach((item, idx) => {
-                const row = document.createElement('div');
-                row.className = 'quote-item-row';
-                row.innerHTML = `
-                    <img src="${item.image || 'https://via.placeholder.com/80'}" class="quote-img-preview" onclick="triggerImgUpload(${idx})">
-                    <input type="text" class="search-box" style="width:100%" placeholder="Nombre repuesto" value="${item.part_name}" oninput="updateItem(${idx}, 'part_name', this.value)">
-                    <input type="number" class="search-box" style="width:70px" placeholder="Cant" value="${item.quantity}" oninput="updateItem(${idx}, 'quantity', this.value)">
-                    <input type="number" class="search-box" style="width:90px" placeholder="Vta" value="${item.sale_price}" oninput="updateItem(${idx}, 'sale_price', this.value)">
-                    <button class="btn-sm btn-danger" onclick="removeQuoteItem(${idx})">🗑</button>
-                    <input type="file" id="img-up-${idx}" style="display:none" onchange="handleItemImg(${idx}, event)">
-                `;
-                container.appendChild(row);
+        // ══ TABS ══
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const pageId = `page-${btn.dataset.page}`;
+                document.getElementById(pageId).classList.add('active');
+                if (btn.dataset.page === 'dashboard') updateDashboard();
+                if (btn.dataset.page === 'reports') renderReports();
             });
-            updateQuoteRender();
-        };
-
-        window.updateItem = (idx, field, val) => {
-            currentQuoteItems[idx][field] = val;
-            updateQuoteRender();
-        };
-        window.removeQuoteItem = (idx) => {
-            currentQuoteItems.splice(idx, 1);
-            renderQuoteItems();
-        };
-        window.triggerImgUpload = (idx) => document.getElementById(`img-up-${idx}`).click();
-        window.handleItemImg = (idx, e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                currentQuoteItems[idx].image = ev.target.result;
-                renderQuoteItems();
-            };
-            reader.readAsDataURL(file);
-        };
-
-        function buildQuoteHTML(cust, vh) {
-            const itemsHtml = currentQuoteItems.map(i => `
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:10px 0;">
-                    <div style="display:flex; gap:1rem; align-items:center;">
-                        ${i.image ? `<img src="${i.image}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : ''}
-                        <div><strong>${i.part_name || 'Sin nombre'}</strong> x${i.quantity}</div>
-                    </div>
-                    <strong>$${i.sale_price}</strong>
-                </div>
-            `).join('');
-            const total = currentQuoteItems.reduce((acc, i) => acc + (parseFloat(i.sale_price) || 0) * (parseInt(i.quantity) || 1), 0).toFixed(2);
-            return `
-                <div style="border-bottom:3px solid #E64937; padding-bottom:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
-                    <h1 style="color:#E64937; margin:0; font-size:1.5rem;">AGN Autopartes</h1>
-                    <div style="text-align:right; font-size:0.75rem; color:#666;">Cotización Formal</div>
-                </div>
-                <div style="margin-bottom:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div><div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Cliente</div><div style="font-weight:700;">${cust}</div></div>
-                    <div><div style="font-size:0.7rem; color:#888; text-transform:uppercase;">Vehículo</div><div style="font-weight:700;">${vh}</div></div>
-                </div>
-                <div style="margin-top:1rem;">${itemsHtml || '<p style="color:#888; text-align:center; padding:2rem;">Agregue repuestos para previsualizar...</p>'}</div>
-                <div style="margin-top:2rem; border-top:1px solid #eee; padding-top:1rem; text-align:right;">
-                    <div style="font-size:0.8rem; color:#888;">Total Estimado</div>
-                    <div style="font-size:1.5rem; font-weight:800; color:#E64937;">$${total}</div>
-                </div>
-            `;
-        }
-
-        function updateQuoteRender() {
-            const cust = document.getElementById('q-cust-name')?.value || document.getElementById('q-cust-name-page')?.value || 'Cliente';
-            const vh = document.getElementById('q-vehicle')?.value || document.getElementById('q-vehicle-page')?.value || 'Vehículo';
-            const html = buildQuoteHTML(cust, vh);
-            const areaModal = document.getElementById('quote-render-area');
-            if (areaModal) areaModal.innerHTML = html;
-            const areaPage = document.getElementById('quote-render-area-page');
-            if (areaPage) areaPage.innerHTML = html;
-        }
-
-        window.renderQuoteItemsPage = function () {
-            const container = document.getElementById('quote-items-container-page');
-            if (!container) return;
-            container.innerHTML = '';
-            currentQuoteItems.forEach((item, idx) => {
-                const row = document.createElement('div');
-                row.className = 'quote-item-row';
-                row.innerHTML = `
-                    <img src="${item.image || 'https://via.placeholder.com/80'}" class="quote-img-preview" onclick="triggerImgUpload(${idx})">
-                    <input type="text" class="search-box" style="width:100%" placeholder="Nombre repuesto" value="${item.part_name}" oninput="updateItemPage(${idx}, 'part_name', this.value)">
-                    <input type="number" class="search-box" style="width:70px" placeholder="Cant" value="${item.quantity}" oninput="updateItemPage(${idx}, 'quantity', this.value)">
-                    <input type="number" class="search-box" style="width:90px" placeholder="Vta $" value="${item.sale_price}" oninput="updateItemPage(${idx}, 'sale_price', this.value)">
-                    <button class="btn-sm btn-danger" onclick="removeQuoteItemPage(${idx})">🗑</button>
-                    <input type="file" id="img-up-page-${idx}" style="display:none" onchange="handleItemImg(${idx}, event)">
-                `;
-                container.appendChild(row);
-            });
-            updateQuoteRender();
-        };
-
-        window.updateItemPage = (idx, field, val) => { currentQuoteItems[idx][field] = val; updateQuoteRender(); };
-        window.removeQuoteItemPage = (idx) => { currentQuoteItems.splice(idx, 1); renderQuoteItemsPage(); };
-
-
-        window.exportQuoteCSV = () => {
-            if (!currentQuoteItems.length) return showToast('Nada que exportar', 'error');
-            const data = currentQuoteItems.map(i => ({
-                id: i.id, part_name: i.part_name, quantity: i.quantity, sale_price: i.sale_price
-            }));
-            exportToCSV(data, `AGN_Cotizacion_${Date.now()}.csv`);
-        };
-
-        window.importQuoteCSV = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const content = ev.target.result;
-                    showToast('CSV Procesado (Estructura básica)', 'info');
-                    // Aquí iría el parser CSV real si fuera necesario
-                } catch (e) { showToast('Error al leer CSV', 'error'); }
-            };
-            reader.readAsText(file);
-        };
-
-        // LINKING LOGIC
-        window.openLinkModal = () => {
-            document.getElementById('link-modal').style.display = 'flex';
-            document.getElementById('link-results').innerHTML = '<p style="color:#888; text-align:center; padding:1rem;">Escriba para buscar órdenes...</p>';
-            document.getElementById('link-search').value = '';
-            document.getElementById('btn-do-link').disabled = true;
-            selectedLinkOrder = null;
-        };
-
-        window.searchLinkOrders = async () => {
-            const q = document.getElementById('link-search').value;
-            if (q.length < 2) return;
-
-            const { data } = await supabase.from('orders')
-                .select('id, readable_id, vehicle_brand, customers(full_name)')
-                .or(`vehicle_brand.ilike.%${q}%,customers.full_name.ilike.%${q}%`)
-                .limit(5);
-
-            const resDiv = document.getElementById('link-results');
-            resDiv.innerHTML = (data || []).map(o => `
-                <div class="note-item" style="cursor:pointer; margin-bottom:5px; border:1px solid var(--border);" onclick="selectLinkOrder('${o.id}', '${o.readable_id}', this)">
-                    <strong>${o.readable_id}</strong> - ${o.customers?.full_name} (${o.vehicle_brand})
-                </div>
-            `).join('') || '<p style="color:#888; text-align:center; padding:1rem;">No se encontraron órdenes.</p>';
-        };
-
-        window.selectLinkOrder = (id, rid, el) => {
-            selectedLinkOrder = id;
-            document.getElementById('btn-do-link').disabled = false;
-            document.querySelectorAll('#link-results .note-item').forEach(i => i.style.borderColor = '');
-            el.style.borderColor = 'var(--blue)';
-            showToast(`Seleccionado: ${rid}`, 'info');
-        };
-
-        window.finalizeLink = async () => {
-            if (!selectedLinkOrder) return;
-            try {
-                const { error } = await supabase.from('order_items').insert(currentQuoteItems.map(i => ({
-                    order_id: selectedLinkOrder,
-                    part_name: i.part_name,
-                    quantity: i.quantity,
-                    sale_price: i.sale_price,
-                    image_data: i.image
-                })));
-                if (error) throw error;
-                showToast('Cotización enlazada con éxito', 'success');
-                document.getElementById('link-modal').style.display = 'none';
-                document.getElementById('quote-overlay').style.display = 'none';
-                setTimeout(() => location.reload(), 1000); // Recargar para ver cambios
-            } catch (e) {
-                showToast(`Error: ${e.message}`, 'error');
-            }
-        };
+        });
 
         // ══ TOAST ══
         function showToast(msg, type = 'success') {

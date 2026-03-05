@@ -17,14 +17,19 @@ export default async function handler(req, res) {
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
     try {
-        // 1. Actualizar tabla orders
+        // 1. Actualizar tabla orders (solo campos proveídos)
+        const updateData = {};
+        if (vin !== undefined) updateData.vin = vin;
+        if (vehicle_brand !== undefined) updateData.vehicle_brand = vehicle_brand;
+        if (vehicle_model !== undefined) updateData.vehicle_model = vehicle_model;
+        if (vehicle_year !== undefined) updateData.vehicle_year = vehicle_year;
+        if (tracking_number !== undefined) updateData.tracking_number = tracking_number;
+        if (status !== undefined) updateData.status = status;
+        updateData.updated_at = new Date().toISOString();
+
         const { error: orderErr } = await supabase
             .from('orders')
-            .update({
-                vin, vehicle_brand, vehicle_model, vehicle_year,
-                tracking_number, status,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', orderId);
 
         if (orderErr) throw orderErr;
