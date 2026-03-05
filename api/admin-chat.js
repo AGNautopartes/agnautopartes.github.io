@@ -17,46 +17,47 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Clave de API de Google no configurada.' });
     }
 
-    // Obtener contexto de órdenes reales para que Aria "recuerde"
+    // Obtener contexto de órdenes recientes
     const { data: existingOrders } = await supabase
         .from('orders')
-        .select('readable_id, part_name, status, customers(full_name)')
+        .select('readable_id, status, vehicle_brand, vehicle_model, customers(full_name)')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
 
     const ordersContext = (existingOrders || []).map(o =>
-        `[${o.readable_id}] Cliente: ${o.customers?.full_name}, Pieza: ${o.part_name}, Estado: ${o.status}`
+        `[${o.readable_id}] ${o.customers?.full_name} - ${o.vehicle_brand} ${o.vehicle_model || ''} (${o.status})`
     ).join('\n');
 
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-Eres "Aria", la asistente IA interna de AGN Autopartes ERP.
+Eres "Aria", la asistente IA de AGN Autopartes ERP.
 HOY ES: ${today}.
 
-CONTEXTO DE ÓRDENES EXISTENTES (Usa esto para ACTUALIZAR en lugar de duplicar):
+CONTEXTO RECIENTE:
 ${ordersContext}
 
 CAPACIDADES:
-- Crear (CREATE_ORDER), Borrar (DELETE_ORDER), Anotar (ADD_NOTE).
-- Actualizar: Puedes actualizar el estado (UPDATE_STATUS) o CUALQUIER campo de la orden como costos, precios de venta, marca, modelo, etc. (UPDATE_FIELDS).
+- BUSCAR: Si te piden buscar una orden por nombre, marca o modelo, usa SEARCH_ORDER.
+- CREAR COTIZACIÓN: Si envían una lista o imagen, usa CREATE_QUOTE_VOLATILE. Esto abrirá el cotizador pero NO guardará en la nube hasta que el usuario lo pida.
+- ENLAZAR: Para vincular una cotización a una orden existente, usa LINK_QUOTE.
 
-REGLAS CRÍTICAS:
-1. RESPUESTAS CORTAS: Máximo 2 líneas de texto. Sé directa.
-2. NO DUPLICAR: Si te piden algo para un cliente o pieza que ya ves en el CONTEXTO, usa acciones de actualización.
-3. TELÉFONO OBLIGATORIO: Para órdenes nuevas, DEBES pedir el teléfono si no lo tienes.
-4. BORRADO: Si piden "borra la orden X", usa DELETE_ORDER.
-5. FORMATO: Siempre responde con el JSON al final si vas a actuar.
+REGLAS:
+1. Respuestas de máximo 2 líneas.
+2. Las imágenes sirven para identificar piezas en una cotización.
+3. Si pides crear una orden con muchos repuestos, usa la estructura de items.
 
 ACCIONES (JSON):
-- CREAR: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","customer_phone":"...","vehicle_brand":"...","vehicle_model":"...","vehicle_year":"...","part_name":"...","part_number":"...","status":"Solicitado","cost_fob":0,"sale_price":0}}]
-- ESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
-- CAMPOS (Costos, Precios, Info): [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"cost_fob":45,"sale_price":200,"part_name":"...","vehicle_brand":"..."}}}]
-- BORRAR: [ACTION:{"type":"DELETE_ORDER","data":{"order_id":"ORD-X"}}]
+- BUSCAR: [ACTION:{"type":"SEARCH_ORDER","data":{"query":"Nombre o Marca"}}]
+- COTIZAR (Volátil): [ACTION:{"type":"CREATE_QUOTE_VOLATILE","data":{"customer_name":"...","items":[{"part_name":"...","quantity":1,"cost_fob":0}]}}]
+- ACTUALIZAR ORDEN: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"status":"..."}}}]
 - NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
 
-ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
+ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, Entregado, Cancelado.
 `.trim();
+
+    // Lógica para procesar búsquedas si el mensaje es explícito (opcional, Aria lo hará vía JSON usualmente)
+    // Pero aquí interceptamos el resultado de la acción si Aria solicita buscar.
 
     const formattedHistory = conversationHistory.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
@@ -64,10 +65,8 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
     }));
 
     formattedHistory.push({ role: 'user', parts: [{ text: message }] });
-
-    // Forzar el system prompt actualizado en cada envío para refrescar la memoria de órdenes
     formattedHistory.unshift({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
-    formattedHistory.splice(1, 0, { role: 'model', parts: [{ text: 'Entendido. Contexto actualizado. ¿Qué desea hacer?' }] });
+    formattedHistory.splice(1, 0, { role: 'model', parts: [{ text: 'Entendido. ¿En qué le puedo ayudar hoy?' }] });
 
     try {
         const geminiRes = await fetch(
@@ -92,17 +91,30 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
             try {
                 action = JSON.parse(actionMatch[1]);
                 displayText = responseText.replace(/\[ACTION:.*?\]/s, '').trim();
+
+                // Interceptar búsqueda para responder de una vez si es posible
+                if (action.type === 'SEARCH_ORDER' && action.data.query) {
+                    const { data: searchResults } = await supabase
+                        .from('orders')
+                        .select('readable_id, status, vehicle_brand, vehicle_model, customers(full_name)')
+                        .or(`vehicle_brand.ilike.%${action.data.query}%,vehicle_model.ilike.%${action.data.query}%,customers.full_name.ilike.%${action.data.query}%`)
+                        .limit(5);
+
+                    if (searchResults && searchResults.length > 0) {
+                        const resultsStr = searchResults.map(r => `[${r.readable_id}] ${r.customers?.full_name}: ${r.vehicle_brand}`).join(', ');
+                        displayText = `He encontrado estas coincidencias: ${resultsStr}. ¿Deseas hacer algo con alguna de ellas?`;
+                    } else {
+                        displayText = `No encontré órdenes que coincidan con "${action.data.query}".`;
+                    }
+                }
             } catch (e) { console.error('JSON Error:', e); }
         }
 
         if (actionMatch && !displayText) {
-            displayText = "De acuerdo, procedo con esa acción.";
-        } else if (!displayText && !action) {
-            displayText = "Lo siento, no pude procesar esa solicitud.";
+            displayText = "He procesado tu solicitud correctamente.";
         }
 
         return res.status(200).json({ response: displayText, action: action });
-
 
     } catch (error) {
         return res.status(500).json({ error: error.message });

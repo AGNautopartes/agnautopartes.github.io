@@ -1,5 +1,5 @@
 // api/create-order.js
-// Crea una orden completa con cliente, vehículo, parte y financieros.
+// Crea una orden completa con cliente, vehículo y múltiples partes.
 import supabase from '../supabase-client.js';
 
 export default async function handler(req, res) {
@@ -15,23 +15,21 @@ export default async function handler(req, res) {
     const {
         // Cliente
         customer_name, customer_phone, customer_email,
-        // Vehículo y parte
-        vehicle_brand, vehicle_model, vehicle_year,
-        part_name, part_number, supplier_url, vin,
+        // Vehículo
+        vehicle_brand, vehicle_model, vehicle_year, vin,
+        // Ítems (Legacy support or Array)
+        items, // Esperamos [{ part_name, part_number, quantity, cost_fob, sale_price, vendor_name, buy_link, image_data }]
+        part_name, part_number, cost_fob, sale_price, vendor_name, buy_link, // Legacy single-item fields
         // Logística
-        status = 'Solicitado', tracking_number, vendor_name,
+        status = 'Solicitado', tracking_number,
         estimated_delivery_client, notes,
-        // Financieros
-        cost_fob = 0, shipping_cost = 0, customs_cost = 0,
-        taxes = 0, other_expenses = 0, sale_price = 0,
         // Meta
         created_by = 'admin'
     } = req.body;
 
     try {
-        // 1. Buscar cliente por teléfono (si existe y no es N/A) o por nombre
+        // 1. Buscar o crear cliente
         let query = supabase.from('customers').select('id, full_name, phone');
-
         if (customer_phone && customer_phone !== 'N/A' && customer_phone !== '') {
             query = query.eq('phone', customer_phone);
         } else {
@@ -54,33 +52,58 @@ export default async function handler(req, res) {
             customer = newCustomer;
         }
 
+        // 2. Preparar los ítems (Convertir legacy a array si es necesario)
+        let partsList = [];
+        if (items && Array.isArray(items) && items.length > 0) {
+            partsList = items;
+        } else if (part_name) {
+            partsList = [{
+                part_name,
+                part_number: part_number || '',
+                cost_fob: parseFloat(cost_fob) || 0,
+                sale_price: parseFloat(sale_price) || 0,
+                vendor_name: vendor_name || '',
+                buy_link: buy_link || ''
+            }];
+        }
 
-        // 2. Crear la orden
+        // 3. Crear la orden base
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .insert([{
                 customer_id: customer.id,
-                part_name, part_number, vin,
+                vin,
                 vehicle_brand, vehicle_model, vehicle_year,
-                supplier_url, status, tracking_number,
-                vendor_name, estimated_delivery_client,
+                status, tracking_number,
+                estimated_delivery_client,
                 notes
             }])
             .select().single();
 
         if (orderErr) throw orderErr;
 
-        // 3. Crear financieros
-        const { error: finErr } = await supabase
-            .from('financials')
-            .insert([{
+        // 4. Insertar ítems
+        if (partsList.length > 0) {
+            const itemsToInsert = partsList.map(item => ({
                 order_id: order.id,
-                cost_fob, shipping_cost, customs_cost,
-                taxes, other_expenses, sale_price
-            }]);
-        if (finErr) throw finErr;
+                part_name: item.part_name,
+                part_number: item.part_number || '',
+                quantity: item.quantity || 1,
+                cost_fob: parseFloat(item.cost_fob) || 0,
+                sale_price: parseFloat(item.sale_price) || 0,
+                vendor_name: item.vendor_name || '',
+                buy_link: item.buy_link || '',
+                image_data: item.image_data || ''
+            }));
 
-        // 4. Registrar en historial
+            const { error: itemsErr } = await supabase
+                .from('order_items')
+                .insert(itemsToInsert);
+
+            if (itemsErr) throw itemsErr;
+        }
+
+        // 5. Registrar en historial
         await supabase.from('order_history').insert([{
             order_id: order.id,
             changed_by: created_by,
@@ -90,10 +113,9 @@ export default async function handler(req, res) {
         }]);
 
         return res.status(201).json({
-            message: `Orden creada para ${customer.full_name}`,
+            message: `Orden creada para ${customer.full_name} con ${partsList.length} ítems`,
             orderId: order.id,
-            customerId: customer.id,
-            isNewCustomer: !customer.created_at
+            customerId: customer.id
         });
 
     } catch (error) {
