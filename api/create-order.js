@@ -67,11 +67,18 @@ export default async function handler(req, res) {
             }];
         }
 
-        // 3. Crear la cabecera de la orden (sin part_name, ya no es requerido)
+        // 3. Crear la cabecera de la orden (con nombre visual dinámico)
+        // Determinamos el part_name solo para propósitos visuales en el UI (lista lateral)
+        let basePartName = 'Orden de Repuestos'; // Valor por defecto si viene vacía
+        if (partsList.length > 0 && partsList[0].part_name) {
+            basePartName = partsList[0].part_name; // Toma el nombre del primer ítem
+        }
+
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .insert([{
                 customer_id: customer.id,
+                part_name: basePartName,
                 vin,
                 vehicle_brand, vehicle_model, vehicle_year,
                 status, tracking_number,
