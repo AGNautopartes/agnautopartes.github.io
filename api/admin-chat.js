@@ -19,32 +19,28 @@ export default async function handler(req, res) {
 
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    const SYSTEM_PROMPT = `
-Eres "Aria", la asistente IA de AGN Autopartes ERP.
-HOY ES: ${today}.
+    const SYSTEM_PROMPT = `Eres Aria, la asistente inteligente de AGN AutoPartes ERP.
+Tu objetivo es ayudar al administrador a gestionar órdenes, clientes y cotizaciones.
 
-CAPACIDADES:
-- BUSCAR ORDEN: Usa SEARCH_ORDER.
-- CREAR ORDEN: Cuando pidan una orden nueva, usa CREATE_ORDER. 
-  * Si el cliente no está en la base de datos o contexto, pregunta "El cliente [Nombre] no existe, ¿lo creo?".
-  * Estado inicial siempre: "Solicitado".
-- AGREGAR REPUESTOS: Usa ADD_ITEMS_TO_ORDER para órdenes existentes.
-- ACTUALIZAR ESTADO: Usa UPDATE_FIELDS.
-- NOTA: Usa ADD_NOTE.
+ESTADO DEL COTIZADOR:
+Usa el cotizador para presupuestos rápidos. No requiere crear orden en DB.
 
-REGLAS CRÍTICAS:
-1. NO USES COTIZADOR VOLÁTIL. Crea las órdenes directamente.
-2. Si el usuario dice "agrega X a la orden de Y", búscalo y usa ADD_ITEMS_TO_ORDER.
-3. Respuestas breves (máx 2 líneas).
-
-ACCIONES (JSON final):
-- BUSCAR: [ACTION:{"type":"SEARCH_ORDER","data":{"query":"..."}}]
-- CREAR: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","vehicle_brand":"...","vehicle_model":"...","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
-- AGREGAR: [ACTION:{"type":"ADD_ITEMS_TO_ORDER","data":{"order_readable_id":"ORD-X","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
-- ESTADO: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"status":"..."}}}]
+ACCIONES DISPONIBLES (JSON final):
+- BUSCAR ORDEN: [ACTION:{"type":"SEARCH_ORDER","data":{"query":"..."}}]
+- CREAR ORDEN: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","vehicle_brand":"...","vehicle_model":"...","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
+- AGREGAR A ORDEN: [ACTION:{"type":"ADD_ITEMS_TO_ORDER","data":{"order_readable_id":"ORD-X","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
+- ACTUALIZAR ESTADO: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"status":"..."}}}]
 - NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
+- COTIZADOR_ADD: [ACTION:{"type":"ADD_TO_QUOTE","data":{"items":[{"name":"...","description":"...","cost":0,"shipping":0,"brand":"..."}]}}]
+- COTIZADOR_CLEAR: [ACTION:{"type":"CLEAR_QUOTE","data":{}}]
+- COTIZADOR_SET_CLIENT: [ACTION:{"type":"SET_QUOTE_CLIENT","data":{"client_name":"...","vehicle":"..."}}]
 
-ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, Entregado, Cancelado.
+REGLAS DE ORO:
+1. Siempre devuelve la acción dentro de [ACTION:{...}]. NO uses bloques de markdown con comillas invertidas.
+2. Si el cliente no existe para una orden, pregunta ANTES de crear.
+3. Si el usuario te habla del cotizador, USA LAS ACCIONES DEL COTIZADOR mencionadas arriba.
+
+IMPORTANTE: El Cotizador es para WhatsApp. La Orden es para el sistema financiero local.
 `.trim();
 
     // Contexto de órdenes recientes para Aria
@@ -80,86 +76,63 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, En
         );
 
         if (!geminiRes.ok) throw new Error('Error Gemini');
+        const rData = await geminiRes.json();
+        const responseText = rData.candidates[0].content.parts[0].text;
 
-        const data = await geminiRes.json();
-        const responseText = data.candidates[0].content.parts[0].text;
-
-        const actionTagStart = responseText.indexOf('[ACTION:');
         let action = null;
         let displayText = responseText;
 
-        if (actionTagStart !== -1) {
+        // --- PARSER AGRESIVO ---
+        function extractJson(text) {
+            const tagMatch = text.match(/\[ACTION:\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*\]/);
+            if (tagMatch) return { raw: tagMatch[0], json: tagMatch[1] };
+            const mdMatch = text.match(/```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```/i);
+            if (mdMatch) return { raw: mdMatch[0], json: mdMatch[1] };
+            const looseMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+            if (looseMatch) return { raw: looseMatch[0], json: looseMatch[1] };
+            return null;
+        }
+
+        const found = extractJson(responseText);
+        if (found) {
             try {
-                let depth = 0, jsonStart = actionTagStart + 8, jsonEnd = jsonStart;
-                for (let i = jsonStart; i < responseText.length; i++) {
-                    if (responseText[i] === '{') depth++;
-                    else if (responseText[i] === '}') {
-                        depth--;
-                        if (depth === 0) { jsonEnd = i + 1; break; }
+                let parsed = JSON.parse(found.json);
+                action = Array.isArray(parsed) ? parsed[0] : parsed;
+                displayText = responseText.replace(found.raw, '').trim();
+            } catch (e) { console.warn("JSON error:", e); }
+        }
+
+        // --- INTERCEPTORES ---
+        if (action) {
+            if (action.type === 'SEARCH_ORDER') {
+                const { data: sr } = await supabase.from('orders').select('readable_id, status, customers(full_name)').or(`vehicle_brand.ilike.%${action.data.query}%,vehicle_model.ilike.%${action.data.query}%,customers.full_name.ilike.%${action.data.query}%`).limit(5);
+                displayText = sr?.length ? `Encontré: ${sr.map(r => `[${r.readable_id}] ${r.customers?.full_name}`).join(', ')}.` : `No encontré órdenes para "${action.data.query}".`;
+                action = null;
+            } else if (action.type === 'CREATE_ORDER') {
+                const { data: cust } = await supabase.from('customers').select('id').ilike('full_name', `%${action.data.customer_name}%`).maybeSingle();
+                if (!cust) {
+                    const lastMsgSnippet = message.toLowerCase();
+                    const isConfirm = ['si', 'sí', 'dale', 'procede', 'crealo', 'ok'].some(w => lastMsgSnippet.includes(w));
+                    if (!isConfirm) {
+                        displayText = `El cliente **${action.data.customer_name}** no existe. ¿Deseas que lo cree?`;
+                        action = null;
                     }
                 }
-                const jsonStr = responseText.substring(jsonStart, jsonEnd);
-                action = JSON.parse(jsonStr);
-                displayText = (responseText.substring(0, actionTagStart) + responseText.substring(jsonEnd + 1)).trim();
-
-                // --- INTERCEPTORES DE BACKEND ---
-
-                // 1. SEARCH_ORDER
-                if (action.type === 'SEARCH_ORDER' && action.data.query) {
-                    const { data: sr } = await supabase.from('orders').select('readable_id, status, customers(full_name)').or(`vehicle_brand.ilike.%${action.data.query}%,vehicle_model.ilike.%${action.data.query}%,customers.full_name.ilike.%${action.data.query}%`).limit(5);
-                    if (sr?.length) {
-                        displayText = `Encontré: ${sr.map(r => `[${r.readable_id}] ${r.customers?.full_name}`).join(', ')}.`;
-                    } else displayText = `No encontré órdenes para "${action.data.query}".`;
+            } else if (action.type === 'ADD_ITEMS_TO_ORDER') {
+                const rid = action.data.order_readable_id.toUpperCase().replace('ORD-', '');
+                const { data: order } = await supabase.from('orders').select('id, readable_id').eq('readable_id', 'ORD-' + rid).maybeSingle();
+                if (order) {
+                    const items = action.data.items.map(i => ({ order_id: order.id, part_name: i.part_name, quantity: i.quantity || 1, cost_fob: i.cost_fob || 0, sale_price: i.sale_price || 0 }));
+                    await supabase.from('order_items').insert(items);
+                    displayText = `✅ Repuestos agregados a la orden #${order.readable_id}.`;
                     action = null;
                 }
-
-                // 2. CREATE_ORDER con confirmación de cliente
-                if (action.type === 'CREATE_ORDER') {
-                    const cName = action.data.customer_name;
-                    // Verificar si el cliente existe
-                    const { data: cust } = await supabase.from('customers').select('id').ilike('full_name', `%${cName}%`).maybeSingle();
-
-                    if (!cust) {
-                        // Si no existe, vemos si el usuario acaba de decir que sí lo cree
-                        const lastMsgSnippet = message.toLowerCase();
-                        const isConfirm = ['si', 'sí', 'dale', 'procede', 'crealo', 'creálo', 'ok'].some(w => lastMsgSnippet.includes(w));
-
-                        if (!isConfirm) {
-                            displayText = `El cliente **${cName}** no existe en el sistema. ¿Deseas que lo cree para proceder con la orden?`;
-                            action = null; // Detener acción
-                        }
-                    }
-                    // Si existe o ya confirmó, CREATE_ORDER sigue al frontend (executeAriaAction)
-                }
-
-                // 3. ADD_ITEMS_TO_ORDER directo al DB
-                if (action.type === 'ADD_ITEMS_TO_ORDER' && action.data.order_readable_id) {
-                    const rid = action.data.order_readable_id.toUpperCase().replace('ORD-', '');
-                    const { data: order } = await supabase.from('orders').select('id, readable_id').eq('readable_id', 'ORD-' + rid).maybeSingle();
-                    if (order) {
-                        const items = action.data.items.map(i => ({
-                            order_id: order.id,
-                            part_name: i.part_name,
-                            quantity: i.quantity || 1,
-                            cost_fob: i.cost_fob || 0,
-                            sale_price: i.sale_price || 0
-                        }));
-                        await supabase.from('order_items').insert(items);
-                        displayText = `✅ Repuestos agregados a la orden #${order.readable_id}.`;
-                        action = null; // Ya cumplido en backend
-                    }
-                }
-
-            } catch (e) {
-                console.error('Parse Error', e);
-                displayText = responseText.replace(/\[ACTION:[\s\S]*?\}\]/g, '').trim();
-                action = null;
             }
         }
 
         return res.status(200).json({ response: displayText || 'Procesado.', action });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message });
     }
 }
-

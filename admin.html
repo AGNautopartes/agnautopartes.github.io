@@ -1604,20 +1604,78 @@
             </div>
         </div>
         <!-- ── COTIZADOR PAGE (Pestaña) ── -->
-        <div class="page" id="page-cotizador" style="flex-direction:column; overflow:hidden; padding:0;">
+        <div class="page" id="page-cotizador" style="display:none; flex-direction:column; overflow:hidden; padding:0;">
             <!-- ERP Link bar — shown above the iframe -->
             <div id="cotizador-erp-bar"
                 style="background:var(--surface2); border-bottom:1px solid var(--border); padding:0.6rem 1.2rem; display:flex; align-items:center; justify-content:flex-end; gap:0.75rem; flex-shrink:0;">
-                <span style="font-size:0.8rem; color:var(--text2);">Cotizador independiente. Cuando quieras enviar los
-                    ítems a una orden existente:</span>
+                <div style="flex:1; font-size:0.75rem; color:var(--accent);">⚠️ Nota: El asistente Aria puede controlar
+                    el cotizador si lo solicita por voz o chat.</div>
+                <span style="font-size:0.8rem; color:var(--text2);">Envia repuestos a una orden existente:</span>
                 <button class="btn-add" onclick="openLinkCotizadorModal()"
                     style="font-size:0.8rem; padding:0.4rem 0.9rem;">🔗 Enlazar a ERP</button>
             </div>
-            <!-- The real cotizador loads as iframe — 100% identical to standalone -->
-            <iframe id="cotizador-iframe" src="11 AGN_Cotizador_v3.4_csv_nav_fix4c_navpicker_samefolder(1).html"
-                style="flex:1; border:none; width:100%; height:100%;" title="AGN Cotizador"></iframe>
+            <!-- Layout adjustment: Max width with centered layout to provide "side space" as requested -->
+            <div style="flex:1; overflow:hidden; display:flex; justify-content:center; background: var(--bg);">
+                <div
+                    style="width:100%; max-width:1400px; height:100%; background: #fff; box-shadow: 0 0 50px rgba(0,0,0,0.2); position: relative;">
+                    <!-- The real cotizador loads as iframe — 100% identical to standalone -->
+                    <iframe id="cotizador-iframe" src="11 AGN_Cotizador_v3.4_csv_nav_fix4c_navpicker_samefolder(1).html"
+                        style="width:100%; height:100%; border:none;" title="AGN Cotizador"></iframe>
+                </div>
+            </div>
         </div>
     </div>
+    </div>
+
+    <!-- ── MODAL: Nueva Orden Manual ── -->
+    <div id="manual-order-modal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div
+            style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem; width:600px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <h3 style="margin-bottom:1rem; font-size:1.2rem;">📝 Nueva Orden (Manual)</h3>
+
+            <div class="info-grid"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="field">
+                    <label
+                        style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:0.3rem;">Cliente</label>
+                    <input type="text" id="mo-customer" placeholder="Nombre completo"
+                        style="width:100%; padding:0.6rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                </div>
+                <div class="field">
+                    <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:0.3rem;">Teléfono
+                        (Opcional)</label>
+                    <input type="text" id="mo-phone" placeholder="Ej: 0987654321"
+                        style="width:100%; padding:0.6rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                </div>
+                <div class="field">
+                    <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:0.3rem;">Marca
+                        Vehículo</label>
+                    <input type="text" id="mo-brand" placeholder="Ej: Toyota"
+                        style="width:100%; padding:0.6rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                </div>
+                <div class="field">
+                    <label style="font-size:0.8rem; color:var(--text2); display:block; margin-bottom:0.3rem;">Modelo
+                        Vehículo</label>
+                    <input type="text" id="mo-model" placeholder="Ej: Hilux 2022"
+                        style="width:100%; padding:0.6rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                </div>
+            </div>
+
+            <h4
+                style="margin-bottom:0.5rem; font-size:0.9rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">
+                🔧 Repuestos</h4>
+            <div id="mo-items-list" style="margin-bottom:1.5rem;">
+                <!-- Dinámico -->
+            </div>
+            <button class="btn-sm" onclick="addManualOrderItem()" style="margin-bottom:1.5rem;">+ Agregar Pieza</button>
+
+            <div
+                style="display:flex; gap:0.75rem; justify-content:flex-end; border-top:1px solid var(--border); padding-top: 1rem;">
+                <button class="btn-sm" onclick="closeManualOrderModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveManualOrder()">💾 Crear Orden</button>
+            </div>
+        </div>
     </div>
 
     <!-- ── MODAL: Enlazar Cotizador a Orden ── -->
@@ -2130,11 +2188,23 @@
         }
 
         async function executeAriaAction(action) {
-            console.log('Executing Aria Action:', action);
+            if (!action || !action.type) return;
+            console.log("Aria executing action:", action);
+
             try {
+                // ACTIONS FOR COTIZADOR (Bridged via postMessage)
+                if (['ADD_TO_QUOTE', 'CLEAR_QUOTE', 'SET_QUOTE_CLIENT'].includes(action.type)) {
+                    // Switch to cotizador tab automatically
+                    document.querySelector('.tab-btn[data-page="cotizador"]').click();
+                    const iframe = document.getElementById('cotizador-iframe');
+                    iframe.contentWindow.postMessage({ ariaAction: action }, "*");
+                    return;
+                }
+
                 if (action.type === 'CONFIRM_CLIENT_CREATION') {
-                    // Aria pregunta si crear cliente
-                    addAiMsg('system', `Aria sugiere crear al cliente: **${action.data.full_name}** (${action.data.phone || 'S/N'})`);
+                    // This handled by Aria logic in backend just asks the user.
+                    // If we reach here, we just need to wait for next user msg.
+                    return;
                 } else if (action.type === 'CREATE_ORDER') {
                     // Si el cliente no existe y Aria no ha confirmado, esta lógica suele ir en admin-chat.js
                     // Pero aquí ejecutamos la creación real si llega el comando.
@@ -2146,14 +2216,14 @@
                     });
                     if (res.ok) {
                         const result = await res.json();
-                        addAiMsg('system', `✅ Orden #${result.readable_id} creada con éxito.`);
+                        addAiMsg('system', `✅ Orden creada con éxito.`);
                         const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
                         allOrders = await ordersRes.json();
                         renderOrders(allOrders);
                         updateStats(allOrders);
                     } else {
                         const err = await res.json();
-                        addAiMsg('system', `❌ Error: ${err.error || 'No se pudo crear la orden'}`);
+                        addAiMsg('system', `❌ Error: ${err.message || 'No se pudo crear la orden'}`);
                     }
                 } else if (action.type === 'ADD_ITEMS_TO_ORDER') {
                     const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
@@ -2171,7 +2241,68 @@
                     } else {
                         addAiMsg('system', `❌ Error al agregar repuestos.`);
                     }
+                } else if (action.type === 'UPDATE_FIELDS') {
+                    // Mapped from backend 'UPDATE_FIELDS' or 'UPDATE_STATUS'
+                    const orderId = action.data.order_id;
+                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                    if (found) {
+                        // If it's only status
+                        if (action.data.fields && action.data.fields.status && Object.keys(action.data.fields).length === 1) {
+                            const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                                body: JSON.stringify({ orderId: found.id, newStatus: action.data.fields.status }),
+                                timeout: 10000
+                            });
+                            if (res.ok) {
+                                showToast("Estado actualizado");
+                                const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                                allOrders = await ordersRes.json();
+                                renderOrders(allOrders);
+                                if (selectedOrder?.id === found.id) renderDetail(allOrders.find(o => o.id === found.id));
+                            } else {
+                                addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
+                            }
+                        } else {
+                            // Combinar datos existentes con los nuevos campos de Aria
+                            const updateData = {
+                                orderId: found.id,
+                                part_name: action.data.fields.part_name || found.part_name,
+                                part_number: action.data.fields.part_number || found.part_number,
+                                vin: action.data.fields.vin || found.vin,
+                                vehicle_brand: action.data.fields.vehicle_brand || found.vehicle_brand,
+                                vehicle_model: action.data.fields.vehicle_model || found.vehicle_model,
+                                vehicle_year: action.data.fields.vehicle_year || found.vehicle_year,
+                                supplier_url: action.data.fields.supplier_url || found.supplier_url,
+                                tracking_number: action.data.fields.tracking_number || found.tracking_number,
+                                status: action.data.fields.status || found.status,
+                                cost_fob: action.data.fields.cost_fob !== undefined ? action.data.fields.cost_fob : found.cost_fob,
+                                sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price
+                            };
+
+                            const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                                body: JSON.stringify(updateData),
+                                timeout: 10000
+                            });
+
+                            if (res.ok) {
+                                // Actualizar localmente
+                                Object.assign(found, updateData);
+                                renderOrders(allOrders);
+                                updateStats(allOrders);
+                                addAiMsg('system', `✅ Orden [#${found.readable_id}] actualizada correctamente.`);
+                                if (selectedOrder?.id === found.id) renderDetail(found);
+                            } else {
+                                addAiMsg('system', `❌ Error al actualizar los campos de [#${found.readable_id}].`);
+                            }
+                        }
+                    } else {
+                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
+                    }
                 } else if (action.type === 'UPDATE_STATUS') {
+                    // Legacy support for the action name, now handled by UPDATE_FIELDS if only status is present
                     const orderId = action.data.order_id;
                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
 
@@ -2186,7 +2317,7 @@
                             found.status = action.data.new_status;
                             renderOrders(allOrders);
                             updateStats(allOrders);
-                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                            addAiMsg('system', `✅ Estado actualizado.`);
                             if (selectedOrder?.id === found.id) renderDetail(found);
                         } else {
                             addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
@@ -2489,12 +2620,94 @@
             window.speechSynthesis.speak(utt);
         }
 
-        document.getElementById('btn-new-order').addEventListener('click', () => {
+        document.getElementById('btn-new-order').addEventListener('click', openManualOrderModal);
 
-            ariaInput.focus();
-            ariaInput.placeholder = 'Ej: "Crea orden para María López, Hyundai Elantra 2019, pastillas de freno, costo $20, shipping $25, venta $120"';
-            showToast('💬 Dile a Aria los datos de la nueva orden →', 'info');
-        });
+        // --- MANUAL ORDER SYSTEM ---
+
+        window.openManualOrderModal = () => {
+            document.getElementById('mo-items-list').innerHTML = '';
+            document.getElementById('mo-customer').value = '';
+            document.getElementById('mo-phone').value = '';
+            document.getElementById('mo-brand').value = '';
+            document.getElementById('mo-model').value = '';
+            addManualOrderItem(); // Add first empty item
+            document.getElementById('manual-order-modal').style.display = 'flex';
+        };
+
+        window.closeManualOrderModal = () => {
+            document.getElementById('manual-order-modal').style.display = 'none';
+        };
+
+        window.addManualOrderItem = () => {
+            const container = document.getElementById('mo-items-list');
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:1rem; align-items:flex-end; background:var(--bg); padding:0.8rem; border-radius:8px;';
+            row.className = 'mo-item-row';
+            row.innerHTML = `
+                <div style="flex:2">
+                    <label style="font-size:0.65rem; color:var(--text2); display:block;">Pieza</label>
+                    <input type="text" class="i-name" placeholder="Ej: Pastillas" style="width:100%; padding:0.4rem; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:0.8rem; border-radius:4px;">
+                </div>
+                <div style="width:50px">
+                    <label style="font-size:0.65rem; color:var(--text2); display:block;">Cant</label>
+                    <input type="number" class="i-qty" value="1" style="width:100%; padding:0.4rem; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:0.8rem; border-radius:4px;">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:0.65rem; color:var(--text2); display:block;">Venta $</label>
+                    <input type="number" class="i-price" value="0" style="width:100%; padding:0.4rem; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:0.8rem; border-radius:4px;">
+                </div>
+                <button onclick="this.parentElement.remove()" style="color:var(--red); background:none; border:none; padding:0.5rem; cursor:pointer;">✖</button>
+            `;
+            container.appendChild(row);
+        };
+
+        window.saveManualOrder = async () => {
+            const customer = document.getElementById('mo-customer').value.trim();
+            const brand = document.getElementById('mo-brand').value.trim();
+            const model = document.getElementById('mo-model').value.trim();
+            const phone = document.getElementById('mo-phone').value.trim();
+
+            if (!customer || !brand) return alert("Cliente y Marca son obligatorios");
+
+            const rows = document.querySelectorAll('.mo-item-row');
+            const items = Array.from(rows).map(r => ({
+                part_name: r.querySelector('.i-name').value || 'Repuesto Genérico',
+                quantity: parseInt(r.querySelector('.i-qty').value) || 1,
+                sale_price: parseFloat(r.querySelector('.i-price').value) || 0,
+                cost_fob: 0
+            }));
+
+            try {
+                const res = await fetch(`${API}/api/create-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                    body: JSON.stringify({
+                        customer_name: customer,
+                        customer_phone: phone,
+                        vehicle_brand: brand,
+                        vehicle_model: model,
+                        items: items
+                    })
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    showToast("✅ Orden creada correctamente (Manual)");
+                    closeManualOrderModal();
+                    // Refrescar lista completa
+                    const r = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                    allOrders = await r.json();
+                    renderOrders(allOrders);
+                    updateStats(allOrders);
+                } else {
+                    const errorData = await res.json();
+                    alert("Error al crear: " + (errorData.message || errorData.error || "Error desconocido"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión al servidor");
+            }
+        };
     </script>
 </body>
 
