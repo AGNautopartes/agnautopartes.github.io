@@ -18,14 +18,14 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 -- 2. Migrate existing data from orders to order_items
 -- We assume current cost_fob in financials applies to the first item created
-    INSERT INTO order_items (order_id, part_name, cost_fob, sale_price, vendor_name, supplier_url)
-    SELECT 
-        o.id, 
-        o.part_name, 
-        COALESCE(f.cost_fob, 0),
-        COALESCE(((f.cost_fob + f.shipping_cost + f.taxes + f.other_expenses) * (1 + f.margin_percent / 100)), 0),
-        o.vendor_name, 
-        o.supplier_url
+INSERT INTO order_items (order_id, part_name, cost_fob, sale_price, vendor_name, supplier_url)
+SELECT 
+    o.id, 
+    o.part_name, 
+    COALESCE(f.cost_fob, 0),
+    COALESCE(((f.cost_fob + f.shipping_cost + f.taxes + f.other_expenses) * (1 + f.margin_percent / 100)), 0),
+    o.vendor_name, 
+    o.supplier_url
 FROM orders o
 LEFT JOIN financials f ON o.id = f.order_id;
 
