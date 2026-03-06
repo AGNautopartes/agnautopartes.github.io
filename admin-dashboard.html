@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — AGN Autopartes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin-shared.css">
+    <style>
+        .ai-sidebar {
+            width: var(--sidebar-w);
+            border-left: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .ai-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .aria-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7B2FBE, #4F8EF7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <nav>
+            <div class="nav-brand"><span>AGN</span> ERP</div>
+            <div class="nav-tabs">
+                <a href="admin.html" class="tab-btn" data-page="orders">📋 Órdenes</a>
+                <a href="admin-dashboard.html" class="tab-btn active" data-page="dashboard">📊 Dashboard</a>
+                <a href="admin-reportes.html" class="tab-btn" data-page="reports">📈 Reportes</a>
+            </div>
+            <div class="nav-right">
+                <span style="font-size:0.8rem;color:var(--text2)" id="nav-user"></span>
+                <button class="btn-sm" id="btn-logout">Salir</button>
+            </div>
+        </nav>
+
+        <div class="app-body">
+            <div class="page active" id="page-dashboard">
+                <div style="padding:2rem;">
+                    <h2 style="margin-bottom:1.5rem;">Resumen Ejecutivo</h2>
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <h3>Ordenes Activas</h3>
+                            <div class="kpi-val" id="kpi-active">...</div>
+                        </div>
+                        <div class="kpi-card">
+                            <h3>Entregadas (Total)</h3>
+                            <div class="kpi-val" id="kpi-delivered">...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aria Chat Sidebar -->
+            <div class="ai-sidebar">
+                <div class="ai-header">
+                    <div class="aria-avatar">A</div>
+                    <div>
+                        <div class="ai-title">Aria AI</div>
+                        <div class="ai-subtitle">Asistente Inteligente</div>
+                    </div>
+                </div>
+                <div class="ai-messages" id="ai-messages"></div>
+                <div class="ai-input-area">
+                    <div class="ai-input-wrapper">
+                        <textarea class="ai-input" id="aria-input" placeholder="Pregúntame algo..." rows="1"></textarea>
+                        <button class="mic-btn" id="aria-mic">🎙️</button>
+                        <button class="speaker-btn" id="aria-mute">🔊</button>
+                    </div>
+                    <button class="ai-send" id="aria-send">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-core.js"></script>
+    <script src="admin-chat.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await window.AGN_CORE.fetchWithTimeout('/api/get-all-orders', {
+                headers: { 'x-admin-password': window.AGN_CORE.adminPass }
+            });
+            if (res.ok) {
+                const orders = await res.json();
+                document.getElementById('kpi-active').textContent = orders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
+                document.getElementById('kpi-delivered').textContent = orders.filter(o => o.status === 'Entregado').length;
+            }
+        });
+    </script>
+</body>
+
+</html>

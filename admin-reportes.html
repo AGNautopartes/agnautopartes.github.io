@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes — AGN Autopartes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin-shared.css">
+    <style>
+        .reports-container {
+            padding: 2rem;
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .reports-filters {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .filter-group label {
+            font-size: 0.7rem;
+            color: var(--text2);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .reports-table-wrapper {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .reports-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .reports-table th {
+            background: var(--surface2);
+            padding: 1rem;
+            text-align: left;
+            color: var(--text2);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .reports-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <nav>
+            <div class="nav-brand"><span>AGN</span> ERP</div>
+            <div class="nav-tabs">
+                <a href="admin.html" class="tab-btn" data-page="orders">📋 Órdenes</a>
+                <a href="admin-dashboard.html" class="tab-btn" data-page="dashboard">📊 Dashboard</a>
+                <a href="admin-reportes.html" class="tab-btn active" data-page="reports">📈 Reportes</a>
+            </div>
+            <div class="nav-right">
+                <span id="nav-user" style="font-size:0.8rem;color:var(--text2)"></span>
+                <button class="btn-sm" id="btn-logout">Salir</button>
+            </div>
+        </nav>
+
+        <div class="app-body">
+            <div class="reports-container">
+                <div class="reports-filters">
+                    <div class="filter-group"><label>Desde</label><input type="date" id="rep-date-from"></div>
+                    <div class="filter-group"><label>Hasta</label><input type="date" id="rep-date-to"></div>
+                    <div class="filter-group"><label>Marca</label><input type="text" id="rep-brand"
+                            placeholder="Toyota..."></div>
+                    <div class="filter-group"><label>Estado</label><select id="rep-status">
+                            <option value="">Todos</option>
+                            <option>Solicitado</option>
+                            <option>Comprado</option>
+                            <option>Entregado</option>
+                        </select></div>
+                    <div class="filter-group" style="justify-content: flex-end;"><button class="btn-primary"
+                            id="btn-export-full">XLSX / CSV</button></div>
+                </div>
+
+                <div class="reports-table-wrapper">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Vehículo</th>
+                                <th>Pieza</th>
+                                <th>Estado</th>
+                                <th>Venta</th>
+                                <th>Ganancia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="admin-core.js"></script>
+    <script>
+        // Lógica de reportes movida aquí
+        let allOrders = [];
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await window.AGN_CORE.fetchWithTimeout('/api/get-all-orders', {
+                headers: { 'x-admin-password': window.AGN_CORE.adminPass }
+            });
+            if (res.ok) {
+                allOrders = await res.json();
+                renderReports();
+            }
+        });
+
+        function renderReports() {
+            const tbody = document.getElementById('reports-tbody');
+            tbody.innerHTML = allOrders.map(o => `
+                <tr>
+                    <td>#${o.readable_id}</td>
+                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                    <td>${o.customers?.full_name || '—'}</td>
+                    <td>${o.vehicle_brand || ''}</td>
+                    <td>${o.part_name}</td>
+                    <td>${o.status}</td>
+                    <td>$${o.sale_price || 0}</td>
+                    <td>$${(o.sale_price - (o.cost_fob || 0)).toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>
