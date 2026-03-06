@@ -11,14 +11,14 @@ export default async function handler(req, res) {
         orderId,
         vin, vehicle_brand, vehicle_model, vehicle_year,
         tracking_number, status,
-        items, // Array [{ id, part_name, part_number, quantity, cost_fob, sale_price, vendor_name, supplier_url, image_data }]
-        itemsToDelete // Array of IDs to remove
+        costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
+        margen_markdown, precio_venta, comision_vendedor,
+        items_json // Array JSONB
     } = req.body;
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
     try {
-        // 1. Actualizar tabla orders (solo campos proveídos)
         const updateData = {};
         if (vin !== undefined) updateData.vin = vin;
         if (vehicle_brand !== undefined) updateData.vehicle_brand = vehicle_brand;
@@ -26,6 +26,18 @@ export default async function handler(req, res) {
         if (vehicle_year !== undefined) updateData.vehicle_year = vehicle_year;
         if (tracking_number !== undefined) updateData.tracking_number = tracking_number;
         if (status !== undefined) updateData.status = status;
+
+        // Campos financieros
+        if (costo_fob !== undefined) updateData.costo_fob = parseFloat(costo_fob) || 0;
+        if (shipping_logistica !== undefined) updateData.shipping_logistica = parseFloat(shipping_logistica) || 0;
+        if (shipping_ecuador !== undefined) updateData.shipping_ecuador = parseFloat(shipping_ecuador) || 0;
+        if (ad_valorem !== undefined) updateData.ad_valorem = parseFloat(ad_valorem) || 0;
+        if (margen_markdown !== undefined) updateData.margen_markdown = parseFloat(margen_markdown) || 0;
+        if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta) || 0;
+        if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
+
+        if (items_json !== undefined) updateData.items_json = items_json;
+
         updateData.updated_at = new Date().toISOString();
 
         const { error: orderErr } = await supabase
@@ -35,38 +47,7 @@ export default async function handler(req, res) {
 
         if (orderErr) throw orderErr;
 
-        // 2. Gestionar items (Eliminar solicitados)
-        if (itemsToDelete && Array.isArray(itemsToDelete) && itemsToDelete.length > 0) {
-            const { error: delErr } = await supabase
-                .from('order_items')
-                .delete()
-                .in('id', itemsToDelete);
-            if (delErr) throw delErr;
-        }
-
-        // 3. Upsert de items recibidos
-        if (items && Array.isArray(items) && items.length > 0) {
-            const itemsToUpsert = items.map(item => ({
-                id: item.id || undefined, // Si no hay ID, Supabase genera uno (INSERT)
-                order_id: orderId,
-                part_name: item.part_name,
-                part_number: item.part_number || '',
-                quantity: item.quantity || 1,
-                cost_fob: parseFloat(item.cost_fob) || 0,
-                sale_price: parseFloat(item.sale_price) || 0,
-                vendor_name: item.vendor_name || '',
-                supplier_url: item.supplier_url || '',
-                image_data: item.image_data || ''
-            }));
-
-            const { error: upsertErr } = await supabase
-                .from('order_items')
-                .upsert(itemsToUpsert);
-
-            if (upsertErr) throw upsertErr;
-        }
-
-        return res.status(200).json({ message: 'Orden e ítems actualizados correctamente' });
+        return res.status(200).json({ message: 'Orden actualizada correctamente' });
     } catch (error) {
         console.error('Error updating order:', error);
         return res.status(500).json({ message: 'Error al actualizar', error: error.message });
