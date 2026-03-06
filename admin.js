@@ -120,7 +120,7 @@ function renderDetail(order) {
 async function updateStatus(orderId) {
     const newStatus = document.getElementById('detail-status-select').value;
     try {
-        const res = await window.AGN_CORE.fetchWithTimeout('/api/update-order-status', {
+        const res = await window.AGN_CORE.fetchWithTimeout('api/update-order-status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
