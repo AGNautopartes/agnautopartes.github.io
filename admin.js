@@ -14,9 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOrders();
 
     // Setup UI listeners
-    document.getElementById('search-input')?.addEventListener('input', debounce(renderOrders, 300));
-    document.getElementById('status-filter')?.addEventListener('change', renderOrders);
-    document.getElementById('btn-new-order')?.onclick = openManualOrderModal;
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.addEventListener('input', debounce(renderOrders, 300));
+
+    const statusFilter = document.getElementById('status-filter');
+    if (statusFilter) statusFilter.addEventListener('change', renderOrders);
+
+    const btnNewOrder = document.getElementById('btn-new-order');
+    if (btnNewOrder) btnNewOrder.onclick = openManualOrderModal;
 });
 
 async function loadOrders() {
@@ -43,12 +48,15 @@ function renderOrders() {
     const container = document.getElementById('orders-list');
     if (!container) return;
 
-    const query = document.getElementById('search-input').value.toLowerCase();
-    const filter = document.getElementById('status-filter').value;
+    const query = (document.getElementById('search-input')?.value || '').toLowerCase();
+    const filter = document.getElementById('status-filter')?.value || '';
+
+    console.log("Rendering orders. Total:", allOrders.length, " Filter:", filter, " Query:", query);
 
     const visible = allOrders.filter(o => {
+        const fullName = o.customers?.full_name || o.customer_name || '';
         const matchSearch = !query ||
-            (o.customers?.full_name || '').toLowerCase().includes(query) ||
+            fullName.toLowerCase().includes(query) ||
             (o.part_name || '').toLowerCase().includes(query) ||
             (o.readable_id || '').toLowerCase().includes(query);
         const matchFilter = !filter || o.status === filter;
@@ -56,20 +64,20 @@ function renderOrders() {
     });
 
     if (visible.length === 0) {
-        container.innerHTML = '<div class="empty-state">No se encontraron órdenes.</div>';
+        container.innerHTML = `<div class="empty-state">No hay órdenes que coincidan (${allOrders.length} totales).</div>`;
         return;
     }
 
     container.innerHTML = visible.map(o => `
-        <div class="order-card ${window.selectedOrder?.id === o.id ? 'selected' : ''}" onclick="selectOrder('${o.id}')">
-            <div>
-                <div class="order-client">${o.customers?.full_name || 'Sin Cliente'}</div>
-                <div class="order-part">${o.part_name}</div>
-                <div class="order-vehicle">${o.vehicle_brand || ''} ${o.vehicle_model || ''} ${o.vehicle_year || ''}</div>
+        <div class="order-card ${(window.selectedOrder && window.selectedOrder.id === o.id) ? 'selected' : ''}" onclick="selectOrder('${o.id}')">
+            <div style="overflow: hidden;">
+                <div class="order-client" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${o.customers?.full_name || o.customer_name || 'Sin Cliente'}</div>
+                <div class="order-part" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${o.part_name || 'Sin nombre de pieza'}</div>
+                <div class="order-vehicle" style="font-size: 0.75rem; color: var(--text2);">${o.vehicle_brand || ''} ${o.vehicle_model || ''}</div>
             </div>
             <div class="order-meta">
-                <span class="sbadge s-${o.status.toLowerCase().replace(/\s+/g, '-')}">${o.status}</span>
-                <span class="order-date">${new Date(o.created_at).toLocaleDateString()}</span>
+                <span class="sbadge s-${(o.status || 'solicitado').toLowerCase().replace(/\s+/g, '-')}">${o.status || 'Solicitado'}</span>
+                <span class="order-date">${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</span>
             </div>
         </div>
     `).join('');
@@ -86,12 +94,15 @@ function selectOrder(id) {
 function renderDetail(order) {
     const container = document.getElementById('detail-content');
     const panel = document.getElementById('detail-panel');
+    const quoteContainer = document.getElementById('quote-container');
+
     panel.classList.remove('empty');
+    if (quoteContainer) quoteContainer.style.display = 'block';
 
     container.innerHTML = `
         <div class="detail-header">
             <h3>Orden #${order.readable_id}</h3>
-            <div class="detail-sub">${order.customers?.full_name}</div>
+            <div class="detail-sub">${order.customers?.full_name || 'Sin nombre'}</div>
         </div>
         <div class="detail-body">
             <div class="detail-section">
@@ -106,11 +117,24 @@ function renderDetail(order) {
             <div class="detail-section">
                 <h4>Estado de la Orden</h4>
                 <div class="status-changer">
-                    <select id="detail-status-select">
+                    <select id="detail-status-select" style="padding:0.5rem; background:var(--surface2); color:white; border:1px solid var(--border); border-radius:8px;">
                         ${['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1', 'Tránsito 2', 'En Aduana', 'Entregado', 'Cancelado']
             .map(s => `<option ${order.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
-                    <button class="btn-action btn-blue" onclick="updateStatus('${order.id}')">Actualizar</button>
+                    <button class="btn-primary" style="padding:0.5rem 1rem; font-size:0.8rem;" onclick="updateStatus('${order.id}')">Actualizar</button>
+                </div>
+            </div>
+            <!-- Lista de Repuestos -->
+            <div class="detail-section">
+                <h4>Repuestos</h4>
+                <div id="detail-items-list" style="font-size:0.85rem;">
+                    ${(order.order_items || []).map(i => `
+                        <div style="padding:0.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">
+                            <span>${i.part_name} x ${i.quantity}</span>
+                            <span style="color:var(--text2)">$${i.price || 0}</span>
+                        </div>
+                    `).join('')}
+                    ${(!order.order_items || order.order_items.length === 0) ? '<div style="color:var(--text2); padding:0.5rem;">No hay ítems registrados.</div>' : ''}
                 </div>
             </div>
         </div>
