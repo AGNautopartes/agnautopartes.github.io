@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     }
 
     const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword !== process.env.PASSWORD_ADMIN) {
+    const { data: user } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+    if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
 

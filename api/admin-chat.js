@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     }
 
     const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword !== process.env.PASSWORD_ADMIN) {
+    const { data: user } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+    if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
 
@@ -17,37 +18,46 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Clave de API de Google no configurada.' });
     }
 
-    const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
-
-    const SYSTEM_PROMPT = `Eres Aria, la asistente inteligente de AGN AutoPartes ERP.
-Tu objetivo es ayudar al administrador a gestionar órdenes, clientes y notas en la base de datos financiera.
-
-ACCIONES ERP DISPONIBLES (JSON final):
-- BUSCAR ORDEN: [ACTION:{"type":"SEARCH_ORDER","data":{"query":"..."}}]
-- CREAR ORDEN: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","vehicle_brand":"...","vehicle_model":"...","items":[]}}] (Puedes crear órdenes vacías con items: []).
-- AGREGAR A ORDEN: [ACTION:{"type":"ADD_ITEMS_TO_ORDER","data":{"order_readable_id":"ORD-X","items":[{"part_name":"...","quantity":1,"cost_fob":0,"sale_price":0}]}}]
-- ACTUALIZAR ESTADO: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"status":"..."}}}]
-- NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
-
-REGLAS DE ORO:
-1. Siempre devuelve la acción dentro de [ACTION:{...}]. NO uses bloques de markdown (\`\`\`json).
-2. Si el cliente no existe para crear una orden, pregunta ANTES de crearla.
-3. El administrador puede pedirte crear una orden inicial sin repuestos. Es válido y normal.
-4. ESTRICTA SEPARACIÓN: Tú gestionas ÓRDENES DEL ERP. No tienes control sobre el "Cotizador". Si el usuario menciona cotizaciones que no son del ERP, son gestiones manuales de él. NUNCA sugieras crear una Orden solo para guardar una cotización.
-`.trim();
-
-    // Contexto de órdenes recientes para Aria
-    const { data: recentOrders } = await supabase
+    // Obtener contexto de órdenes reales para que Aria "recuerde"
+    const { data: existingOrders } = await supabase
         .from('orders')
-        .select('readable_id, status, vehicle_brand, vehicle_model, customers(full_name)')
+        .select('readable_id, part_name, status, customers(full_name)')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
-    const ordersContext = (recentOrders || []).map(o =>
-        `[${o.readable_id}] ${o.customers?.full_name}: ${o.vehicle_brand} ${o.vehicle_model || ''} (${o.status})`
+    const ordersContext = (existingOrders || []).map(o =>
+        `[${o.readable_id}] Cliente: ${o.customers?.full_name}, Pieza: ${o.part_name}, Estado: ${o.status}`
     ).join('\n');
 
-    const fullPrompt = `${SYSTEM_PROMPT}\n\nCONTEXTO RECIENTE:\n${ordersContext}`;
+    const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const SYSTEM_PROMPT = `
+Eres "Aria", la asistente IA interna de AGN Autopartes ERP.
+HOY ES: ${today}.
+
+CONTEXTO DE ÓRDENES EXISTENTES (Usa esto para ACTUALIZAR en lugar de duplicar):
+${ordersContext}
+
+CAPACIDADES:
+- Crear (CREATE_ORDER), Borrar (DELETE_ORDER), Anotar (ADD_NOTE).
+- Actualizar: Puedes actualizar el estado (UPDATE_STATUS) o CUALQUIER campo de la orden como costos, precios de venta, marca, modelo, etc. (UPDATE_FIELDS).
+
+REGLAS CRÍTICAS:
+1. RESPUESTAS CORTAS: Máximo 2 líneas de texto. Sé directa.
+2. NO DUPLICAR: Si te piden algo para un cliente o pieza que ya ves en el CONTEXTO, usa acciones de actualización.
+3. TELÉFONO OBLIGATORIO: Para órdenes nuevas, DEBES pedir el teléfono si no lo tienes.
+4. BORRADO: Si piden "borra la orden X", usa DELETE_ORDER.
+5. FORMATO: Siempre responde con el JSON al final si vas a actuar.
+
+ACCIONES (JSON):
+- CREAR: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","customer_phone":"...","vehicle_brand":"...","vehicle_model":"...","vehicle_year":"...","part_name":"...","part_number":"...","status":"Solicitado","cost_fob":0,"sale_price":0}}]
+- ESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
+- CAMPOS (Costos, Precios, Info): [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"cost_fob":45,"sale_price":200,"part_name":"...","vehicle_brand":"..."}}}]
+- BORRAR: [ACTION:{"type":"DELETE_ORDER","data":{"order_id":"ORD-X"}}]
+- NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
+
+ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
+`.trim();
 
     const formattedHistory = conversationHistory.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
@@ -55,8 +65,10 @@ REGLAS DE ORO:
     }));
 
     formattedHistory.push({ role: 'user', parts: [{ text: message }] });
-    formattedHistory.unshift({ role: 'user', parts: [{ text: fullPrompt }] });
-    formattedHistory.splice(1, 0, { role: 'model', parts: [{ text: 'Entendido. ¿En qué le puedo ayudar?' }] });
+
+    // Forzar el system prompt actualizado en cada envío para refrescar la memoria de órdenes
+    formattedHistory.unshift({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
+    formattedHistory.splice(1, 0, { role: 'model', parts: [{ text: 'Entendido. Contexto actualizado. ¿Qué desea hacer?' }] });
 
     try {
         const geminiRes = await fetch(
@@ -68,68 +80,33 @@ REGLAS DE ORO:
             }
         );
 
-        if (!geminiRes.ok) throw new Error('Error Gemini');
-        const rData = await geminiRes.json();
-        const responseText = rData.candidates[0].content.parts[0].text;
+        if (!geminiRes.ok) throw new Error('Error en la API de Gemini');
 
+        const data = await geminiRes.json();
+        const responseText = data.candidates[0].content.parts[0].text;
+
+        const actionMatch = responseText.match(/\[ACTION:(.*?)\]/s);
         let action = null;
         let displayText = responseText;
 
-        // --- PARSER AGRESIVO ---
-        function extractJson(text) {
-            const tagMatch = text.match(/\[ACTION:\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*\]/);
-            if (tagMatch) return { raw: tagMatch[0], json: tagMatch[1] };
-            const mdMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```/i);
-            if (mdMatch) return { raw: mdMatch[0], json: mdMatch[1] };
-            const looseMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-            if (looseMatch) return { raw: looseMatch[0], json: looseMatch[1] };
-            return null;
-        }
-
-        const found = extractJson(responseText);
-        if (found) {
+        if (actionMatch) {
             try {
-                let parsed = JSON.parse(found.json);
-                action = Array.isArray(parsed) ? parsed[0] : parsed;
-                // Clean the displayText completely from markdown blocks to avoid leaking backticks
-                displayText = responseText
-                    .replace(found.raw, '')
-                    .replace(/```(?:json)?[\s\S]*?```/ig, '')
-                    .trim();
-            } catch (e) { console.warn("JSON error:", e); }
+                action = JSON.parse(actionMatch[1]);
+                displayText = responseText.replace(/\[ACTION:.*?\]/s, '').trim();
+            } catch (e) { console.error('JSON Error:', e); }
         }
 
-        // --- INTERCEPTORES ---
-        if (action) {
-            if (action.type === 'SEARCH_ORDER') {
-                const { data: sr } = await supabase.from('orders').select('readable_id, status, customers(full_name)').or(`vehicle_brand.ilike.%${action.data.query}%,vehicle_model.ilike.%${action.data.query}%,customers.full_name.ilike.%${action.data.query}%`).limit(5);
-                displayText = sr?.length ? `Encontré: ${sr.map(r => `[${r.readable_id}] ${r.customers?.full_name}`).join(', ')}.` : `No encontré órdenes para "${action.data.query}".`;
-                action = null;
-            } else if (action.type === 'CREATE_ORDER') {
-                const { data: cust } = await supabase.from('customers').select('id').ilike('full_name', `%${action.data.customer_name}%`).maybeSingle();
-                if (!cust) {
-                    const lastMsgSnippet = message.toLowerCase();
-                    const isConfirm = ['si', 'sí', 'dale', 'procede', 'crealo', 'ok'].some(w => lastMsgSnippet.includes(w));
-                    if (!isConfirm) {
-                        displayText = `El cliente **${action.data.customer_name}** no existe. ¿Deseas que lo cree?`;
-                        action = null;
-                    }
-                }
-            } else if (action.type === 'ADD_ITEMS_TO_ORDER') {
-                const rid = action.data.order_readable_id.toUpperCase().replace('ORD-', '');
-                const { data: order } = await supabase.from('orders').select('id, readable_id').eq('readable_id', 'ORD-' + rid).maybeSingle();
-                if (order) {
-                    const items = action.data.items.map(i => ({ order_id: order.id, part_name: i.part_name, quantity: i.quantity || 1, cost_fob: i.cost_fob || 0, sale_price: i.sale_price || 0 }));
-                    await supabase.from('order_items').insert(items);
-                    displayText = `✅ Repuestos agregados a la orden #${order.readable_id}.`;
-                    action = null;
-                }
-            }
+        if (actionMatch && !displayText) {
+            displayText = "De acuerdo, procedo con esa acción.";
+        } else if (!displayText && !action) {
+            displayText = "Lo siento, no pude procesar esa solicitud.";
         }
 
-        return res.status(200).json({ response: displayText || 'Procesado.', action });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.message });
+        return res.status(200).json({ response: displayText, action: action });
+
+
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
     }
 }
+

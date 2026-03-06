@@ -6,8 +6,21 @@ export default async function handler(req, res) {
     }
 
     const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword !== process.env.PASSWORD_ADMIN) {
-        return res.status(401).json({ message: 'No autorizado' });
+
+    // 1. Intentar validar contra la tabla admin_users de Supabase
+    const { data: user, error: authError } = await supabase
+        .from('admin_users')
+        .select('username')
+        .eq('password_hash', adminPassword)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+    if (!user) {
+        // Fallback a variable de entorno para no romper accesos existentes durante la migración
+        if (adminPassword !== process.env.PASSWORD_ADMIN) {
+            return res.status(401).json({ message: 'No autorizado' });
+        }
     }
 
     try {

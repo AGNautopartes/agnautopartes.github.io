@@ -4,7 +4,8 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ message: 'Método no permitido' });
 
     const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword !== process.env.PASSWORD_ADMIN) return res.status(401).json({ message: 'No autorizado' });
+    const { data: user } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+    if (!user && adminPassword !== process.env.PASSWORD_ADMIN) return res.status(401).json({ message: 'No autorizado' });
 
     const { orderId } = req.query;
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
