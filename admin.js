@@ -138,6 +138,24 @@ async function updateStatus(orderId) {
     }
 }
 
+async function addNote(orderId, note) {
+    try {
+        const res = await window.AGN_CORE.fetchWithTimeout('api/add-note', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': window.AGN_CORE.adminPass
+            },
+            body: JSON.stringify({ orderId, content: note, author: `Aria (via ${window.AGN_CORE.adminName})` })
+        });
+        if (res.ok) {
+            window.AGN_CORE.showToast("Nota agregada");
+        }
+    } catch (err) {
+        window.AGN_CORE.showToast("Error al agregar nota", "error");
+    }
+}
+
 // Registro de acciones para Aria (Sección 5 .clippy.md)
 window.AGN_ERP_ACTIONS = {
     UPDATE_STATUS: async (data) => {
