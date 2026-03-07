@@ -21,40 +21,41 @@ export default async function handler(req, res) {
     // Obtener contexto de órdenes reales para que Aria "recuerde"
     const { data: existingOrders } = await supabase
         .from('orders')
-        .select('readable_id, part_name, status, customers(full_name)')
+        .select('readable_id, part_name, status, vehicle_brand, vehicle_model, vehicle_year, items_json, costo_fob, customers(full_name)')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(25);
 
-    const ordersContext = (existingOrders || []).map(o =>
-        `[${o.readable_id}] Cliente: ${o.customers?.full_name}, Pieza: ${o.part_name}, Estado: ${o.status}`
-    ).join('\n');
+    const ordersContext = (existingOrders || []).map(o => {
+        const vBrand = o.vehicle_brand || 'N/A';
+        const vModel = o.vehicle_model || 'N/A';
+        const vYear = o.vehicle_year || 'N/A';
+        const itemsList = (o.items_json && Array.isArray(o.items_json) && o.items_json.length > 0)
+            ? o.items_json.map(i => `${i.part_name} (#${i.part_number || 'S/N'})`).join('; ')
+            : 'Ninguno';
+
+        return `- [${o.readable_id}] | CLIENTE: ${o.customers?.full_name} | CARRO: ${vBrand} ${vModel} ${vYear} | PIEZA PRINCIPAL: ${o.part_name} | DESGLOSE DB: [${itemsList}] | STATUS: ${o.status}`;
+    }).join('\n');
 
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-Eres "Aria", la asistente IA interna de AGN Autopartes ERP.
-HOY ES: ${today}.
+Eres "Aria", la asistente IA del ERP AGN Autopartes.
+FECHA: ${today}.
 
-CONTEXTO DE ÓRDENES EXISTENTES (Usa esto para ACTUALIZAR en lugar de duplicar):
+REGLA DE ORO: TIENES MEMORIA TOTAL. 
+Antes de decir "No tengo esa información", REVISA la lista de abajo obligatoriamente. Si el usuario te habla de Diego Donoso o #ORD-16, YA SABES que su carro y repuestos están en esta lista. Solo pide datos si la orden NO existe.
+
+LISTA DE ÓRDENES REALES (Contexto):
 ${ordersContext}
 
-CAPACIDADES:
-- Crear (CREATE_ORDER), Borrar (DELETE_ORDER), Anotar (ADD_NOTE).
-- Actualizar: Puedes actualizar el estado (UPDATE_STATUS) o CUALQUIER campo de la orden como costos, precios de venta, marca, modelo, etc. (UPDATE_FIELDS).
-
-REGLAS CRÍTICAS:
-1. RESPUESTAS CORTAS: Máximo 2 líneas de texto. Sé directa.
-2. NO DUPLICAR: Si te piden algo para un cliente o pieza que ya ves en el CONTEXTO, usa acciones de actualización.
-3. TELÉFONO OBLIGATORIO: Para órdenes nuevas, DEBES pedir el teléfono si no lo tienes.
-4. BORRADO: Si piden "borra la orden X", usa DELETE_ORDER.
-5. FORMATO: Siempre responde con el JSON al final si vas a actuar.
-
-ACCIONES (JSON):
-- CREAR: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"...","customer_phone":"...","vehicle_brand":"...","vehicle_model":"...","vehicle_year":"...","part_name":"...","part_number":"...","status":"Solicitado","cost_fob":0,"sale_price":0}}]
-- ESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
-- CAMPOS (Costos, Precios, Info): [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"cost_fob":45,"sale_price":200,"part_name":"...","vehicle_brand":"..."}}}]
-- BORRAR: [ACTION:{"type":"DELETE_ORDER","data":{"order_id":"ORD-X"}}]
-- NOTA: [ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-X","note":"..."}}]
+INSTRUCCIONES:
+1. BREVEDAD: Responde en máximo 20 palabras.
+2. VEHÍCULO: Si te preguntan por el carro de una orden, búscalo en la lista anterior (Columna CARRO). No preguntes al usuario.
+3. REPUESTOS: Para añadir piezas a una orden existente (#ORD-X), usa UPDATE_FIELDS con el array "items_json".
+4. ACCIONES (JSON obligatorio al final):
+   - CREAR: [ACTION:{"type":"CREATE_ORDER","data":{...}}]
+   - ACTUALIZAR CAMPOS: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"vehicle_brand":"...", "items_json": [...]}}}]
+   - TESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
 
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
 `.trim();
