@@ -19,21 +19,28 @@ export default async function handler(req, res) {
     }
 
     // Obtener contexto de órdenes reales para que Aria "recuerde"
+    // 🟢 Misión: Visión Relacional (Fase 5) - Ahora Aria lee de order_items directamente
     const { data: existingOrders } = await supabase
         .from('orders')
-        .select('readable_id, part_name, status, vehicle_brand, vehicle_model, vehicle_year, items_json, costo_fob, customers(full_name)')
+        .select(`
+            readable_id, part_name, status, vehicle_brand, vehicle_model, vehicle_year, costo_fob,
+            customers(full_name),
+            order_items(part_name, part_number)
+        `)
         .order('created_at', { ascending: false })
-        .limit(25);
+        .limit(20);
 
     const ordersContext = (existingOrders || []).map(o => {
         const vBrand = o.vehicle_brand || 'N/A';
         const vModel = o.vehicle_model || 'N/A';
         const vYear = o.vehicle_year || 'N/A';
-        const itemsList = (o.items_json && Array.isArray(o.items_json) && o.items_json.length > 0)
-            ? o.items_json.map(i => `${i.part_name} (#${i.part_number || 'S/N'})`).join('; ')
+
+        // Usar los datos de la tabla relacional order_items
+        const itemsList = (o.order_items && o.order_items.length > 0)
+            ? o.order_items.map(i => `${i.part_name} (#${i.part_number || 'S/N'})`).join('; ')
             : 'Ninguno';
 
-        return `- [${o.readable_id}] | CLIENTE: ${o.customers?.full_name} | CARRO: ${vBrand} ${vModel} ${vYear} | PIEZA PRINCIPAL: ${o.part_name} | DESGLOSE DB: [${itemsList}] | STATUS: ${o.status}`;
+        return `- [${o.readable_id}] | CLIENTE: ${o.customers?.full_name} | CARRO: ${vBrand} ${vModel} ${vYear} | PIEZA PRINCIPAL (Legacy): ${o.part_name} | DESGLOSE RELACIONAL: [${itemsList}] | STATUS: ${o.status}`;
     }).join('\n');
 
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });

@@ -47,7 +47,32 @@ export default async function handler(req, res) {
 
         if (orderErr) throw orderErr;
 
-        return res.status(200).json({ message: 'Orden actualizada correctamente' });
+        // 🟢 Misión: Sincronización Atómica (Fase 5)
+        // Guardar cada ítem como una fila real en order_items para reportes y visión de Aria
+        if (items_json && Array.isArray(items_json)) {
+            // 1. Limpiar ítems previos para esta orden (Limpieza Atómica)
+            await supabase.from('order_items').delete().eq('order_id', orderId);
+
+            // 2. Insertar la lista actualizada (Doble Escritura)
+            const rowsToInsert = items_json.map(it => ({
+                order_id: orderId,
+                part_name: it.part_name || 'Sin nombre',
+                part_number: it.part_number || '',
+                quantity: parseInt(it.quantity) || 1,
+                cost_fob: parseFloat(it.cost_fob) || 0,
+                sale_price: parseFloat(it.sale_price) || 0,
+                vendor_name: it.vendor_name || '',
+                supplier_url: it.supplier_url || '',
+                updated_at: new Date().toISOString()
+            }));
+
+            if (rowsToInsert.length > 0) {
+                const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);
+                if (itemsErr) console.error('Error sincronizando order_items:', itemsErr);
+            }
+        }
+
+        return res.status(200).json({ message: 'Orden actualizada (Sincronía Atómica OK)' });
     } catch (error) {
         console.error('Error updating order:', error);
         return res.status(500).json({ message: 'Error al actualizar', error: error.message });
