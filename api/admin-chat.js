@@ -39,11 +39,10 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-Eres "Aria", la asistente IA del ERP AGN Autopartes.
-FECHA: ${today}.
+Eres "Aria", la asistente IA del ERP AGN Autopartes. FECHA: ${today}.
 
-REGLA DE ORO: TIENES MEMORIA TOTAL. 
-Antes de decir "No tengo esa información", REVISA la lista de abajo obligatoriamente. Si el usuario te habla de Diego Donoso o #ORD-16, YA SABES que su carro y repuestos están en esta lista. Solo pide datos si la orden NO existe.
+REGLA DE ORO: TIENES MEMORIA TOTAL.
+Revisa la lista de abajo antes de responder. Si el usuario te habla de una orden existente, YA SABES que su carro y repuestos están en esta lista. Solo pide datos si la orden NO existe.
 
 LISTA DE ÓRDENES REALES (Contexto):
 ${ordersContext}
@@ -51,11 +50,11 @@ ${ordersContext}
 INSTRUCCIONES:
 1. BREVEDAD: Responde en máximo 20 palabras.
 2. VEHÍCULO: Si te preguntan por el carro de una orden, búscalo en la lista anterior (Columna CARRO). No preguntes al usuario.
-3. REPUESTOS: Para añadir piezas a una orden existente (#ORD-X), usa UPDATE_FIELDS con el array "items_json".
+3. REPUESTOS: Para añadir piezas a una orden existente (#ORD-X), usa UPDATE_FIELDS con el array "items_json". El número de parte y la URL son OPCIONALES.
 4. ACCIONES (JSON obligatorio al final):
    - CREAR: [ACTION:{"type":"CREATE_ORDER","data":{...}}]
-   - ACTUALIZAR CAMPOS: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"vehicle_brand":"...", "items_json": [{"part_name":"Nombre", "part_number":"#", "supplier_url":"url"}]}}}]
-   - TESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
+   - ACTUALIZAR CAMPOS: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"vehicle_brand":"...", "items_json": [{"part_name":"Item", "part_number":"#", "supplier_url":"url"}]}}}]
+   - ACTUALIZAR ESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
 
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
 `.trim();
@@ -86,15 +85,28 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
         const data = await geminiRes.json();
         const responseText = data.candidates[0].content.parts[0].text;
 
-        const actionMatch = responseText.match(/\[ACTION:(.*?)\]/s);
+        // Regex mejorado para capturar el JSON completo (busca desde el primer '{' después de ACTION: hasta el último '}')
+        const actionMatch = responseText.match(/\[ACTION:(\{.*\})\]/s);
         let action = null;
         let displayText = responseText;
 
         if (actionMatch) {
             try {
-                action = JSON.parse(actionMatch[1]);
+                action = JSON.parse(actionMatch[1].trim());
                 displayText = responseText.replace(/\[ACTION:.*?\]/s, '').trim();
-            } catch (e) { console.error('JSON Error:', e); }
+            } catch (e) {
+                console.error('JSON Parse Error:', e);
+                // Intento de rescate manual si el regex capturó de más
+                try {
+                    const startIdx = responseText.indexOf('[ACTION:');
+                    const endIdx = responseText.lastIndexOf(']');
+                    if (startIdx !== -1 && endIdx > startIdx) {
+                        const rawAction = responseText.substring(startIdx + 8, endIdx + 1);
+                        action = JSON.parse(rawAction);
+                        displayText = responseText.substring(0, startIdx).trim();
+                    }
+                } catch (e2) { }
+            }
         }
 
         if (actionMatch && !displayText) {
@@ -105,9 +117,7 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
 
         return res.status(200).json({ response: displayText, action: action });
 
-
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
 }
-
