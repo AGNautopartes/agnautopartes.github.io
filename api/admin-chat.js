@@ -54,7 +54,7 @@ INSTRUCCIONES:
 3. REPUESTOS: Para añadir piezas a una orden existente (#ORD-X), usa UPDATE_FIELDS con el array "items_json".
 4. ACCIONES (JSON obligatorio al final):
    - CREAR: [ACTION:{"type":"CREATE_ORDER","data":{...}}]
-   - ACTUALIZAR CAMPOS: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"vehicle_brand":"...", "items_json": [...]}}}]
+   - ACTUALIZAR CAMPOS: [ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-X","fields":{"vehicle_brand":"...", "items_json": [{"part_name":"Nombre", "part_number":"#", "supplier_url":"url"}]}}}]
    - TESTADO: [ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-X","new_status":"..."}}]
 
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.

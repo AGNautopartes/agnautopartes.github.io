@@ -1604,17 +1604,24 @@
                     <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
                 </div>
                 <div id="dynamic-items-container">
-                    ${(o.items_json && Array.isArray(o.items_json) && o.items_json.length > 0) ? o.items_json.map(item => `
-                        <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
-                            <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
-                                <strong>Repuesto</strong>
-                                <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+                    ${(() => {
+                    let items = (o.items_json && Array.isArray(o.items_json)) ? o.items_json : [];
+                    // Sincronización Automática: Si no hay repuestos en el desglose, usar la Pieza Principal
+                    if (items.length === 0 && o.part_name) {
+                        items = [{ part_name: o.part_name, part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
+                    }
+                    return items.map(item => `
+                            <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
+                                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
+                                    <strong>Repuesto</strong>
+                                    <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+                                </div>
+                                <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
+                                <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
+                                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
                             </div>
-                            <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
-                            <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
-                            <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
-                        </div>
-                    `).join('') : ''}
+                        `).join('');
+                })()}
                 </div>
             </div>
 
@@ -1969,7 +1976,12 @@
                             tracking_number: action.data.fields.tracking_number || found.tracking_number,
                             status: action.data.fields.status || found.status,
                             cost_fob: action.data.fields.cost_fob !== undefined ? action.data.fields.cost_fob : found.cost_fob,
-                            sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price
+                            sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price,
+                            items_json: action.data.fields.items_json ? (
+                                Array.isArray(action.data.fields.items_json) ?
+                                    action.data.fields.items_json.map(it => typeof it === 'string' ? { part_name: it } : it) :
+                                    found.items_json
+                            ) : found.items_json
                         };
 
                         const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
