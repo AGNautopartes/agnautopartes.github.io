@@ -1963,7 +1963,21 @@
                     const orderId = action.data.order_id;
                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
                     if (found) {
-                        // Combinar datos existentes con los nuevos campos de Aria
+                        // Algoritmo de Reconciliación (Merge Inteligente)
+                        const currentItems = Array.isArray(found.items_json) ? [...found.items_json] : [];
+                        const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
+
+                        // Mezclar sin duplicar: Si la pieza ya existe por nombre exacto, se actualiza; si no, se añade
+                        ariaItems.forEach(newItem => {
+                            const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
+                            const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
+                            if (idx !== -1) {
+                                currentItems[idx] = { ...currentItems[idx], ...itemObj };
+                            } else {
+                                currentItems.push(itemObj);
+                            }
+                        });
+
                         const updateData = {
                             orderId: found.id,
                             part_name: action.data.fields.part_name || found.part_name,
@@ -1977,11 +1991,7 @@
                             status: action.data.fields.status || found.status,
                             cost_fob: action.data.fields.cost_fob !== undefined ? action.data.fields.cost_fob : found.cost_fob,
                             sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price,
-                            items_json: action.data.fields.items_json ? (
-                                Array.isArray(action.data.fields.items_json) ?
-                                    action.data.fields.items_json.map(it => typeof it === 'string' ? { part_name: it } : it) :
-                                    found.items_json
-                            ) : found.items_json
+                            items_json: currentItems
                         };
 
                         const res = await fetchWithTimeout(`${API}/api/update-order-full`, {

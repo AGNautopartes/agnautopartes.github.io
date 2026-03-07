@@ -85,27 +85,23 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
         const data = await geminiRes.json();
         const responseText = data.candidates[0].content.parts[0].text;
 
-        // Regex mejorado para capturar el JSON completo (busca desde el primer '{' después de ACTION: hasta el último '}')
-        const actionMatch = responseText.match(/\[ACTION:(\{.*\})\]/s);
         let action = null;
         let displayText = responseText;
 
-        if (actionMatch) {
-            try {
-                action = JSON.parse(actionMatch[1].trim());
-                displayText = responseText.replace(/\[ACTION:.*?\]/s, '').trim();
-            } catch (e) {
-                console.error('JSON Parse Error:', e);
-                // Intento de rescate manual si el regex capturó de más
+        // Búsqueda determinista de bloque [ACTION:{...}]
+        const startToken = '[ACTION:';
+        const startIdx = responseText.indexOf(startToken);
+        if (startIdx !== -1) {
+            const endIdx = responseText.lastIndexOf(']');
+            if (endIdx > startIdx) {
+                const rawContent = responseText.substring(startIdx + startToken.length, endIdx).trim();
                 try {
-                    const startIdx = responseText.indexOf('[ACTION:');
-                    const endIdx = responseText.lastIndexOf(']');
-                    if (startIdx !== -1 && endIdx > startIdx) {
-                        const rawAction = responseText.substring(startIdx + 8, endIdx + 1);
-                        action = JSON.parse(rawAction);
-                        displayText = responseText.substring(0, startIdx).trim();
-                    }
-                } catch (e2) { }
+                    action = JSON.parse(rawContent);
+                    // El texto para el chat es todo lo que NO sea la acción
+                    displayText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
+                } catch (e) {
+                    console.error('Error parseando bloque de acción:', e);
+                }
             }
         }
 
