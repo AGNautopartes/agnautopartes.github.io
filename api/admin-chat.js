@@ -112,7 +112,7 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
             }
         }
 
-        if (actionMatch && !displayText) {
+        if (action && !displayText) {
             displayText = "De acuerdo, procedo con esa acción.";
         } else if (!displayText && !action) {
             displayText = "Lo siento, no pude procesar esa solicitud.";
