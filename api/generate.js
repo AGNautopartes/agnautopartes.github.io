@@ -6,7 +6,7 @@ export default async function handler(request, response) {
     }
 
     const { conversationHistory } = request.body;
-    const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true';
+    const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true' ? true : false;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
