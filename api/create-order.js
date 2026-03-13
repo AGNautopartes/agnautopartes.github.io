@@ -28,6 +28,10 @@ export default async function handler(req, res) {
         created_by = 'admin'
     } = req.body;
 
+    // Normalizar valores nulos o undefined a strings vacíos o valores por defecto
+    const safeString = (val, def = '') => (val === null || val === undefined) ? def : String(val);
+    const safeName = (val) => (val === null || val === undefined || String(val).trim() === '') ? 'Cliente Sin Nombre' : String(val).trim();
+
     try {
         // 1. Buscar o crear cliente
         let query = supabase.from('customers').select('id, full_name, phone');
