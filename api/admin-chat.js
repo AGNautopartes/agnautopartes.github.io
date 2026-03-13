@@ -98,7 +98,7 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
 
         if (USE_OPENROUTER) {
             // === OPENROUTER CALL ===
-            const requestedModel = req.body.model || process.env.OPENROUTER_MODEL || 'mistralai/mixtral-8x7b-instruct';
+            const requestedModel = req.body.model || process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct';
             const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {

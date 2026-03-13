@@ -1302,22 +1302,37 @@
 
             <!-- Persistent Aria AI Chat -->
             <div class="ai-sidebar">
-                <div class="ai-header">
-
-                    <div class="aria-avatar">🤖</div>
-                    <div style="display:flex; align-items:center">
-                        <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                <path
-                                    d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-                            </svg>
-                        </button>
-                        <div>
-                            <div class="ai-title">Aria — Asistente ERP</div>
-                            <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
-                        </div>
-                    </div>
-                </div>
+                 <div class="ai-header">
+ 
+                     <div class="aria-avatar">🤖</div>
+                     <div style="display:flex; flex-direction: column; gap: 4px;">
+                         <div style="display:flex; align-items:center; gap: 8px;">
+                             <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
+                                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                     <path
+                                         d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                                 </svg>
+                             </button>
+                             <div>
+                                 <div class="ai-title">Aria — Asistente ERP</div>
+                                 <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
+                             </div>
+                         </div>
+                         <!-- Model Selector -->
+                         <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2);">
+                             <label for="admin-model-selector" style="font-weight: 600;">Modelo:</label>
+                             <select id="admin-model-selector" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
+                                 <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B (Free)</option>
+                                 <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B (Free)</option>
+                                 <option value="google/gemini-2.0-flash-lite-001">Gemini Flash Lite (Free)</option>
+                                 <option value="stepfun/step-3.5-flash">Step 3.5 Flash (Free)</option>
+                                 <option value="openai/gpt-4o-mini">GPT-4o Mini (Free)</option>
+                                 <option value="openai/gpt-4o">GPT-4o (Pago)</option>
+                                 <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Pago)</option>
+                             </select>
+                         </div>
+                     </div>
+                 </div>
                 <div class="ai-messages" id="ai-messages">
                     <div class="ai-msg assistant">¡Hola! Soy Aria, su asistente ERP. Puedo crear órdenes, actualizar
                         estados, <strong>modificar costos o precios</strong> y registrar notas. Por ejemplo, dígame:
@@ -1459,13 +1474,27 @@
                 btn.textContent = 'Ingresar'; btn.disabled = false;
                 return;
             }
-            adminPass = pwd; adminName = name;
-            allOrders = await res.json();
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            document.getElementById('nav-user').textContent = name;
-            renderOrders(allOrders);
-            updateStats(allOrders);
+             adminPass = pwd; adminName = name;
+             allOrders = await res.json();
+             document.getElementById('login-screen').style.display = 'none';
+             document.getElementById('app').style.display = 'flex';
+             document.getElementById('nav-user').textContent = name;
+             renderOrders(allOrders);
+             updateStats(allOrders);
+
+             // Inicializar selector de modelo IA en admin
+             const adminModelSelector = document.getElementById('admin-model-selector');
+             if (adminModelSelector) {
+                 const savedModel = localStorage.getItem('agn-admin-selected-model');
+                 if (savedModel) {
+                     adminModelSelector.value = savedModel;
+                 } else {
+                     adminModelSelector.value = 'meta-llama/llama-3.1-8b-instruct'; // Default
+                 }
+                 adminModelSelector.addEventListener('change', () => {
+                     localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
+                 });
+             }
         }
 
         document.getElementById('btn-logout').addEventListener('click', () => location.reload());
@@ -1846,15 +1875,237 @@
                     return;
                 }
 
-                const data = await res.json();
-                thinking.remove();
-
-                const responseText = data.response;
-                if (responseText) {
-                    addAiMsg('assistant', responseText);
-                    ariaHistory.push({ role: 'assistant', content: responseText });
-                    ariaSpeak(responseText);
-                }
+                 const data = await res.json();
+                 thinking.remove();
+ 
+                 let responseText = data.response; // Viene del backend (api/admin-chat.js)
+                 let action = data.action; // Viene del backend
+ 
+                 // Remover el bloque [ACTION:...] del texto si existe
+                 if (action && responseText) {
+                     const startToken = '[ACTION:';
+                     const startIdx = responseText.indexOf(startToken);
+                     if (startIdx !== -1) {
+                         const endIdx = responseText.lastIndexOf(']');
+                         if (endIdx > startIdx) {
+                             responseText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
+                         }
+                     }
+                 }
+ 
+                 if (responseText) {
+                     addAiMsg('assistant', responseText);
+                     ariaHistory.push({ role: 'assistant', content: responseText });
+                     ariaSpeak(responseText);
+                 }
+                 
+                 if (action) {
+                     await executeAriaAction(action);
+                 }
+             } catch (e) {
+                 console.error('Aria Error:', e);
+                 if (thinking && thinking.parentNode) thinking.remove();
+ 
+                 let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
+                 if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
+ 
+                 addAiMsg('assistant', errorMsg);
+             } finally {
+                 ariaSend.disabled = false;
+             }
+         }
+ 
+         async function executeAriaAction(action) {
+             console.log('Executing Aria Action:', action);
+             try {
+                 if (action.type === 'CREATE_ORDER') {
+                     // Asegurarse de que part_name y otros campos esenciales existan
+                     const orderData = {
+                         customer_name: action.data.client_name || 'Cliente Desconocido',
+                         customer_phone: action.data.contact_info || 'N/A',
+                         vehicle_brand: action.data.vehicle_brand || 'N/A',
+                         vehicle_model: action.data.vehicle_model || 'N/A',
+                         vehicle_year: action.data.vehicle_year || 'N/A',
+                         part_name: action.data.main_part || 'Repuesto sin especificar',
+                         status: 'Solicitado',
+                         created_by: adminName,
+                         notes: action.data.notes || ''
+                     };
+ 
+                     const res = await fetchWithTimeout(`${API}/api/create-order`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                         body: JSON.stringify({ ...orderData, created_by: adminName }),
+                         timeout: 10000
+                     });
+                     if (res.ok) {
+                         const result = await res.json();
+                         showToast(`✅ Orden #${result.orderId} creada`, 'success'); // Usar el ID real
+                         addAiMsg('system', `✅ Orden #${result.orderId} creada con éxito.`);
+                         const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                         allOrders = await ordersRes.json();
+                         renderOrders(allOrders);
+                         updateStats(allOrders);
+                     } else {
+                         const errorText = await res.text();
+                         console.error('Error al crear orden desde Aria:', errorText);
+                         addAiMsg('system', '❌ Error al crear la orden en la base de datos. Detalles en consola.');
+                         showToast('❌ Error al crear orden', 'error');
+                     }
+                 } else if (action.type === 'UPDATE_STATUS') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+ 
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id, newStatus: action.data.new_status }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             found.status = action.data.new_status;
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                             if (selectedOrder?.id === found.id) renderDetail(found);
+                             showToast(`✅ Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al actualizar estado desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
+                             showToast('❌ Error al actualizar estado', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'DELETE_ORDER') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/delete-order`, {
+                             method: 'DELETE',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             allOrders = allOrders.filter(o => o.id !== found.id);
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
+                             if (selectedOrder?.id === found.id) {
+                                 document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+                                 document.getElementById('detail-panel').classList.add('empty');
+                             }
+                             showToast(`🗑️ Orden #${found.readable_id} eliminada`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al eliminar orden desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
+                             showToast('❌ Error al eliminar orden', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'ADD_NOTE') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/add-note`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
+                             if (selectedOrder?.id === found.id) loadNotes(found.id);
+                             showToast(`📝 Nota agregada a orden #${found.readable_id}`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al agregar nota desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al guardar nota en [#${found.readable_id}].`);
+                             showToast('❌ Error al agregar nota', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'UPDATE_FIELDS') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         // Algoritmo de Reconciliación (Merge Inteligente)
+                         const currentItems = Array.isArray(found.order_items) ? [...found.order_items] : [];
+                         const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
+ 
+                         ariaItems.forEach(newItem => {
+                             const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
+                             const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
+                             if (idx !== -1) {
+                                 currentItems[idx] = { ...currentItems[idx], ...itemObj };
+                             } else {
+                                 currentItems.push(itemObj);
+                             }
+                         });
+ 
+                         const updateData = {
+                             orderId: found.id,
+                             part_name: action.data.fields.part_name || found.part_name,
+                             part_number: action.data.fields.part_number || found.part_number,
+                             cost_fob: action.data.fields.cost_fob || found.cost_fob,
+                             sale_price: action.data.fields.sale_price || found.sale_price,
+                             vendor_name: action.data.fields.vendor_name || found.vendor_name,
+                             supplier_url: action.data.fields.supplier_url || found.supplier_url,
+                             items_json: currentItems // Enviar el array de ítems actualizado
+                         };
+ 
+                         // Fusionar otros campos que no sean items_json
+                         const otherFieldsToUpdate = {};
+                         for (const key in action.data.fields) {
+                             if (key !== 'items_json') {
+                                 otherFieldsToUpdate[key] = action.data.fields[key];
+                             }
+                         }
+ 
+                         const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ ...updateData, ...otherFieldsToUpdate, orderId: found.id }),
+                             timeout: 15000
+                         });
+                         if (res.ok) {
+                             // Actualizar la orden en allOrders y selectedOrder
+                             Object.assign(found, { ...updateData, ...otherFieldsToUpdate });
+                             // Actualizar order_items en found con el nuevo currentItems
+                             found.order_items = currentItems;
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
+                             if (selectedOrder?.id === found.id) renderDetail(found);
+                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al actualizar campos desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al actualizar campos de [#${found.readable_id}].`);
+                             showToast('❌ Error al actualizar campos', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar campos.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else {
+                     addAiMsg('system', 'Acción no reconocida.');
+                 }
+             } catch (actionError) {
+                 console.error('Error al ejecutar acción de Aria:', actionError);
+                 addAiMsg('system', `❌ Error al procesar la acción: ${actionError.message || 'Desconocido'}.`);
+                 showToast('❌ Error en acción de IA', 'error');
+             }
+         }
 
                 if (data.action) {
                     await executeAriaAction(data.action);

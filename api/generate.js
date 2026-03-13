@@ -24,7 +24,7 @@ export default async function handler(request, response) {
         if (USE_OPENROUTER) {
             // === OPENROUTER (formato OpenAI) ===
             // Modelo puede venir del body o de .env
-            const requestedModel = request.body.model || process.env.OPENROUTER_MODEL || 'mistralai/mixtral-8x7b-instruct';
+            const requestedModel = request.body.model || process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct';
             const openRouterMessages = conversationHistory.map(msg => ({
                 role: msg.role === 'assistant' ? 'assistant' : 'user',
                 content: msg.content
