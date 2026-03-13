@@ -348,8 +348,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify(data),
             });
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error al guardar en Supabase:', errorData.message);
+                const errorText = await response.text();
+                try {
+                    const errorData = JSON.parse(errorText);
+                    console.error('Error al guardar en Supabase:', errorData.message);
+                } catch (e) {
+                    console.error('Error al guardar en Supabase (respuesta no JSON):', errorText);
+                }
             } else {
                 console.log('Cotización persistida en Supabase.');
             }
