@@ -1921,28 +1921,46 @@
                  if (action.type === 'CREATE_ORDER') {
                      // Asegurarse de que part_name y otros campos esenciales existan
                      // Validar que los datos sean correctos antes de enviar
-                     const clientName = action.data?.client_name || action.data?.customer_name || action.data?.name;
+                     const clientNameRaw = action.data?.client_name || action.data?.customer_name || action.data?.name;
                      const vehicleBrand = action.data?.vehicle_brand || action.data?.brand || '';
                      const vehicleModel = action.data?.vehicle_model || action.data?.model || '';
                      const vehicleYear = action.data?.vehicle_year || action.data?.year || '';
                      const mainPart = action.data?.main_part || action.data?.part_name || action.data?.part || '';
                      
-                     console.log('Datos recibidos para CREATE_ORDER:', action.data);
-                     console.log('Mapeo - clientName:', clientName, 'vehicleBrand:', vehicleBrand);
+                     // Validar que los campos esenciales NO estén vacíos
+                     const clientName = (clientNameRaw && String(clientNameRaw).trim() !== '') ? String(clientNameRaw).trim() : null;
+                     const vehicleBrandClean = (vehicleBrand && String(vehicleBrand).trim() !== '') ? String(vehicleBrand).trim() : null;
+                     const mainPartClean = (mainPart && String(mainPart).trim() !== '') ? String(mainPart).trim() : null;
 
+                     console.log('Datos recibidos para CREATE_ORDER:', action.data);
+                     console.log('Mapeo - clientName:', clientName, 'vehicleBrand:', vehicleBrandClean, 'mainPart:', mainPartClean);
+
+                     // Validación más estricta
                      if (!clientName) {
-                         addAiMsg('system', '❌ No entendí el nombre del cliente. Por favor, especifica el nombre completo.');
+                         addAiMsg('system', '❌ No entendí el nombre del cliente. Por favor, dime el nombre completo del cliente.');
                          showToast('❌ Falta nombre del cliente', 'error');
+                         return;
+                     }
+                     
+                     if (!vehicleBrandClean || !vehicleModel) {
+                         addAiMsg('system', '❌ Necesito la marca y modelo del vehículo. Ejemplo: "Toyota Hilux".');
+                         showToast('❌ Falta vehículo', 'error');
+                         return;
+                     }
+                     
+                     if (!mainPartClean) {
+                         addAiMsg('system', '❌ Necesito saber qué repuesto necesitas. Ejemplo: "parabrisas", "amortiguador".');
+                         showToast('❌ Falta repuesto', 'error');
                          return;
                      }
 
                      const orderData = {
-                         customer_name: String(clientName),
+                         customer_name: clientName,
                          customer_phone: String(action.data?.contact_info || action.data?.phone || 'N/A'),
-                         vehicle_brand: String(vehicleBrand || 'N/A'),
+                         vehicle_brand: vehicleBrandClean,
                          vehicle_model: String(vehicleModel || 'N/A'),
                          vehicle_year: String(vehicleYear || 'N/A'),
-                         part_name: String(mainPart || 'Repuesto sin especificar'),
+                         part_name: mainPartClean,
                          status: 'Solicitado',
                          created_by: adminName,
                          notes: String(action.data?.notes || '')
