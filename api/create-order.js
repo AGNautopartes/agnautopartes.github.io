@@ -13,24 +13,47 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: 'No autorizado' });
     }
 
-    const {
-        // Cliente
-        customer_name, customer_phone, customer_email,
-        // Vehículo
-        vehicle_brand, vehicle_model, vehicle_year, vin,
-        // Ítems (Legacy support or Array)
-        items, // Esperamos [{ part_name, part_number, quantity, cost_fob, sale_price, vendor_name, supplier_url, image_data }]
-        part_name, part_number, cost_fob, sale_price, vendor_name, supplier_url, // Legacy single-item fields
-        // Logística
-        status = 'Solicitado', tracking_number,
-        estimated_delivery_client, notes,
-        // Meta
-        created_by = 'admin'
-    } = req.body;
+    // Extraer TODOS los posibles nombres de campo que la IA puede enviar
+    const body = req.body || {};
+    
+    // Cliente - cualquier nombre de campo posible
+    const customer_name = body.customer_name || body.cliente || body.name || body.nombre || body.client_name || body.customerName || null;
+    const customer_phone = body.customer_phone || body.telefono || body.phone || 'N/A';
+    const customer_email = body.customer_email || body.email || body.correo || '';
+    
+    // Vehículo - cualquier nombre de campo posible
+    const vehicle_model = body.vehicle_model || body.modelo || body.carro || body.model || null;
+    const vehicle_brand = body.vehicle_brand || body.marca || body.brand || 'N/A';
+    const vehicle_year = body.vehicle_year || body.ano || body.year || 'N/A';
+    const vin = body.vin || '';
+    
+    // Ítems
+    const items = body.items;
+    const part_name = body.part_name || body.main_part || body.pieza || body.repuesto || '';
+    const part_number = body.part_number || body.numero_pieza || '';
+    const cost_fob = body.cost_fob || body.costo || 0;
+    const sale_price = body.sale_price || body.precio || 0;
+    const vendor_name = body.vendor_name || body.vendedor || '';
+    const supplier_url = body.supplier_url || body.url || '';
+    
+    // Logística
+    const status = body.status || 'Solicitado';
+    const tracking_number = body.tracking_number || '';
+    const estimated_delivery_client = body.estimated_delivery_client || '';
+    const notes = body.notes || body.notas || '';
+    const created_by = body.created_by || 'admin';
 
     // Normalizar valores nulos o undefined a strings vacíos o valores por defecto
     const safeString = (val, def = '') => (val === null || val === undefined) ? def : String(val);
     const safeName = (val) => (val === null || val === undefined || String(val).trim() === '') ? 'Cliente Sin Nombre' : String(val).trim();
+
+    // Validación mínima requerida
+    if (!customer_name || !vehicle_model) {
+        return res.status(400).json({ 
+            message: 'Faltan datos requeridos', 
+            error: 'Se requiere: customer_name (o cliente/name/nombre) y vehicle_model (o modelo/carro/model)' 
+        });
+    }
 
     try {
         // 1. Buscar o crear cliente

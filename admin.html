@@ -1918,66 +1918,32 @@
          async function executeAriaAction(action) {
              console.log('Executing Aria Action:', action);
              try {
-                 if (action.type === 'CREATE_ORDER') {
-                     
+                  if (action.type === 'CREATE_ORDER') {
                       console.log('=== CREATE_ORDER RAW ===');
                       console.log('action.data:', JSON.stringify(action.data));
-                      console.log('=======================');
-                     
-                      // EXTRAER CUALQUIER COSA que parezca un nombre o vehículo
-                      const allValues = Object.values(action.data || {}).join(' ').toLowerCase();
-                      const keys = Object.keys(action.data || {});
                       
-                      // Buscar patrones en los valores
-                      const textToSearch = Object.values(action.data || {}).join(' ');
+                      // Extraer campos directamente - el servidor ahora acepta cualquier nombre
+                      const data = action.data || {};
                       
-                      // Nombres de cliente más comunes
-                      const namePatterns = /(?:client|customer|cliente|nombre|name|client_name|customer_name|nom)\s*[:=]\s*"?([^",}]+)/i;
-                      const modelPatterns = /(?:model|carro|vehicle|modelo)\s*[:=]\s*"?([^",}]+)/i;
-                      const brandPatterns = /(?:brand|marca)\s*[:=]\s*"?([^",}]+)/i;
-                      
-                      // Buscar en el texto completo
-                      const clienteMatch = textToSearch.match(/(?:client|customer|cliente|nombre|name)[:\s]+([a-záéíóúñ]+ [a-záéíóúñ]+)/i);
-                      const modeloMatch = textToSearch.match(/(?:model|carro|vehicle)[:\s]+([a-záéíóúñ]+ \d{4}|[a-záéíóúñ]+)/i);
-                      
-                      // Si todo falla, usar valores directo
-                      let clientName = null;
-                      let vehicleModel = null;
-                      
-                      // Intentar extraer de cualquier campo
-                      for (const [key, value] of Object.entries(action.data || {})) {
-                          const strVal = String(value).toLowerCase();
-                          if (!clientName && strVal.length > 3 && !strVal.includes('ord-') && !strVal.includes('n/a')) {
-                              // Probablemente es un nombre
-                              if (strVal.split(' ').length <= 4) {
-                                  clientName = String(value);
-                              }
-                          }
-                          if (!vehicleModel && (strVal.includes('toyota') || strVal.includes('honda') || strVal.includes('ford') || strVal.includes('kia') || strVal.includes('hyundai') || strVal.includes('mitsubishi') || strVal.includes('chevrolet') || strVal.includes('nissan') || /\d{4}/.test(strVal))) {
-                              vehicleModel = String(value);
-                          }
-                      }
-
-                      console.log('Extracción - clientName:', clientName, 'vehicleModel:', vehicleModel);
-
-                      if (!clientName || !vehicleModel) {
-                          addAiMsg('system', '❌ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO] [AÑO]"');
-                          return;
-                      }
-
                       const orderData = {
-                          customer_name: clientName,
+                          customer_name: data.customer_name || data.client_name || data.cliente || data.name || data.nombre || '',
+                          vehicle_model: data.vehicle_model || data.modelo || data.carro || data.model || '',
+                          vehicle_brand: data.vehicle_brand || data.marca || data.brand || 'N/A',
+                          vehicle_year: data.vehicle_year || data.ano || data.year || 'N/A',
+                          main_part: data.main_part || data.part_name || data.pieza || data.repuesto || 'Repuesto sin especificar',
                           customer_phone: 'N/A',
-                          vehicle_brand: 'N/A',
-                          vehicle_model: vehicleModel,
-                          vehicle_year: 'N/A',
-                          part_name: 'Repuesto sin especificar',
                           status: 'Solicitado',
                           created_by: adminName,
                           notes: 'Creado por Aria'
                       };
-
+                      
                       console.log('Enviando:', orderData);
+
+                      // Validación mínima en cliente
+                      if (!orderData.customer_name || !orderData.vehicle_model) {
+                          addAiMsg('system', '❌ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO]"');
+                          return;
+                      }
 
                      const res = await fetchWithTimeout(`${API}/api/create-order`, {
                          method: 'POST',
