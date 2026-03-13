@@ -47,9 +47,9 @@ export default async function handler(req, res) {
             const { data: newCustomer, error: createErr } = await supabase
                 .from('customers')
                 .insert([{
-                    full_name: customer_name,
-                    phone: customer_phone || 'N/A',
-                    email: customer_email || '',
+                    full_name: safeName(customer_name),
+                    phone: safeString(customer_phone, 'N/A'),
+                    email: safeString(customer_email, ''),
                     source: 'manual'
                 }])
                 .select().single();
@@ -83,12 +83,15 @@ export default async function handler(req, res) {
             .from('orders')
             .insert([{
                 customer_id: customer.id,
-                part_name: basePartName,
-                vin,
-                vehicle_brand, vehicle_model, vehicle_year,
-                status, tracking_number,
-                estimated_delivery_client,
-                notes
+                part_name: safeString(basePartName, 'Orden de Repuestos'),
+                vin: safeString(vin, ''),
+                vehicle_brand: safeString(vehicle_brand, 'N/A'),
+                vehicle_model: safeString(vehicle_model, 'N/A'),
+                vehicle_year: safeString(vehicle_year, 'N/A'),
+                status: safeString(status, 'Solicitado'),
+                tracking_number: safeString(tracking_number, ''),
+                estimated_delivery_client: safeString(estimated_delivery_client, ''),
+                notes: safeString(notes, '')
             }])
             .select().single();
 
