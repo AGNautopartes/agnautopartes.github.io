@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true';
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
     if (USE_OPENROUTER && !OPENROUTER_API_KEY) {
         return res.status(500).json({ error: 'OPENROUTER_API_KEY no configurada.' });
@@ -145,7 +146,7 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
         } else {
             // === GEMINI CALL ===
             const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
