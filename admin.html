@@ -1920,46 +1920,64 @@
              try {
                  if (action.type === 'CREATE_ORDER') {
                      
-                      console.log('=== CREATE_ORDER DEBUG ===');
-                      console.log('action.data completa:', JSON.stringify(action.data));
-                      console.log('===========================');
+                      console.log('=== CREATE_ORDER RAW ===');
+                      console.log('action.data:', JSON.stringify(action.data));
+                      console.log('=======================');
                      
-                      // Aceptar CUALQUIER nombre de campo que el AI pueda enviar
-                      const clientNameRaw = action.data?.client_name || action.data?.customer_name || action.data?.name || action.data?.cliente || action.data?.nombre || action.data?.client || '';
-                      const vehicleModelRaw = action.data?.vehicle_model || action.data?.model || action.data?.carro || action.data?.vehiculo || action.data?.vehicle || '';
-                      const vehicleBrandRaw = action.data?.vehicle_brand || action.data?.brand || action.data?.marca || action.data?.carro || '';
-                      const vehicleYearRaw = action.data?.vehicle_year || action.data?.year || action.data?.año || '';
-                      const partNameRaw = action.data?.main_part || action.data?.part_name || action.data?.part || action.data?.repuesto || action.data?.pieza_principal || action.data?.pieza || '';
+                      // EXTRAER CUALQUIER COSA que parezca un nombre o vehículo
+                      const allValues = Object.values(action.data || {}).join(' ').toLowerCase();
+                      const keys = Object.keys(action.data || {});
                       
-                      console.log('Mapeado - clientName:', clientNameRaw, 'vehicleModel:', vehicleModelRaw);
+                      // Buscar patrones en los valores
+                      const textToSearch = Object.values(action.data || {}).join(' ');
                       
-                      // Validar SOLO lo mínimo necesario
-                      const clientName = (clientNameRaw && String(clientNameRaw).trim() !== '') ? String(clientNameRaw).trim() : null;
-                      const vehicleModel = (vehicleModelRaw && String(vehicleModelRaw).trim() !== '') ? String(vehicleModelRaw).trim() : null;
+                      // Nombres de cliente más comunes
+                      const namePatterns = /(?:client|customer|cliente|nombre|name|client_name|customer_name|nom)\s*[:=]\s*"?([^",}]+)/i;
+                      const modelPatterns = /(?:model|carro|vehicle|modelo)\s*[:=]\s*"?([^",}]+)/i;
+                      const brandPatterns = /(?:brand|marca)\s*[:=]\s*"?([^",}]+)/i;
+                      
+                      // Buscar en el texto completo
+                      const clienteMatch = textToSearch.match(/(?:client|customer|cliente|nombre|name)[:\s]+([a-záéíóúñ]+ [a-záéíóúñ]+)/i);
+                      const modeloMatch = textToSearch.match(/(?:model|carro|vehicle)[:\s]+([a-záéíóúñ]+ \d{4}|[a-záéíóúñ]+)/i);
+                      
+                      // Si todo falla, usar valores directo
+                      let clientName = null;
+                      let vehicleModel = null;
+                      
+                      // Intentar extraer de cualquier campo
+                      for (const [key, value] of Object.entries(action.data || {})) {
+                          const strVal = String(value).toLowerCase();
+                          if (!clientName && strVal.length > 3 && !strVal.includes('ord-') && !strVal.includes('n/a')) {
+                              // Probablemente es un nombre
+                              if (strVal.split(' ').length <= 4) {
+                                  clientName = String(value);
+                              }
+                          }
+                          if (!vehicleModel && (strVal.includes('toyota') || strVal.includes('honda') || strVal.includes('ford') || strVal.includes('kia') || strVal.includes('hyundai') || strVal.includes('mitsubishi') || strVal.includes('chevrolet') || strVal.includes('nissan') || /\d{4}/.test(strVal))) {
+                              vehicleModel = String(value);
+                          }
+                      }
 
-                      if (!clientName) {
-                          addAiMsg('system', '❌ Necesito el nombre del cliente. Ejemplo: "Juan Pérez".');
+                      console.log('Extracción - clientName:', clientName, 'vehicleModel:', vehicleModel);
+
+                      if (!clientName || !vehicleModel) {
+                          addAiMsg('system', '❌ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO] [AÑO]"');
                           return;
                       }
-                      if (!vehicleModel) {
-                          addAiMsg('system', '❌ Necesito el modelo del vehículo. Ejemplo: "Toyota Hilux".');
-                          return;
-                      }
 
-                      // El resto es OPCIONAL - usar valores por defecto
                       const orderData = {
                           customer_name: clientName,
                           customer_phone: 'N/A',
-                          vehicle_brand: String(vehicleBrandRaw || 'N/A'),
+                          vehicle_brand: 'N/A',
                           vehicle_model: vehicleModel,
-                          vehicle_year: String(vehicleYearRaw || 'N/A'),
-                          part_name: String(partNameRaw || 'Repuesto sin especificar'),
+                          vehicle_year: 'N/A',
+                          part_name: 'Repuesto sin especificar',
                           status: 'Solicitado',
                           created_by: adminName,
-                          notes: ''
+                          notes: 'Creado por Aria'
                       };
 
-                      console.log('Enviando a API:', orderData);
+                      console.log('Enviando:', orderData);
 
                      const res = await fetchWithTimeout(`${API}/api/create-order`, {
                          method: 'POST',
