@@ -1919,40 +1919,47 @@
              console.log('Executing Aria Action:', action);
              try {
                  if (action.type === 'CREATE_ORDER') {
-                     // REQUISITO: Solo cliente + vehículo (modelo)
-                     const clientNameRaw = action.data?.client_name || action.data?.customer_name || action.data?.name;
-                     const vehicleModelRaw = action.data?.vehicle_model || action.data?.model;
                      
-                     // Validar SOLO lo necesario
-                     const clientName = (clientNameRaw && String(clientNameRaw).trim() !== '') ? String(clientNameRaw).trim() : null;
-                     const vehicleModel = (vehicleModelRaw && String(vehicleModelRaw).trim() !== '') ? String(vehicleModelRaw).trim() : null;
+                      console.log('=== CREATE_ORDER DEBUG ===');
+                      console.log('action.data completa:', JSON.stringify(action.data));
+                      console.log('===========================');
+                     
+                      // Aceptar CUALQUIER nombre de campo que el AI pueda enviar
+                      const clientNameRaw = action.data?.client_name || action.data?.customer_name || action.data?.name || action.data?.cliente || action.data?.nombre || action.data?.client || '';
+                      const vehicleModelRaw = action.data?.vehicle_model || action.data?.model || action.data?.carro || action.data?.vehiculo || action.data?.vehicle || '';
+                      const vehicleBrandRaw = action.data?.vehicle_brand || action.data?.brand || action.data?.marca || action.data?.carro || '';
+                      const vehicleYearRaw = action.data?.vehicle_year || action.data?.year || action.data?.año || '';
+                      const partNameRaw = action.data?.main_part || action.data?.part_name || action.data?.part || action.data?.repuesto || action.data?.pieza_principal || action.data?.pieza || '';
+                      
+                      console.log('Mapeado - clientName:', clientNameRaw, 'vehicleModel:', vehicleModelRaw);
+                      
+                      // Validar SOLO lo mínimo necesario
+                      const clientName = (clientNameRaw && String(clientNameRaw).trim() !== '') ? String(clientNameRaw).trim() : null;
+                      const vehicleModel = (vehicleModelRaw && String(vehicleModelRaw).trim() !== '') ? String(vehicleModelRaw).trim() : null;
 
-                     console.log('CREATE_ORDER - clientName:', clientName, 'vehicleModel:', vehicleModel);
+                      if (!clientName) {
+                          addAiMsg('system', '❌ Necesito el nombre del cliente. Ejemplo: "Juan Pérez".');
+                          return;
+                      }
+                      if (!vehicleModel) {
+                          addAiMsg('system', '❌ Necesito el modelo del vehículo. Ejemplo: "Toyota Hilux".');
+                          return;
+                      }
 
-                     // Solo validar lo mínimo necesario
-                     if (!clientName) {
-                         addAiMsg('system', '❌ Necesito el nombre del cliente. Ejemplo: "Juan Pérez".');
-                         return;
-                     }
-                     if (!vehicleModel) {
-                         addAiMsg('system', '❌ Necesito el modelo del vehículo. Ejemplo: "Toyota Hilux".');
-                         return;
-                     }
+                      // El resto es OPCIONAL - usar valores por defecto
+                      const orderData = {
+                          customer_name: clientName,
+                          customer_phone: 'N/A',
+                          vehicle_brand: String(vehicleBrandRaw || 'N/A'),
+                          vehicle_model: vehicleModel,
+                          vehicle_year: String(vehicleYearRaw || 'N/A'),
+                          part_name: String(partNameRaw || 'Repuesto sin especificar'),
+                          status: 'Solicitado',
+                          created_by: adminName,
+                          notes: ''
+                      };
 
-                     // El resto es OPCIONAL - usar valores por defecto
-                     const orderData = {
-                         customer_name: clientName,
-                         customer_phone: String(action.data?.contact_info || action.data?.phone || 'N/A'),
-                         vehicle_brand: String(action.data?.vehicle_brand || action.data?.brand || 'N/A'),
-                         vehicle_model: vehicleModel,
-                         vehicle_year: String(action.data?.vehicle_year || action.data?.year || 'N/A'),
-                         part_name: String(action.data?.main_part || action.data?.part_name || action.data?.part || 'Repuesto sin especificar'),
-                         status: 'Solicitado',
-                         created_by: adminName,
-                         notes: String(action.data?.notes || '')
-                     };
-
-                     console.log('Enviando a API:', orderData);
+                      console.log('Enviando a API:', orderData);
 
                      const res = await fetchWithTimeout(`${API}/api/create-order`, {
                          method: 'POST',
