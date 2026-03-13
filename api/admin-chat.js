@@ -13,18 +13,17 @@ export default async function handler(req, res) {
 
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
 
-    // === DETERMINAR API A USAR ===
-    const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true' ? true : false;
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    // === SOLO GEMINI - OpenRouter deshabilitado ===
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
-    if (USE_OPENROUTER && !OPENROUTER_API_KEY) {
-        return res.status(500).json({ error: 'OPENROUTER_API_KEY no configurada.' });
+    if (!GEMINI_API_KEY) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY no configurada.' });
     }
-    if (!USE_OPENROUTER && !GEMINI_API_KEY) {
-        return res.status(500).json({ error: 'Clave de API de Google no configurada.' });
-    }
+
+    console.log('=== DEBUG API ===');
+    console.log('GEMINI_API_KEY existe:', !!GEMINI_API_KEY);
+    console.log('GEMINI_MODEL:', GEMINI_MODEL);
 
     // === OBTENER CONTEXTO DE ÓRDENES (igual) ===
     const { data: existingOrders } = await supabase
@@ -90,53 +89,33 @@ ${ordersContext}
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
 `.trim();
 
-    // === PREPARAR MENSAJES SEGÚN API ===
-    let messagesForAPI;
-    if (USE_OPENROUTER) {
-        // Formato OpenAI: [{role, content}]
-        messagesForAPI = [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...conversationHistory.map(m => ({
-                role: m.role === 'assistant' ? 'assistant' : 'user',
-                content: m.content
-            })),
-            { role: 'user', content: message }
-        ];
-    } else {
-        // Formato Gemini: [{role, parts:[{text}]}]
-        messagesForAPI = [
-            { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-            ...conversationHistory.map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            })),
-            { role: 'user', parts: [{ text: message }] }
-        ];
-    }
+    // === SOLO GEMINI - Formato Gemini ===
+    const messagesForAPI = [
+        { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+        ...conversationHistory.map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+        })),
+        { role: 'user', parts: [{ text: message }] }
+    ];
 
     try {
         let responseText;
 
-        if (USE_OPENROUTER) {
-            // === OPENROUTER CALL ===
-            const requestedModel = req.body.model || process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct';
-            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        // === GEMINI CALL ===
+        const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+            {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://agnautopartes.vercel.app',
-                    'X-Title': process.env.OPENROUTER_TITLE || 'AGN AutoPartes ERP'
-                },
-                body: JSON.stringify({
-                    model: requestedModel,
-                    messages: messagesForAPI,
-                    temperature: 0.7
-                })
-            });
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: messagesForAPI })
+            }
+        );
 
-            if (!resp.ok) {
-                const err = await resp.json();
+        if (!geminiRes.ok) {
+            const err = await geminiRes.json();
+            console.error('GEMINI ERROR:', err);
+            throw new Error(err.error?.message || 'Error en Gemini');
                 throw new Error(err.error?.message || 'Error en OpenRouter');
             }
 
