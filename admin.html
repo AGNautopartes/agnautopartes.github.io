@@ -1920,18 +1920,36 @@
              try {
                  if (action.type === 'CREATE_ORDER') {
                      // Asegurarse de que part_name y otros campos esenciales existan
+                     // Validar que los datos sean correctos antes de enviar
+                     const clientName = action.data?.client_name || action.data?.customer_name || action.data?.name;
+                     const vehicleBrand = action.data?.vehicle_brand || action.data?.brand || '';
+                     const vehicleModel = action.data?.vehicle_model || action.data?.model || '';
+                     const vehicleYear = action.data?.vehicle_year || action.data?.year || '';
+                     const mainPart = action.data?.main_part || action.data?.part_name || action.data?.part || '';
+                     
+                     console.log('Datos recibidos para CREATE_ORDER:', action.data);
+                     console.log('Mapeo - clientName:', clientName, 'vehicleBrand:', vehicleBrand);
+
+                     if (!clientName) {
+                         addAiMsg('system', '❌ No entendí el nombre del cliente. Por favor, especifica el nombre completo.');
+                         showToast('❌ Falta nombre del cliente', 'error');
+                         return;
+                     }
+
                      const orderData = {
-                         customer_name: action.data.client_name || 'Cliente Desconocido',
-                         customer_phone: action.data.contact_info || 'N/A',
-                         vehicle_brand: action.data.vehicle_brand || 'N/A',
-                         vehicle_model: action.data.vehicle_model || 'N/A',
-                         vehicle_year: action.data.vehicle_year || 'N/A',
-                         part_name: action.data.main_part || 'Repuesto sin especificar',
+                         customer_name: String(clientName),
+                         customer_phone: String(action.data?.contact_info || action.data?.phone || 'N/A'),
+                         vehicle_brand: String(vehicleBrand || 'N/A'),
+                         vehicle_model: String(vehicleModel || 'N/A'),
+                         vehicle_year: String(vehicleYear || 'N/A'),
+                         part_name: String(mainPart || 'Repuesto sin especificar'),
                          status: 'Solicitado',
                          created_by: adminName,
-                         notes: action.data.notes || ''
+                         notes: String(action.data?.notes || '')
                      };
- 
+
+                     console.log('Enviando orderData:', orderData);
+
                      const res = await fetchWithTimeout(`${API}/api/create-order`, {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
@@ -1946,12 +1964,18 @@
                          allOrders = await ordersRes.json();
                          renderOrders(allOrders);
                          updateStats(allOrders);
-                     } else {
-                         const errorText = await res.text();
-                         console.error('Error al crear orden desde Aria:', errorText);
-                         addAiMsg('system', '❌ Error al crear la orden en la base de datos. Detalles en consola.');
-                         showToast('❌ Error al crear orden', 'error');
-                     }
+                      } else {
+                          const errorText = await res.text();
+                          console.error('Error al crear orden desde Aria:', errorText);
+                          // Intentar parsear el error para dar mejor feedback
+                          let errorMsg = 'Error al crear la orden en la base de datos.';
+                          try {
+                              const errJson = JSON.parse(errorText);
+                              if (errJson.message) errorMsg = errJson.message;
+                          } catch(e) {}
+                          addAiMsg('system', `❌ ${errorMsg}`);
+                          showToast('❌ Error al crear orden: ' + errorMsg, 'error');
+                      }
                  } else if (action.type === 'UPDATE_STATUS') {
                      const orderId = action.data.order_id;
                      const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
