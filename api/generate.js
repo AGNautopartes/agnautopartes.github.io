@@ -1,64 +1,92 @@
-// api/generate.js - Versión para GEMINI
+// api/generate.js - Soporte Gemini y OpenRouter
 
 export default async function handler(request, response) {
-  // 1. Solo aceptar peticiones POST
-  if (request.method !== 'POST') {
-    return response.status(405).json({ message: 'Método no permitido' });
-  }
-
-  // 2. Tomar el historial de chat que envió el frontend
-  const { conversationHistory } = request.body;
-
-  // 3. Obtener la clave API de Gemini de forma SEGURA desde las variables de entorno
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-
-  if (!GOOGLE_API_KEY) {
-    return response.status(500).json({ error: { message: 'La clave de API de Google no está configurada en el servidor.' } });
-  }
-
-  // 4. Transformar el historial al formato que espera Gemini
-  // El frontend usa {role, content}, Gemini espera {role, parts:[{text}]}
-  // También, el rol 'assistant' se llama 'model' en Gemini.
-  const geminiFormattedHistory = conversationHistory.map(message => {
-    let role = message.role;
-    if (role === 'assistant') {
-      role = 'model';
-    }
-    // El rol 'system' se trata como un mensaje de 'user' en este endpoint
-    if (role === 'system') {
-        role = 'user';
-    }
-    return {
-      role: role,
-      parts: [{ text: message.content }]
-    };
-  });
-  
-  const model = 'gemini-2.0-flash';
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
-
-  try {
-    // 5. Llamar a la API de Gemini desde el servidor
-    const geminiResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ contents: geminiFormattedHistory }),
-    });
-
-    if (!geminiResponse.ok) {
-        const errorData = await geminiResponse.json();
-        throw new Error(errorData.error.message || 'Error en la petición a Gemini');
+    if (request.method !== 'POST') {
+        return response.status(405).json({ message: 'Método no permitido' });
     }
 
-    const data = await geminiResponse.json();
+    const { conversationHistory } = request.body;
+    const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true';
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
-    // 6. Devolver la respuesta de Gemini al frontend
-    return response.status(200).json(data);
+    // Validar API keys según modo
+    if (USE_OPENROUTER && !OPENROUTER_API_KEY) {
+        return response.status(500).json({ error: { message: 'OPENROUTER_API_KEY no configurada.' } });
+    }
+    if (!USE_OPENROUTER && !GEMINI_API_KEY) {
+        return response.status(500).json({ error: { message: 'La clave de API de Google no está configurada.' } });
+    }
 
-  } catch (error) {
-    console.error('Error en la función serverless de Gemini:', error);
-    return response.status(500).json({ error: { message: 'Error interno del servidor.' } });
-  }
+    try {
+        let apiResponse;
+
+        if (USE_OPENROUTER) {
+            // === OPENROUTER (formato OpenAI) ===
+            // Modelo puede venir del body o de .env
+            const requestedModel = request.body.model || process.env.OPENROUTER_MODEL || 'mistralai/mixtral-8x7b-instruct';
+            const openRouterMessages = conversationHistory.map(msg => ({
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: msg.content
+            }));
+
+            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://agnautopartes.vercel.app',
+                    'X-Title': process.env.OPENROUTER_TITLE || 'AGN AutoPartes ERP'
+                },
+                body: JSON.stringify({
+                    model: requestedModel,
+                    messages: openRouterMessages,
+                    temperature: 0.7
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error?.message || 'Error en OpenRouter');
+            }
+
+            apiResponse = await resp.json();
+            // Extraer texto de respuesta
+            const aiResponseText = apiResponse.choices?.[0]?.message?.content || '';
+
+        } else {
+            // === GEMINI (original) ===
+            const geminiFormattedHistory = conversationHistory.map(message => {
+                let role = message.role;
+                if (role === 'assistant') role = 'model';
+                if (role === 'system') role = 'user';
+                return { role, parts: [{ text: message.content }] };
+            });
+
+            const model = 'gemini-2.0-flash';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+            const geminiRes = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: geminiFormattedHistory })
+            });
+
+            if (!geminiRes.ok) {
+                const err = await geminiRes.json();
+                throw new Error(err.error?.message || 'Error en Gemini');
+            }
+
+            const data = await geminiRes.json();
+            const aiResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        }
+
+        return response.status(200).json({
+            candidates: [{ content: { parts: [{ text: aiResponseText }] } }]
+        });
+
+    } catch (error) {
+        console.error('Error en generate:', error);
+        return response.status(500).json({ error: { message: error.message || 'Error interno' } });
+    }
 }

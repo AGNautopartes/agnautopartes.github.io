@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const telefonoInput = document.getElementById('telefono');
     const brandDisplayName = document.getElementById('selected-brand-name');
     const brandDisplayLogo = document.getElementById('selected-brand-display-logo');
-    const bgVideo = document.getElementById('bg-video');
+     const bgVideo = document.getElementById('bg-video');
+
+     // Selector de modelo de IA (OpenRouter)
+     let modelSelector = null;
 
     // --- ESTRATEGIA DE ROLES ---
     // 1. Guardamos cada personalidad de la IA en su propia constante.
@@ -229,9 +232,52 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    const voiceAssistant = new VoiceAssistant();
+     const voiceAssistant = new VoiceAssistant();
 
-    // ==================================================================
+     // === SELECTOR DE MODELO DE IA (OPENROUTER) ===
+     function createModelSelector() {
+         if (modelSelector) return modelSelector;
+         const container = document.createElement('div');
+         container.id = 'model-selector-container';
+         container.style.cssText = 'padding: 8px 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666;';
+
+         const label = document.createElement('label');
+         label.textContent = 'Modelo IA:';
+         label.htmlFor = 'model-selector';
+
+         const select = document.createElement('select');
+         select.id = 'model-selector';
+         select.style.cssText = 'padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 12px;';
+
+         const models = [
+             {value: 'mistralai/mixtral-8x7b-instruct', text: 'Mixtral (Gratis)'},
+             {value: 'meta-llama/llama-3.1-8b-instruct', text: 'Llama 3.1 (Gratis)'},
+             {value: 'google/gemini-2.0-flash-lite-001', text: 'Gemini Flash (Barato)'},
+             {value: 'openai/gpt-4o', text: 'GPT-4o (Pago)'}
+         ];
+
+         models.forEach(m => {
+             const option = document.createElement('option');
+             option.value = m.value;
+             option.textContent = m.text;
+             select.appendChild(option);
+         });
+
+         const savedModel = localStorage.getItem('agn-selected-model');
+         if (savedModel) select.value = savedModel;
+         else select.value = 'mistralai/mixtral-8x7b-instruct';
+
+         select.addEventListener('change', () => {
+             localStorage.setItem('agn-selected-model', select.value);
+         });
+
+         container.appendChild(label);
+         container.appendChild(select);
+         modelSelector = container;
+         return container;
+     }
+
+     // ==================================================================
     // == 3. LÓGICA DE MENSAJERÍA Y COMUNICACIÓN CON IA ==
     // ==================================================================
 
@@ -273,12 +319,16 @@ document.addEventListener('DOMContentLoaded', function () {
         chatSendBtn.disabled = true;
         addMessage('assistant', '', true);
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ conversationHistory: conversationHistory }),
-            });
+         try {
+             const selectedModel = modelSelector ? modelSelector.querySelector('select').value : null;
+             const requestBody = { conversationHistory };
+             if (selectedModel) requestBody.model = selectedModel;
+
+             const response = await fetch(`${API_BASE_URL}/api/generate`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(requestBody),
+             });
 
             const existingThinkingMessage = document.getElementById('thinking-message');
             if (existingThinkingMessage) existingThinkingMessage.remove();
@@ -484,7 +534,21 @@ document.addEventListener('DOMContentLoaded', function () {
         checkFormCompleteness();
     }
 
-    function openChat() { if (!chatWidget) return; chatWidget.classList.remove('hidden'); addChatListeners(); if (chatInput) chatInput.focus(); }
+     function openChat() {
+         if (!chatWidget) return;
+         chatWidget.classList.remove('hidden');
+         // Añadir selector de modelo si no existe
+         if (!document.getElementById('model-selector-container')) {
+             const selector = createModelSelector();
+             if (chatMessages && chatMessages.parentNode) {
+                 chatWidget.insertBefore(selector, chatMessages);
+             } else {
+                 chatWidget.appendChild(selector);
+             }
+         }
+         addChatListeners();
+         if (chatInput) chatInput.focus();
+     }
     if (assistantButtonHeader) assistantButtonHeader.addEventListener('click', openChat);
     if (assistantButtonForm) assistantButtonForm.addEventListener('click', openChat);
     if (chatCloseBtn) chatCloseBtn.addEventListener('click', () => { if (chatWidget) chatWidget.classList.add('hidden'); });

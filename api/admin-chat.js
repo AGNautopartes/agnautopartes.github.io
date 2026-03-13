@@ -12,14 +12,20 @@ export default async function handler(req, res) {
     }
 
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
-    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
-    if (!GOOGLE_API_KEY) {
+    // === DETERMINAR API A USAR ===
+    const USE_OPENROUTER = process.env.USE_OPENROUTER === 'true';
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+
+    if (USE_OPENROUTER && !OPENROUTER_API_KEY) {
+        return res.status(500).json({ error: 'OPENROUTER_API_KEY no configurada.' });
+    }
+    if (!USE_OPENROUTER && !GEMINI_API_KEY) {
         return res.status(500).json({ error: 'Clave de API de Google no configurada.' });
     }
 
-    // Obtener contexto de órdenes reales para que Aria "recuerde"
-    // 🟢 Misión: Visión Relacional (Fase 5) - Ahora Aria lee de order_items directamente
+    // === OBTENER CONTEXTO DE ÓRDENES (igual) ===
     const { data: existingOrders } = await supabase
         .from('orders')
         .select(`
@@ -34,12 +40,9 @@ export default async function handler(req, res) {
         const vBrand = o.vehicle_brand || 'N/A';
         const vModel = o.vehicle_model || 'N/A';
         const vYear = o.vehicle_year || 'N/A';
-
-        // Usar los datos de la tabla relacional order_items
         const itemsList = (o.order_items && o.order_items.length > 0)
             ? o.order_items.map(i => `${i.part_name} (#${i.part_number || 'S/N'})`).join('; ')
             : 'Ninguno';
-
         return `- [${o.readable_id}] | CLIENTE: ${o.customers?.full_name} | CARRO: ${vBrand} ${vModel} ${vYear} | PIEZA PRINCIPAL (Legacy): ${o.part_name} | DESGLOSE RELACIONAL: [${itemsList}] | STATUS: ${o.status}`;
     }).join('\n');
 
@@ -66,36 +69,83 @@ INSTRUCCIONES:
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
 `.trim();
 
-    const formattedHistory = conversationHistory.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-    }));
-
-    formattedHistory.push({ role: 'user', parts: [{ text: message }] });
-
-    // Forzar el system prompt actualizado en cada envío para refrescar la memoria de órdenes
-    formattedHistory.unshift({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
-    formattedHistory.splice(1, 0, { role: 'model', parts: [{ text: 'Entendido. Contexto actualizado. ¿Qué desea hacer?' }] });
+    // === PREPARAR MENSAJES SEGÚN API ===
+    let messagesForAPI;
+    if (USE_OPENROUTER) {
+        // Formato OpenAI: [{role, content}]
+        messagesForAPI = [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...conversationHistory.map(m => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: m.content
+            })),
+            { role: 'user', content: message }
+        ];
+    } else {
+        // Formato Gemini: [{role, parts:[{text}]}]
+        messagesForAPI = [
+            { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+            ...conversationHistory.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            })),
+            { role: 'user', parts: [{ text: message }] }
+        ];
+    }
 
     try {
-        const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`,
-            {
+        let responseText;
+
+        if (USE_OPENROUTER) {
+            // === OPENROUTER CALL ===
+            const requestedModel = req.body.model || process.env.OPENROUTER_MODEL || 'mistralai/mixtral-8x7b-instruct';
+            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: formattedHistory })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://agnautopartes.vercel.app',
+                    'X-Title': process.env.OPENROUTER_TITLE || 'AGN AutoPartes ERP'
+                },
+                body: JSON.stringify({
+                    model: requestedModel,
+                    messages: messagesForAPI,
+                    temperature: 0.7
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error?.message || 'Error en OpenRouter');
             }
-        );
 
-        if (!geminiRes.ok) throw new Error('Error en la API de Gemini');
+            const data = await resp.json();
+            responseText = data.choices?.[0]?.message?.content || '';
 
-        const data = await geminiRes.json();
-        const responseText = data.candidates[0].content.parts[0].text;
+        } else {
+            // === GEMINI CALL ===
+            const geminiRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: messagesForAPI })
+                }
+            );
 
+            if (!geminiRes.ok) {
+                const err = await geminiRes.json();
+                throw new Error(err.error?.message || 'Error en Gemini');
+            }
+
+            const data = await geminiRes.json();
+            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        }
+
+        // === PARSE ACCIONES (misma lógica) ===
         let action = null;
         let displayText = responseText;
 
-        // Búsqueda determinista de bloque [ACTION:{...}]
         const startToken = '[ACTION:';
         const startIdx = responseText.indexOf(startToken);
         if (startIdx !== -1) {
@@ -104,7 +154,6 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
                 const rawContent = responseText.substring(startIdx + startToken.length, endIdx).trim();
                 try {
                     action = JSON.parse(rawContent);
-                    // El texto para el chat es todo lo que NO sea la acción
                     displayText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
                 } catch (e) {
                     console.error('Error parseando bloque de acción:', e);
