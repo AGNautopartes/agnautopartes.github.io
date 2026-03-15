@@ -18,10 +18,19 @@ export default async function handler(req, res) {
     }
     const { message, conversationHistory = [], adminName = 'Admin', model = process.env.DEFAULT_MODEL || '' } = req.body;
 
-    const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-    // === OBTENER CONTEXTO DE ÓRDENES (igual) ===
+    // Routing: si el modelo es de Google y tenemos GEMINI_API_KEY, usar Gemini nativo.
+    // Para todo lo demás (o si no hay GEMINI_API_KEY), usar OpenRouter.
+    const isGoogleModel = model.startsWith('google/');
+    const useGeminiNative = isGoogleModel && !!GEMINI_API_KEY;
+    const useOpenRouter = !useGeminiNative && !!OPENROUTER_API_KEY;
+
+    if (!useGeminiNative && !useOpenRouter) {
+        return res.status(500).json({ error: 'No hay API key disponible para el modelo seleccionado. Configura GEMINI_API_KEY u OPENROUTER_API_KEY en Vercel.' });
+    }
+
     const { data: existingOrders } = await supabase
         .from('orders')
         .select(`
@@ -85,8 +94,6 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
 
     try {
         let responseText;
-
-        const useOpenRouter = OPENROUTER_API_KEY && (model !== 'google/gemini-2.0-flash' || !GEMINI_API_KEY || process.env.USE_OPENROUTER === 'true');
 
         if (useOpenRouter) {
             // === OPENROUTER CALL ===

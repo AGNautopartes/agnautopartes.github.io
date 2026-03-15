@@ -1,44 +1,53 @@
-
 export default async function handler(req, res) {
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-    
-    // Default vetted models if things fail
-    const defaultModels = [
-        { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash (Recomendado)' },
-        { id: 'google/gemini-2.5-pro-preview-03-25', name: 'Gemini 2.5 Pro' },
-        { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B' },
-        { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
-        { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' }
-    ];
 
-    if (!OPENROUTER_API_KEY) {
-        return res.status(200).json(defaultModels);
+    if (!GEMINI_API_KEY && !OPENROUTER_API_KEY) {
+        return res.status(500).json({ error: 'No hay API keys configuradas (GEMINI_API_KEY u OPENROUTER_API_KEY).' });
     }
 
-    try {
-        const response = await fetch('https://openrouter.ai/api/v1/models', {
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`
+    const models = [];
+
+    // === GEMINI MODELS ===
+    if (GEMINI_API_KEY) {
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+            if (r.ok) {
+                const data = await r.json();
+                const geminiModels = (data.models || [])
+                    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+                    .map(m => ({
+                        id: `google/${m.name.replace('models/', '')}`,
+                        name: m.displayName || m.name
+                    }));
+                models.push(...geminiModels);
             }
-        });
-
-        if (!response.ok) {
-            return res.status(200).json(defaultModels);
+        } catch (e) {
+            console.error('Error fetching Gemini models:', e);
         }
-
-        const data = await response.json();
-        // Limit to high quality or free models to avoid cluttering and accidental costs
-        const formatted = data.data
-            .filter(m => m.id.includes('flash') || m.id.includes('mini') || m.id.includes('llama-3.3') || m.id.includes('deepseek'))
-            .map(m => ({
-                id: m.id,
-                name: m.name || m.id
-            }))
-            .slice(0, 15);
-
-        return res.status(200).json(formatted.length > 0 ? formatted : defaultModels);
-    } catch (error) {
-        console.error('Error fetching models:', error);
-        return res.status(200).json(defaultModels);
     }
+
+    // === OPENROUTER MODELS ===
+    if (OPENROUTER_API_KEY) {
+        try {
+            const r = await fetch('https://openrouter.ai/api/v1/models', {
+                headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }
+            });
+            if (r.ok) {
+                const data = await r.json();
+                const orModels = (data.data || [])
+                    .filter(m => !m.id.startsWith('google/')) // evitar duplicados con Gemini
+                    .map(m => ({ id: m.id, name: m.name || m.id }));
+                models.push(...orModels);
+            }
+        } catch (e) {
+            console.error('Error fetching OpenRouter models:', e);
+        }
+    }
+
+    if (models.length === 0) {
+        return res.status(500).json({ error: 'No se pudieron obtener modelos de ninguna API.' });
+    }
+
+    return res.status(200).json(models);
 }
