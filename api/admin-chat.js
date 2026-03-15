@@ -128,7 +128,7 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
                 return res.status(500).json({ error: 'Falta GEMINI_API_KEY u OPENROUTER_API_KEY.' });
             }
 
-            const geminiModelStr = model.startsWith('google/') ? model.replace('google/', '') : (process.env.GEMINI_MODEL || '');
+            const geminiModelStr = model.startsWith('google/') ? model.replace('google/', '') : (process.env.GEMINI_MODEL || 'gemini-2.0-flash-001');
 
             const messagesForAPI = [
                 { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },

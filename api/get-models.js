@@ -4,8 +4,8 @@ export default async function handler(req, res) {
     
     // Default vetted models if things fail
     const defaultModels = [
-        { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash (Recomendado)' },
-        { id: 'google/gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Lite' },
+        { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash (Recomendado)' },
+        { id: 'google/gemini-2.5-pro-preview-03-25', name: 'Gemini 2.5 Pro' },
         { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B' },
         { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
         { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' }

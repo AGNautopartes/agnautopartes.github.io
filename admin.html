@@ -1499,6 +1499,15 @@
         let allOrders = [], selectedOrder = null;
         let ariaHistory = [];
 
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = `toast-${type} show`;
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = '', 3000);
+        }
+
         // â•â• LOGIN â•â•
         document.getElementById('btn-login').addEventListener('click', doLogin);
         document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
