@@ -16,20 +16,10 @@ export default async function handler(req, res) {
     if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
+    const { message, conversationHistory = [], adminName = 'Admin', model = 'google/gemini-2.5-flash' } = req.body;
 
-    const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
-
-    // === SOLO GEMINI - OpenRouter deshabilitado ===
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-
-    if (!GEMINI_API_KEY) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY no configurada.' });
-    }
-
-    console.log('=== DEBUG API ===');
-    console.log('GEMINI_API_KEY existe:', !!GEMINI_API_KEY);
-    console.log('GEMINI_MODEL:', GEMINI_MODEL);
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
     // === OBTENER CONTEXTO DE ÓRDENES (igual) ===
     const { data: existingOrders } = await supabase
@@ -55,79 +45,120 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-Eres "Aria", la asistente IA del ERP AGN Autopartes. FECHA: ${today}.
+Eres "Aria", el núcleo inteligente del ERP de AGN Autopartes. FECHA: ${today}.
 
-OBJETIVO: Crear órdenes de repuestos de forma SIMPLE y RÁPIDA.
+TU MISIÓN: Gestionar el flujo de órdenes, finanzas y logística con precisión total.
 
-📋 CAMPOS OBLIGATORIOS PARA CREAR ORDEN (usa ESTOS NOMBRES EXACTOS):
-- customer_name: Nombre del cliente (ej: "Juan Perez")
-- vehicle_model: Modelo del vehículo (ej: "Hilux", "Corolla", "Accent")
+📋 OPERACIONES SOPORTADAS:
+1. CREAR ÓRDEN: customer_name y vehicle_model obligatorios.
+2. ACTUALIZAR ESTADO: new_status (ver abajo).
+3. GESTIÓN FINANCIERA (UPDATE_FIELDS): Puedes modificar uno o varios campos:
+   - cost_fob: Costo base en origen.
+   - cost_shipping: Valor de fletes/seguro.
+   - cost_advalorem: Impuestos aduana.
+   - sale_price: Precio final pactado.
+   - profit_margin: % de ganancia deseado (ej: 0.35 para 35%).
+   - vendor_commission: % o valor fijo para el vendedor.
 
-📋 CAMPOS OPCIONALES (usa ESTOS NOMBRES EXACTOS):
-- vehicle_brand: Marca (ej: "Toyota", "Hyundai")
-- vehicle_year: Año (ej: "2020", "2015")
-- main_part: Repuesto principal (ej: "parabrisas", "faro")
+4. NOTAS: Agregar aclaraciones importantes.
 
-❌ NO uses: "cliente", "carro", "pieza_principal", "nombre", "modelo", "client_name" - USA "customer_name"
+📋 CAMPOS EXACTOS PARA UPDATE_FIELDS (Usar estos keys):
+- "cost_fob", "sale_price", "vendor_name", "supplier_url", "part_name", "part_number", "part_description"
+- Para ítems: "items_json" (array de objetos {part_name, part_number, cost, qty})
 
-EJEMPLO CORRECTO:
-Usuario: "crea orden para Pedro Garcia, Toyota Hilux 2020, amortiguador"
-Tú respondes: [ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"Pedro Garcia","vehicle_model":"Hilux","vehicle_brand":"Toyota","vehicle_year":"2020","main_part":"amortiguador"}}]
+🧠 CAPACIDAD MATEMÁTICA:
+- Si el usuario dice: "Súmale $15 de shipping a la orden 10", tú buscas la orden 10, tomas su 'costo_fob' y envías un UPDATE_FIELDS con el nuevo total o solo los campos modificados.
+- Si el usuario dice: "Dime cuánto gano con la orden 5 si la vendo en $200", haz el cálculo (Venta - Costo) y responde amablemente.
 
-OTROS EJEMPLOS CORRECTOS:
-- "orden para Maria, Honda Civic" → {"customer_name":"Maria","vehicle_model":"Civic","vehicle_brand":"Honda"}
-- "nueva orden para Luis, Ford Explorer" → {"customer_name":"Luis","vehicle_model":"Explorer","vehicle_brand":"Ford"}
-
-REGLAS:
-1. Si el usuario da cliente + vehículo, CREA LA ORDEN inmediatamente
-2. NO preguntes más datos si ya tienes cliente + vehicle_model
-3. El JSON debe ser la ÚLTIMA cosa en tu respuesta
-
-FORMATO DE ACCIÓN:
-[ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"NOMBRE","vehicle_model":"MODELO","vehicle_brand":"MARCA","vehicle_year":"AÑO","main_part":"REPUESTO"}}]
-
-UPDATE STATUS:
-[ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-1","new_status":"Cotizado"}}]
-
-LISTA DE ÓRDENES ACTUALES:
-${ordersContext}
+REGLAS DE ORO:
+1. Responde SIEMPRE de forma ejecutiva pero amigable. 
+2. Si recibes comandos de voz (transcritos), ignora muletillas ("ehh", "este", "ponle").
+3. Al crear órdenes, asume que si dicen "Toyota Hilux", Marca=Toyota, Modelo=Hilux.
 
 ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado.
-`.trim();
 
-    // === SOLO GEMINI - Formato Gemini ===
-    const messagesForAPI = [
-        { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-        ...conversationHistory.map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }]
-        })),
-        { role: 'user', parts: [{ text: message }] }
-    ];
+FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
+[ACTION:{"type":"CREATE_ORDER","data":{...}}]
+[ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-1","new_status":"..."}}]
+[ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-1","fields":{...}}}]
+`.trim();
 
     try {
         let responseText;
 
-        // === GEMINI CALL ===
-        const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: messagesForAPI })
-            }
-        );
+        const useOpenRouter = OPENROUTER_API_KEY && (model !== 'google/gemini-2.5-flash' || !GEMINI_API_KEY || process.env.USE_OPENROUTER === 'true');
 
-        if (!geminiRes.ok) {
-            const err = await geminiRes.json();
-            console.error('GEMINI ERROR:', err);
-            throw new Error(err.error?.message || 'Error en Gemini');
+        if (useOpenRouter) {
+            // === OPENROUTER CALL ===
+            const messagesForAPI = [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...conversationHistory.map(m => ({
+                    role: m.role,
+                    content: m.content
+                })),
+                { role: 'user', content: message }
+            ];
+
+            const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': 'https://agnautopartes.github.io', 
+                    'X-Title': 'AGN Autopartes ERP'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: messagesForAPI
+                })
+            });
+
+            if (!orRes.ok) {
+                const err = await orRes.json();
+                console.error('OPENROUTER ERROR:', err);
+                throw new Error(err.error?.message || 'Error en OpenRouter');
+            }
+
+            const data = await orRes.json();
+            responseText = data.choices?.[0]?.message?.content || '';
+
+        } else {
+            // === NATIVE GEMINI CALL ===
+            if (!GEMINI_API_KEY) {
+                return res.status(500).json({ error: 'Falta GEMINI_API_KEY u OPENROUTER_API_KEY.' });
+            }
+
+            const geminiModelStr = model.startsWith('google/') ? model.replace('google/', '') : (process.env.GEMINI_MODEL || 'gemini-2.5-flash');
+
+            const messagesForAPI = [
+                { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+                ...conversationHistory.map(m => ({
+                    role: m.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: m.content }]
+                })),
+                { role: 'user', parts: [{ text: message }] }
+            ];
+
+            const geminiRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelStr}:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: messagesForAPI })
+                }
+            );
+
+            if (!geminiRes.ok) {
+                const err = await geminiRes.json();
+                console.error('GEMINI ERROR:', err);
+                throw new Error(err.error?.message || 'Error en Gemini');
+            }
+
+            const data = await geminiRes.json();
+            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
 
-        const data = await geminiRes.json();
-        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        // === PARSE ACCIONES (misma lógica) ===
+        // === PARSE ACCIONES ===
         let action = null;
         let displayText = responseText;
 

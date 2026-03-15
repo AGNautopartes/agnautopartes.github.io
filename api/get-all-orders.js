@@ -7,18 +7,24 @@ export default async function handler(req, res) {
 
     const adminPassword = req.headers['x-admin-password'];
 
-    // 1. Intentar validar contra la tabla admin_users de Supabase
-    const { data: user, error: authError } = await supabase
-        .from('admin_users')
-        .select('username')
-        .eq('password_hash', adminPassword)
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
+    let user = null;
+    try {
+        // 1. Intentar validar contra la tabla admin_users de Supabase
+        const res = await supabase
+            .from('admin_users')
+            .select('username')
+            .eq('password_hash', adminPassword)
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+        user = res.data;
+    } catch (e) {
+        console.warn("No se pudo verificar admin_users en DB, usando fallback local.");
+    }
 
     if (!user) {
-        // Fallback a variable de entorno para no romper accesos existentes durante la migración
-        if (adminPassword !== process.env.PASSWORD_ADMIN) {
+        // Fallback robusto: revisar ambas variables
+        if (adminPassword !== process.env.PASSWORD_ADMIN && adminPassword !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ message: 'No autorizado' });
         }
     }

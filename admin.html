@@ -1117,6 +1117,50 @@
                 opacity: 1;
             }
         }
+        .voice-visualizer {
+            display: none;
+            gap: 3px;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
+            margin: 5px 0;
+        }
+        .voice-visualizer.active { display: flex; }
+        .vis-bar {
+            width: 3px;
+            height: 10px;
+            background: var(--blue);
+            border-radius: 10px;
+            animation: pulse-vis 1s infinite ease-in-out;
+        }
+        .vis-bar:nth-child(2) { animation-delay: 0.2s; }
+        .vis-bar:nth-child(3) { animation-delay: 0.4s; }
+        .vis-bar:nth-child(4) { animation-delay: 0.6s; }
+        .vis-bar:nth-child(5) { animation-delay: 0.8s; }
+
+        @keyframes pulse-vis {
+            0%, 100% { height: 5px; opacity: 0.5; }
+            50% { height: 15px; opacity: 1; }
+        }
+
+        .ai-msg.assistant::before {
+            content: "✨";
+            margin-right: 5px;
+            font-size: 0.8rem;
+        }
+
+        #aria-mic.active {
+            background: rgba(0, 122, 255, 0.2);
+            color: var(--blue);
+            box-shadow: 0 0 15px rgba(0, 122, 255, 0.5);
+            animation: pulse-mic 1.5s infinite;
+        }
+
+        @keyframes pulse-mic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+        }
     </style>
 </head>
 
@@ -1321,7 +1365,7 @@
                          <!-- Model Selector -->
                          <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2);">
                              <label for="admin-model-selector" style="font-weight: 600;">Modelo:</label>
-                             <select id="admin-model-selector" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
+                             <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
                                  <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B (Free)</option>
                                  <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B (Free)</option>
                                  <option value="google/gemini-2.0-flash-lite-001">Gemini Flash Lite (Free)</option>
@@ -1338,7 +1382,11 @@
                         estados, <strong>modificar costos o precios</strong> y registrar notas. Por ejemplo, dígame:
                         <em>"Actualiza el costo de la orden 4 a $45"</em> o <em>"Crea una orden para Juan..."</em>
                     </div>
-
+                </div>
+                <!-- Visualizer and Status -->
+                <div id="aria-status" style="font-size: 0.65rem; color: var(--text2); text-align: center; padding: 2px 0; min-height: 12px;"></div>
+                <div id="aria-visualizer" class="voice-visualizer">
+                    <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                 </div>
                 <div class="ai-input-area">
                     <div class="ai-input-wrapper">
@@ -1666,16 +1714,18 @@
             <div class="detail-section">
                 <h4>💰 Financieros</h4>
                 <div class="financial-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem">
-                    <div class="fin-item"><div class="fl">Costo FOB</div><div class="fv"><input type="number" id="edit-fob" value="${o.costo_fob || o.cost_fob || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Base Price (FOB)</div><div class="fv"><input type="number" id="edit-base-price" value="${o.costo_fob || o.cost_fob || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Logística</div><div class="fv"><input type="number" id="edit-logistica" value="${o.shipping_logistica || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Shipping EC</div><div class="fv"><input type="number" id="edit-shipping-ec" value="${o.shipping_ecuador || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Ad Valorem</div><div class="fv"><input type="number" id="edit-advalorem" value="${o.ad_valorem || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Shipping/Aduana</div><div class="fv"><input type="number" id="edit-shipping-aduana" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
+                    
                     <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
                     <div class="fin-item"><div class="fl">Costo Total</div><div class="fv"><input type="number" id="calc-costo-total" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
                     
                     <div class="fin-item"><div class="fl">Margen (%)</div><div class="fv"><input type="number" id="edit-margen" value="${((o.margen_markdown || 0.30) * 100)}" step="0.1" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Precio Venta (Sbt)</div><div class="fv"><input type="number" id="edit-sale" value="${o.precio_venta || o.sale_price || 0}" step="0.01" oninput="recalculateTotals(true)"></div></div>
-                    <div class="fin-item"><div class="fl">IVA (15%)</div><div class="fv"><input type="number" id="calc-iva" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
+                    <div class="fin-item"><div class="fl">IVA Venta (15%)</div><div class="fv"><input type="number" id="edit-iva-vta" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
                     <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
                     <div class="fin-item"><div class="fl">Total Cliente</div><div class="fv"><input type="number" id="calc-total-iva" value="0" readonly style="background:var(--bg-card); font-weight:bold; color:var(--blue)"></div></div>
                     <div class="fin-item"><div class="fl">Comisión Vend.</div><div class="fv"><input type="number" id="edit-comision" value="${o.comision_vendedor || 0}" step="0.01"></div></div>
@@ -1696,6 +1746,95 @@
 
             // Llamar al cálculo de totales inicial al renderizar la vista
             setTimeout(recalculateTotals, 100);
+        }
+
+        function openNewManualOrder() {
+            const panel = document.getElementById('detail-panel');
+            const content = document.getElementById('detail-content');
+            panel.classList.remove('empty');
+            panel.classList.remove('collapsed');
+            const toggleBtn = document.getElementById('toggle-detail');
+            if (toggleBtn) toggleBtn.textContent = '↔';
+
+            content.innerHTML = `
+                <div class="detail-header">
+                    <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">NUEVA ORDEN MANUAL</div>
+                    <input type="text" id="new-part-name" placeholder="Repuesto principal (Ej: Faros LED)" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid var(--blue); padding: 5px 0;">
+                </div>
+
+                <div class="detail-body">
+                    <div class="detail-section">
+                        <h4>👤 Cliente</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
+                            <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>🚗 Vehículo</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand" placeholder="Ej: Kia"></div></div>
+                            <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model" placeholder="Ej: Sportage"></div></div>
+                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
+                            <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="new-vin" placeholder="Opcional"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                         <h4>⚙️ Detalle de Compra</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Num. Parte</div><div class="iv"><input type="text" id="new-part-no" placeholder="OEM/SKU"></div></div>
+                            <div class="info-item" style="grid-column: span 2"><div class="il">URL</div><div class="iv"><input type="text" id="new-url" placeholder="Link de compra"></div></div>
+                            <div class="info-item"><div class="il">Costo FOB</div><div class="iv"><input type="number" id="new-fob" value="0" step="0.01"></div></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px">
+                        <button class="btn-primary" style="width:100%; padding: 12px;" onclick="saveNewManualOrder()">Crear Orden</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function saveNewManualOrder() {
+            const name = document.getElementById('new-cust-name').value;
+            const model = document.getElementById('new-model').value;
+            const part = document.getElementById('new-part-name').value;
+
+            if (!name || !model || !part) {
+                showToast('⚠️ Nombre, Modelo y Pieza son obligatorios', 'warning');
+                return;
+            }
+
+            const data = {
+                customer_name: name,
+                customer_phone: document.getElementById('new-cust-phone').value,
+                vehicle_brand: document.getElementById('new-brand').value,
+                vehicle_model: model,
+                vehicle_year: document.getElementById('new-year').value,
+                vin: document.getElementById('new-vin').value,
+                part_name: part,
+                part_number: document.getElementById('new-part-no').value,
+                supplier_url: document.getElementById('new-url').value,
+                cost_fob: parseFloat(document.getElementById('new-fob').value) || 0,
+                status: 'Solicitado'
+            };
+
+            showToast('⏳ Creando...', 'info');
+
+            const res = await fetch(`${API}/api/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                showToast('✅ Orden creada exitosamente', 'success');
+                await loadData(); // Recargar lista
+            } else {
+                showToast('❌ Error al crear orden', 'error');
+            }
         }
 
         async function updateManualOrder(orderId) {
@@ -1720,7 +1859,7 @@
                 status: document.getElementById('det-status').value,
 
                 // Financieros
-                costo_fob: parseFloat(document.getElementById('edit-fob').value) || 0,
+                costo_fob: parseFloat(document.getElementById('edit-base-price').value) || 0,
                 shipping_logistica: parseFloat(document.getElementById('edit-logistica').value) || 0,
                 shipping_ecuador: parseFloat(document.getElementById('edit-shipping-ec').value) || 0,
                 ad_valorem: parseFloat(document.getElementById('edit-advalorem').value) || 0,
@@ -1864,7 +2003,12 @@
                 const res = await fetchWithTimeout(`${API}/api/admin-chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                    body: JSON.stringify({ message: msg, conversationHistory: ariaHistory, adminName }),
+                    body: JSON.stringify({ 
+                        message: msg, 
+                        conversationHistory: ariaHistory, 
+                        adminName, 
+                        model: document.getElementById('aria-model-select')?.value || 'google/gemini-2.5-flash' 
+                    }),
                     timeout: 20000 // 20s para IA
                 });
 
@@ -2126,318 +2270,8 @@
              }
          }
 
-                if (data.action) {
-                    await executeAriaAction(data.action);
-                }
-            } catch (e) {
-                console.error('Aria Error:', e);
-                if (thinking && thinking.parentNode) thinking.remove();
-
-                let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
-                if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
-
-                addAiMsg('assistant', errorMsg);
-            } finally {
-                ariaSend.disabled = false;
-            }
-        }
-
-        async function executeAriaAction(action) {
-            console.log('Executing Aria Action:', action);
-            try {
-                if (action.type === 'CREATE_ORDER') {
-                    const res = await fetchWithTimeout(`${API}/api/create-order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify({ ...action.data, created_by: adminName }),
-                        timeout: 10000
-                    });
-                    if (res.ok) {
-                        const result = await res.json();
-                        addAiMsg('system', `✅ Orden creada con éxito.`);
-                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
-                        allOrders = await ordersRes.json();
-                        renderOrders(allOrders);
-                        updateStats(allOrders);
-                    } else {
-                        addAiMsg('system', '❌ Error al crear la orden en la base de datos.');
-                    }
-                } else if (action.type === 'UPDATE_STATUS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, newStatus: action.data.new_status }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            found.status = action.data.new_status;
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
-                            if (selectedOrder?.id === found.id) renderDetail(found);
-                        } else {
-                            addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
-                    }
-                } else if (action.type === 'DELETE_ORDER') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/delete-order`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            allOrders = allOrders.filter(o => o.id !== found.id);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
-                            if (selectedOrder?.id === found.id) {
-                                document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
-                                document.getElementById('detail-panel').classList.add('empty');
-                            }
-                        } else {
-                            addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
-                    }
-                } else if (action.type === 'ADD_NOTE') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/add-note`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
-                            if (selectedOrder?.id === found.id) loadNotes(found.id);
-                        } else {
-                            addAiMsg('system', `❌ Error al guardar nota en [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
-                    }
-                } else if (action.type === 'UPDATE_FIELDS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        // Algoritmo de Reconciliación (Merge Inteligente)
-                        const currentItems = Array.isArray(found.items_json) ? [...found.items_json] : [];
-                        const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
-
-                        // Mezclar sin duplicar: Si la pieza ya existe por nombre exacto, se actualiza; si no, se añade
-                        ariaItems.forEach(newItem => {
-                            const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
-                            const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
-                            if (idx !== -1) {
-                                currentItems[idx] = { ...currentItems[idx], ...itemObj };
-                            } else {
-                                currentItems.push(itemObj);
-                            }
-                        });
-
-                        const updateData = {
-                            orderId: found.id,
-                            part_name: action.data.fields.part_name || found.part_name,
-                            part_number: action.data.fields.part_number || found.part_number,
-                            vin: action.data.fields.vin || found.vin,
-                            vehicle_brand: action.data.fields.vehicle_brand || found.vehicle_brand,
-                            vehicle_model: action.data.fields.vehicle_model || found.vehicle_model,
-                            vehicle_year: action.data.fields.vehicle_year || found.vehicle_year,
-                            supplier_url: action.data.fields.supplier_url || found.supplier_url,
-                            tracking_number: action.data.fields.tracking_number || found.tracking_number,
-                            status: action.data.fields.status || found.status,
-                            cost_fob: action.data.fields.cost_fob !== undefined ? action.data.fields.cost_fob : found.cost_fob,
-                            sale_price: action.data.fields.sale_price !== undefined ? action.data.fields.sale_price : found.sale_price,
-                            items_json: currentItems
-                        };
-
-                        const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify(updateData),
-                            timeout: 10000
-                        });
-
-                        if (res.ok) {
-                            // Actualizar localmente
-                            Object.assign(found, updateData);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `✅ Orden [#${found.readable_id}] actualizada correctamente.`);
-                            if (selectedOrder?.id === found.id) renderDetail(found);
-                        } else {
-                            addAiMsg('system', `❌ Error al actualizar los campos de [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
-                    }
-                } else {
-                    console.warn('Unknown Aria action:', action.type);
-                }
-            } catch (err) {
-                console.error('Action execution error:', err);
-                addAiMsg('system', `❌ Error al ejecutar acción: ${err.message}`);
-            }
-        }
 
 
-
-        // ══ DASHBOARD ══
-        function updateDashboard() {
-            document.getElementById('kpi-active').textContent = allOrders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
-            document.getElementById('kpi-delivered').textContent = allOrders.filter(o => o.status === 'Entregado').length;
-        }
-
-        // ══ REPORTS LOGIC ══
-        function renderReports() {
-            const tbody = document.getElementById('reports-tbody');
-            const from = document.getElementById('rep-date-from').value;
-            const to = document.getElementById('rep-date-to').value;
-            const brand = document.getElementById('rep-brand').value.toLowerCase();
-            const model = document.getElementById('rep-model').value.toLowerCase();
-            const status = document.getElementById('rep-status').value;
-            const customer = document.getElementById('rep-customer').value.toLowerCase();
-
-            const filtered = allOrders.filter(o => {
-                const date = o.created_at.split('T')[0];
-                const matchDate = (!from || date >= from) && (!to || date <= to);
-                const matchBrand = !brand || (o.vehicle_brand || '').toLowerCase().includes(brand);
-                const matchModel = !model || (o.vehicle_model || '').toLowerCase().includes(model);
-                const matchStatus = !status || o.status === status;
-                const matchCustomer = !customer || (o.customers?.full_name || '').toLowerCase().includes(customer);
-                return matchDate && matchBrand && matchModel && matchStatus && matchCustomer;
-            });
-
-            tbody.innerHTML = filtered.map(o => `
-                <tr>
-                    <td>#${o.readable_id}</td>
-                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
-                    <td>${o.customers?.full_name || '—'}</td>
-                    <td>${o.vehicle_brand || ''} ${o.vehicle_model || ''}</td>
-                    <td>${o.part_name}</td>
-                    <td><span class="pill">${o.status}</span></td>
-                    <td>$${o.sale_price || 0}</td>
-                    <td style="color:${(o.sale_price - o.cost_fob) > 0 ? 'var(--green)' : 'var(--red)'}">
-                        $${(o.sale_price - (o.cost_fob || 0)).toFixed(2)}
-                    </td>
-                </tr>
-            `).join('') || '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text2)">No se encontraron órdenes con estos filtros.</td></tr>';
-        }
-
-        // Listeners para filtros de reportes
-        ['rep-date-from', 'rep-date-to', 'rep-brand', 'rep-model', 'rep-status', 'rep-customer'].forEach(id => {
-            document.getElementById(id).addEventListener('input', renderReports);
-        });
-
-        // ══ TOAST ══
-        function showToast(msg, type = 'success') {
-            const t = document.createElement('div');
-            t.className = `toast ${type}`;
-            t.textContent = msg;
-            document.body.appendChild(t);
-            setTimeout(() => {
-                t.style.opacity = '0';
-                t.style.transition = '0.5s';
-                setTimeout(() => t.remove(), 500);
-            }, 3000);
-        }
-
-        // ══ EXPORT CSV (CORREGIDO) ══
-        function exportToCSV(data, fileName) {
-            if (!data.length) return showToast('No hay datos para exportar', 'error');
-
-            const headers = [
-                'ID', 'Fecha', 'Cliente', 'Telefono', 'Marca', 'Modelo', 'Anio',
-                'Pieza', 'ParteNum', 'VIN', 'Tracking', 'Estado',
-                'CostoFOB', 'PrecioVenta', 'Ganancia'
-            ];
-
-            const rows = data.map(o => [
-                o.readable_id,
-                new Date(o.created_at).toLocaleDateString(),
-                o.customers?.full_name || '—',
-                o.customers?.phone || '—',
-                o.vehicle_brand || '—',
-                o.vehicle_model || '—',
-                o.vehicle_year || '—',
-                o.part_name,
-                o.part_number || '—',
-                o.vin || '—',
-                o.tracking_number || '—',
-                o.status,
-                o.cost_fob || 0,
-                o.sale_price || 0,
-                (o.sale_price - (o.cost_fob || 0)).toFixed(2)
-            ]);
-
-            let csvContent = "\uFEFF"; // BOM para Excel
-            csvContent += headers.join(',') + "\n"; // Separador COMA
-            rows.forEach(r => {
-                csvContent += r.map(field => {
-                    const str = String(field).replace(/"/g, '""');
-                    return `"${str}"`;
-                }).join(',') + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", fileName);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('✅ Reporte generado');
-        }
-
-        document.getElementById('btn-export').addEventListener('click', () => {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const filter = document.getElementById('status-filter').value;
-            const visible = allOrders.filter(o => {
-                const matchSearch = !query ||
-                    (o.customers?.full_name || '').toLowerCase().includes(query) ||
-                    (o.part_name || '').toLowerCase().includes(query) ||
-                    (o.readable_id || '').toLowerCase().includes(query);
-                const matchFilter = !filter || o.status === filter;
-                return matchSearch && matchFilter;
-            });
-            exportToCSV(visible, `AGN_Ordenes_Filtradas_${new Date().toISOString().slice(0, 10)}.csv`);
-        });
-
-        document.getElementById('btn-export-full').addEventListener('click', () => {
-            // Usa los mismos filtros que la tabla de reportes
-            const from = document.getElementById('rep-date-from').value;
-            const to = document.getElementById('rep-date-to').value;
-            const brand = document.getElementById('rep-brand').value.toLowerCase();
-            const model = document.getElementById('rep-model').value.toLowerCase();
-            const status = document.getElementById('rep-status').value;
-            const customer = document.getElementById('rep-customer').value.toLowerCase();
-
-            const toExport = allOrders.filter(o => {
-                const date = o.created_at.split('T')[0];
-                const matchDate = (!from || date >= from) && (!to || date <= to);
-                const matchBrand = !brand || (o.vehicle_brand || '').toLowerCase().includes(brand);
-                const matchModel = !model || (o.vehicle_model || '').toLowerCase().includes(model);
-                const matchStatus = !status || o.status === status;
-                const matchCustomer = !customer || (o.customers?.full_name || '').toLowerCase().includes(customer);
-                return matchDate && matchBrand && matchModel && matchStatus && matchCustomer;
-            });
-
-            exportToCSV(toExport, `AGN_Reporte_Avanzado_${new Date().toISOString().slice(0, 10)}.csv`);
-        });
 
         // ══ VOICE (NATIVE CHROME API) ══
         let recognition;
@@ -2482,10 +2316,7 @@
         }
 
         document.getElementById('btn-new-order').addEventListener('click', () => {
-
-            ariaInput.focus();
-            ariaInput.placeholder = 'Ej: "Crea orden para María López, Hyundai Elantra 2019, pastillas de freno, costo $20, shipping $25, venta $120"';
-            showToast('💬 Dile a Aria los datos de la nueva orden →', 'info');
+            openNewManualOrder();
         });
 
         // ══ FUNCIONES DE FICHA MULTI-REPUESTO Y MATEMÁTICAS FINANCIERAS ══
@@ -2508,12 +2339,16 @@
         }
 
         function recalculateTotals(reverse = false) {
-            const fob = parseFloat(document.getElementById('edit-fob')?.value) || 0;
+            const fob = parseFloat(document.getElementById('edit-base-price')?.value) || 0;
             const log = parseFloat(document.getElementById('edit-logistica')?.value) || 0;
             const ec = parseFloat(document.getElementById('edit-shipping-ec')?.value) || 0;
             const adv = parseFloat(document.getElementById('edit-advalorem')?.value) || 0;
 
-            const costoTotal = fob + log + ec + adv;
+            const shippingAduana = log + ec + adv;
+            const elShippingAduana = document.getElementById('edit-shipping-aduana');
+            if (elShippingAduana) elShippingAduana.value = shippingAduana.toFixed(2);
+
+            const costoTotal = fob + shippingAduana;
             const elCosto = document.getElementById('calc-costo-total');
             if (elCosto) elCosto.value = costoTotal.toFixed(2);
 
@@ -2538,6 +2373,9 @@
             // IVA 15%
             const ventaActual = parseFloat(inputSale?.value) || 0;
             const iva = ventaActual * 0.15;
+
+            const elIvaVta = document.getElementById('edit-iva-vta');
+            if (elIvaVta) elIvaVta.value = iva.toFixed(2);
 
             const elIva = document.getElementById('calc-iva');
             if (elIva) elIva.value = iva.toFixed(2);

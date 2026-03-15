@@ -8,7 +8,13 @@ export default async function handler(req, res) {
     }
 
     const adminPassword = req.headers['x-admin-password'];
-    const { data: user } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+    let user = null;
+    try {
+        const { data } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+        user = data;
+    } catch (e) {
+        // Fallback to Env validation if RLS fails
+    }
     if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
@@ -114,7 +120,8 @@ export default async function handler(req, res) {
                 status: safeString(status, 'Solicitado'),
                 tracking_number: safeString(tracking_number, ''),
                 estimated_delivery_client: safeString(estimated_delivery_client, ''),
-                notes: safeString(notes, '')
+                notes: safeString(notes, ''),
+                items_json: partsList
             }])
             .select().single();
 
