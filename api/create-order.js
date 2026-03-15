@@ -119,29 +119,30 @@ export default async function handler(req, res) {
                 vehicle_year: safeString(vehicle_year, 'N/A'),
                 status: safeString(status, 'Solicitado'),
                 tracking_number: safeString(tracking_number, ''),
-                estimated_delivery_client: safeString(estimated_delivery_client, ''),
-                notes: safeString(notes, ''),
-                items_json: partsList
+                estimated_delivery_client: estimated_delivery_client || null,
+                notes: safeString(notes, '')
             }])
             .select().single();
 
         if (orderErr) throw orderErr;
 
-        // 4. Inicializar registro financiero vacío (Requerido para que la vista sume bien y no se rompa la UI)
+        // 4. Inicializar registro financiero vacío
         const { error: finErr } = await supabase
             .from('financials')
             .insert([{
                 order_id: order.id,
                 cost_fob: 0,
                 shipping_cost: 0,
+                customs_cost: 0,
                 taxes: 0,
                 other_expenses: 0,
+                sale_price: 0,
                 margin_percent: 20
             }]);
 
         if (finErr) throw finErr;
 
-        // 5. Insertar ítems en la tabla order_items usando el order_id recién creado
+        // 5. Insertar ítems en order_items
         if (partsList.length > 0) {
             const itemsToInsert = partsList.map(item => ({
                 order_id: order.id,
@@ -161,6 +162,7 @@ export default async function handler(req, res) {
 
             if (itemsErr) throw itemsErr;
         }
+
 
         // 5. Registrar en historial
         await supabase.from('order_history').insert([{
