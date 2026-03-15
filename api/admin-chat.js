@@ -6,7 +6,13 @@ export default async function handler(req, res) {
     }
 
     const adminPassword = req.headers['x-admin-password'];
-    const { data: user } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+    let user = null;
+    try {
+        const { data } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
+        user = data;
+    } catch (e) {
+        // Fallback to Env validation if RLS fails
+    }
     if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
@@ -116,31 +122,10 @@ ESTADOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (
             const err = await geminiRes.json();
             console.error('GEMINI ERROR:', err);
             throw new Error(err.error?.message || 'Error en Gemini');
-                throw new Error(err.error?.message || 'Error en OpenRouter');
-            }
-
-            const data = await resp.json();
-            responseText = data.choices?.[0]?.message?.content || '';
-
-        } else {
-            // === GEMINI CALL ===
-            const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: messagesForAPI })
-                }
-            );
-
-            if (!geminiRes.ok) {
-                const err = await geminiRes.json();
-                throw new Error(err.error?.message || 'Error en Gemini');
-            }
-
-            const data = await geminiRes.json();
-            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
+
+        const data = await geminiRes.json();
+        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         // === PARSE ACCIONES (misma lógica) ===
         let action = null;
