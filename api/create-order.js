@@ -134,10 +134,8 @@ export default async function handler(req, res) {
                 order_id: order.id,
                 cost_fob: 0,
                 shipping_cost: 0,
-                customs_cost: 0,
                 taxes: 0,
                 other_expenses: 0,
-                sale_price: 0,
                 margin_percent: 20
             }]);
 
