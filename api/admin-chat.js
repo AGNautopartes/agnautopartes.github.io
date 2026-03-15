@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (!user && adminPassword !== process.env.PASSWORD_ADMIN) {
         return res.status(401).json({ message: 'No autorizado' });
     }
-    const { message, conversationHistory = [], adminName = 'Admin', model = 'google/gemini-2.0-flash' } = req.body;
+    const { message, conversationHistory = [], adminName = 'Admin', model = process.env.DEFAULT_MODEL || '' } = req.body;
 
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -128,7 +128,7 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
                 return res.status(500).json({ error: 'Falta GEMINI_API_KEY u OPENROUTER_API_KEY.' });
             }
 
-            const geminiModelStr = model.startsWith('google/') ? model.replace('google/', '') : (process.env.GEMINI_MODEL || 'gemini-2.0-flash');
+            const geminiModelStr = model.startsWith('google/') ? model.replace('google/', '') : (process.env.GEMINI_MODEL || '');
 
             const messagesForAPI = [
                 { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },

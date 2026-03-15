@@ -7,7 +7,7 @@ export default async function handler(request, response) {
 
     const { conversationHistory } = request.body;
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || '';
 
     if (!GEMINI_API_KEY) {
         return response.status(500).json({ error: { message: 'GEMINI_API_KEY no configurada.' } });

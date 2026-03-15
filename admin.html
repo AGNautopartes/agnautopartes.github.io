@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -1513,9 +1513,14 @@
                 if (!select || !models.length) return;
                 
                 select.innerHTML = models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-                // Seleccionar el recomendado por defecto
-                const recommended = models.find(m => m.id.includes('2.0-flash'));
-                if (recommended) select.value = recommended.id;
+                
+                // Cargar preferencia guardada o usar el primero de la lista
+                const savedModel = localStorage.getItem('agn-admin-selected-model');
+                if (savedModel && models.some(m => m.id === savedModel)) {
+                    select.value = savedModel;
+                } else if (models.length > 0) {
+                    select.value = models[0].id;
+                }
             } catch (err) { console.error('Error loading models:', err); }
         }
         loadAriaModels();
@@ -1545,11 +1550,7 @@
              const adminModelSelector = document.getElementById('aria-model-select');
              if (adminModelSelector) {
                  const savedModel = localStorage.getItem('agn-admin-selected-model');
-                 if (savedModel) {
-                     adminModelSelector.value = savedModel;
-                 } else {
-                     adminModelSelector.value = 'meta-llama/llama-3.1-8b-instruct'; // Default
-                 }
+                 if (savedModel) { adminModelSelector.value = savedModel; }
                  adminModelSelector.addEventListener('change', () => {
                      localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
                  });
@@ -2018,7 +2019,7 @@
                         message: msg, 
                         conversationHistory: ariaHistory, 
                         adminName, 
-                        model: document.getElementById('aria-model-select')?.value || 'google/gemini-2.0-flash' 
+                        model: document.getElementById('aria-model-select')?.value || '' 
                     }),
                     timeout: 20000 // 20s para IA
                 });
