@@ -86,7 +86,7 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
     try {
         let responseText;
 
-        const useOpenRouter = OPENROUTER_API_KEY && (model !== 'google/gemini-2.5-flash' || !GEMINI_API_KEY || process.env.USE_OPENROUTER === 'true');
+        const useOpenRouter = OPENROUTER_API_KEY && (model !== 'google/gemini-2.0-flash' || !GEMINI_API_KEY || process.env.USE_OPENROUTER === 'true');
 
         if (useOpenRouter) {
             // === OPENROUTER CALL ===

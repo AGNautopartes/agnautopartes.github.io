@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -42,7 +42,7 @@
             font-size: 14px;
         }
 
-        /* ══ LOGIN ══ */
+        /* â•â• LOGIN â•â• */
         #login-screen {
             display: flex;
             align-items: center;
@@ -134,7 +134,7 @@
             text-align: center;
         }
 
-        /* ══ LAYOUT ══ */
+        /* â•â• LAYOUT â•â• */
         #app {
             display: none;
             height: 100vh;
@@ -223,7 +223,7 @@
             overflow: hidden;
         }
 
-        /* ══ PAGES ══ */
+        /* â•â• PAGES â•â• */
         .page {
             display: none;
             flex: 1;
@@ -234,7 +234,7 @@
             display: flex;
         }
 
-        /* ══ ORDERS PAGE ══ */
+        /* â•â• ORDERS PAGE â•â• */
         #page-orders {
             flex-direction: row;
         }
@@ -456,10 +456,10 @@
             border: 1px solid rgba(230, 73, 55, 0.3);
         }
 
-        /* ══ DETAIL PANEL ══ */
+        /* â•â• DETAIL PANEL â•â• */
         .detail-panel {
             width: 380px;
-            /* Tamaño similar a Aria */
+            /* TamaÃ±o similar a Aria */
             border-left: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -732,7 +732,7 @@
             color: var(--text);
         }
 
-        /* ══ AI CHAT SIDEBAR ══ */
+        /* â•â• AI CHAT SIDEBAR â•â• */
         .ai-sidebar {
             width: var(--sidebar-w);
             border-left: 1px solid var(--border);
@@ -861,7 +861,7 @@
             cursor: not-allowed;
         }
 
-        /* ══ DASHBOARD ══ */
+        /* â•â• DASHBOARD â•â• */
         #page-dashboard {
             flex-direction: column;
             padding: 1.5rem;
@@ -1144,7 +1144,7 @@
         }
 
         .ai-msg.assistant::before {
-            content: "✨";
+            content: "âœ¨";
             margin-right: 5px;
             font-size: 0.8rem;
         }
@@ -1166,7 +1166,7 @@
 
 <body>
 
-    <!-- ══════ LOGIN ══════ -->
+    <!-- â•â•â•â•â•â• LOGIN â•â•â•â•â•â• -->
     <div id="login-screen">
         <div class="login-card">
             <div class="login-logo">
@@ -1178,14 +1178,14 @@
             <div class="login-subtitle">Panel ERP Administrativo</div>
             <div class="field"><label>Nombre</label><input type="text" id="login-name" placeholder="Tu nombre"
                     autocomplete="name"></div>
-            <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"
+            <div class="field"><label>ContraseÃ±a</label><input type="password" id="login-pass" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     autofocus></div>
             <button class="btn-primary" id="btn-login">Ingresar</button>
             <div class="login-error" id="login-err"></div>
         </div>
     </div>
 
-    <!-- ══════ APP ══════ -->
+    <!-- â•â•â•â•â•â• APP â•â•â•â•â•â• -->
     <div id="app">
         <nav>
             <div class="nav-brand">
@@ -1194,9 +1194,9 @@
             </div>
 
             <div class="nav-tabs">
-                <button class="tab-btn active" data-page="orders">📋 Órdenes</button>
-                <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
-                <button class="tab-btn" data-page="reports">📈 Reportes</button>
+                <button class="tab-btn active" data-page="orders">ðŸ“‹ Ã“rdenes</button>
+                <button class="tab-btn" data-page="dashboard">ðŸ“Š Dashboard</button>
+                <button class="tab-btn" data-page="reports">ðŸ“ˆ Reportes</button>
 
             </div>
             <div class="nav-right">
@@ -1207,7 +1207,7 @@
         </nav>
 
         <div class="app-body">
-            <!-- ── ORDERS PAGE ── -->
+            <!-- â”€â”€ ORDERS PAGE â”€â”€ -->
             <div class="page active" id="page-orders">
                 <div class="orders-main">
                     <div class="stats-bar" id="stats-bar">
@@ -1221,7 +1221,7 @@
                         </div>
                         <div class="stat-item">
                             <div class="n" style="color:var(--purple)" id="s-transito">—</div>
-                            <div class="l">En Tránsito</div>
+                            <div class="l">En TrÃ¡nsito</div>
                         </div>
                         <div class="stat-item">
                             <div class="n" style="color:var(--green)" id="s-entregado">—</div>
@@ -1230,20 +1230,20 @@
                     </div>
                     <div class="orders-toolbar">
                         <input type="text" class="search-box" id="search-input"
-                            placeholder="🔍 Buscar cliente, pieza, vehículo...">
+                            placeholder="ðŸ” Buscar cliente, pieza, vehículo...">
                         <select class="filter-select" id="status-filter">
                             <option value="">Todos los estados</option>
                             <option>Solicitado</option>
                             <option>Cotizado</option>
                             <option>Comprado</option>
-                            <option>Tránsito 1 (Prov→Log)</option>
-                            <option>Tránsito 2 (Log→EC)</option>
+                            <option>TrÃ¡nsito 1 (Provâ†’Log)</option>
+                            <option>TrÃ¡nsito 2 (Logâ†’EC)</option>
                             <option>En Aduana</option>
                             <option>Entregado</option>
                             <option>Cancelado</option>
                         </select>
                         <button class="btn-add" id="btn-export"
-                            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
+                            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">ðŸ“¥
                             Exportar Reporte</button>
                         <button class="btn-add" id="btn-new-order">+ Nueva Orden</button>
 
@@ -1255,18 +1255,18 @@
 
                 <!-- Order Detail -->
                 <div class="detail-panel empty" id="detail-panel">
-                    <button class="btn-toggle-detail" id="toggle-detail" title="Expandir/Colapsar">↔</button>
+                    <button class="btn-toggle-detail" id="toggle-detail" title="Expandir/Colapsar">â†”</button>
                     <div id="detail-content"
                         style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
                         <div
                             style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)">
-                            <span>← Selecciona una orden</span>
+                            <span>â† Selecciona una orden</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── DASHBOARD PAGE ── -->
+            <!-- â”€â”€ DASHBOARD PAGE â”€â”€ -->
             <div class="page" id="page-dashboard">
                 <div class="kpi-grid">
                     <div class="kpi-card">
@@ -1280,7 +1280,7 @@
                 </div>
             </div>
 
-            <!-- ── REPORTS PAGE ── -->
+            <!-- â”€â”€ REPORTS PAGE â”€â”€ -->
             <div class="page" id="page-reports">
                 <div class="reports-container">
                     <div class="reports-filters">
@@ -1348,7 +1348,7 @@
             <div class="ai-sidebar">
                  <div class="ai-header">
  
-                     <div class="aria-avatar">🤖</div>
+                     <div class="aria-avatar">ðŸ¤–</div>
                      <div style="display:flex; flex-direction: column; gap: 4px;">
                          <div style="display:flex; align-items:center; gap: 8px;">
                              <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
@@ -1363,18 +1363,12 @@
                              </div>
                          </div>
                          <!-- Model Selector -->
-                         <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2);">
-                             <label for="admin-model-selector" style="font-weight: 600;">Modelo:</label>
-                             <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
-                                 <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B (Free)</option>
-                                 <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B (Free)</option>
-                                 <option value="google/gemini-2.0-flash-lite-001">Gemini Flash Lite (Free)</option>
-                                 <option value="stepfun/step-3.5-flash">Step 3.5 Flash (Free)</option>
-                                 <option value="openai/gpt-4o-mini">GPT-4o Mini (Free)</option>
-                                 <option value="openai/gpt-4o">GPT-4o (Pago)</option>
-                                 <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Pago)</option>
-                             </select>
-                         </div>
+                          <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2);">
+                              <label for="aria-model-select" style="font-weight: 600;">Modelo:</label>
+                              <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
+                                  <option value="google/gemini-2.0-flash">Cargando...</option>
+                              </select>
+                          </div>
                      </div>
                  </div>
                 <div class="ai-messages" id="ai-messages">
@@ -1399,13 +1393,13 @@
                             </svg>
                         </button>
                     </div>
-                    <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
+                    <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
                 </div>
 
             </div>
         </div>
 
-        <!-- ── DASHBOARD PAGE ── -->
+        <!-- â”€â”€ DASHBOARD PAGE â”€â”€ -->
         <div class="page" id="page-dashboard">
             <div class="kpi-grid" id="kpi-grid">
                 <div class="kpi-card">
@@ -1417,7 +1411,7 @@
                     <div class="kpi-val" id="kpi-profit" style="color:var(--cyan)">—</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Órdenes Activas</h3>
+                    <h3>Ã“rdenes Activas</h3>
                     <div class="kpi-val" id="kpi-active" style="color:var(--yellow)">—</div>
                 </div>
                 <div class="kpi-card">
@@ -1425,11 +1419,11 @@
                     <div class="kpi-val" id="kpi-delivered" style="color:var(--blue)">—</div>
                 </div>
             </div>
-            <div style="color:var(--text2);font-size:0.85rem;text-align:center;padding:2rem;">Más reportes
+            <div style="color:var(--text2);font-size:0.85rem;text-align:center;padding:2rem;">MÃ¡s reportes
                 próximamente...</div>
         </div>
 
-        <!-- ── REPORTS PAGE ── -->
+        <!-- â”€â”€ REPORTS PAGE â”€â”€ -->
         <div class="page" id="page-reports">
             <div class="reports-container">
                 <div class="reports-filters">
@@ -1456,8 +1450,8 @@
                             <option>Solicitado</option>
                             <option>Cotizado</option>
                             <option>Comprado</option>
-                            <option>Tránsito 1 (Prov→Log)</option>
-                            <option>Tránsito 2 (Log→EC)</option>
+                            <option>TrÃ¡nsito 1 (Provâ†’Log)</option>
+                            <option>TrÃ¡nsito 2 (Logâ†’EC)</option>
                             <option>En Aduana</option>
                             <option>Entregado</option>
                             <option>Cancelado</option>
@@ -1468,7 +1462,7 @@
                         <input type="text" id="rep-customer" placeholder="Ej: Juan Pérez">
                     </div>
                     <button class="btn-primary" id="btn-export-full" style="grid-column: span 2; margin-top: 1rem;">
-                        📥 Exportar Reporte Completo
+                        ðŸ“¥ Exportar Reporte Completo
                     </button>
                 </div>
 
@@ -1505,9 +1499,26 @@
         let allOrders = [], selectedOrder = null;
         let ariaHistory = [];
 
-        // ══ LOGIN ══
+        // â•â• LOGIN â•â•
         document.getElementById('btn-login').addEventListener('click', doLogin);
         document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
+        
+        // Cargar modelos dinÃ¡micamente
+        async function loadAriaModels() {
+            try {
+                const res = await fetch(`${API}/api/get-models`);
+                if (!res.ok) return;
+                const models = await res.json();
+                const select = document.getElementById('aria-model-select');
+                if (!select || !models.length) return;
+                
+                select.innerHTML = models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                // Seleccionar el recomendado por defecto
+                const recommended = models.find(m => m.id.includes('2.0-flash'));
+                if (recommended) select.value = recommended.id;
+            } catch (err) { console.error('Error loading models:', err); }
+        }
+        loadAriaModels();
 
         async function doLogin() {
             const pwd = document.getElementById('login-pass').value.trim();
@@ -1518,7 +1529,7 @@
 
             const res = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': pwd } });
             if (res.status === 401) {
-                document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
+                document.getElementById('login-err').textContent = 'ContraseÃ±a incorrecta.';
                 btn.textContent = 'Ingresar'; btn.disabled = false;
                 return;
             }
@@ -1531,7 +1542,7 @@
              updateStats(allOrders);
 
              // Inicializar selector de modelo IA en admin
-             const adminModelSelector = document.getElementById('admin-model-selector');
+             const adminModelSelector = document.getElementById('aria-model-select');
              if (adminModelSelector) {
                  const savedModel = localStorage.getItem('agn-admin-selected-model');
                  if (savedModel) {
@@ -1547,7 +1558,7 @@
 
         document.getElementById('btn-logout').addEventListener('click', () => location.reload());
 
-        // ══ NAVIGATION ══
+        // â•â• NAVIGATION â•â•
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1565,11 +1576,11 @@
             const panel = document.getElementById('detail-panel');
             panel.classList.toggle('collapsed');
             const btn = document.getElementById('toggle-detail');
-            btn.textContent = panel.classList.contains('collapsed') ? '🔎' : '↔';
+            btn.textContent = panel.classList.contains('collapsed') ? 'ðŸ”Ž' : 'â†”';
         });
 
 
-        // ══ SEARCH & FILTER ══
+        // â•â• SEARCH & FILTER â•â•
         document.getElementById('search-input').addEventListener('input', filterOrders);
         document.getElementById('status-filter').addEventListener('change', filterOrders);
 
@@ -1584,11 +1595,11 @@
             renderOrders(filtered);
         }
 
-        // ══ RENDER ORDERS ══
+        // â•â• RENDER ORDERS â•â•
         function getStatusClass(status) {
             const m = {
                 'Solicitado': 's-solicitado', 'Cotizado': 's-cotizado', 'Comprado': 's-comprado',
-                'Tránsito 1 (Prov→Log)': 's-transito1', 'Tránsito 2 (Log→EC)': 's-transito2',
+                'TrÃ¡nsito 1 (Provâ†’Log)': 's-transito1', 'TrÃ¡nsito 2 (Logâ†’EC)': 's-transito2',
                 'En Aduana': 's-en-aduana', 'Entregado': 's-entregado', 'Cancelado': 's-cancelado'
             };
             return m[status] || 's-solicitado';
@@ -1605,7 +1616,7 @@
                 <div class="order-id" style="font-size:0.65rem; font-weight:800; color:var(--blue); margin-bottom:0.2rem">#${o.readable_id || 'ID'}</div>
                 <div class="order-client">${o.customers?.full_name || 'Sin nombre'} <span style="color:var(--text2);font-weight:400;font-size:0.78rem">${o.customers?.phone || ''}</span></div>
                 <div class="order-part">${o.part_name}${o.part_number ? ` — #${o.part_number}` : ''}</div>
-                ${vehicle ? `<div class="order-vehicle">🚗 ${vehicle}</div>` : ''}
+                ${vehicle ? `<div class="order-vehicle">ðŸš— ${vehicle}</div>` : ''}
             </div>
             <div class="order-meta">
                 <span class="sbadge ${getStatusClass(o.status)}">${o.status}</span>
@@ -1619,13 +1630,13 @@
         function updateStats(orders) {
             document.getElementById('s-total').textContent = orders.length;
             document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Comprado').length;
-            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Tránsito')).length;
+            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('TrÃ¡nsito')).length;
             document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
             const active = orders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
             document.getElementById('nav-active').textContent = `${active} activas`;
         }
 
-        // ══ SELECT ORDER ══
+        // â•â• SELECT ORDER â•â•
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
             document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
@@ -1642,9 +1653,9 @@
             const content = document.getElementById('detail-content');
             panel.classList.remove('empty');
             panel.classList.remove('collapsed'); // Expandir al seleccionar nueva orden
-            document.getElementById('toggle-detail').textContent = '↔';
+            document.getElementById('toggle-detail').textContent = 'â†”';
 
-            const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Cancelado'];
+            const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'TrÃ¡nsito 1 (Provâ†’Log)', 'TrÃ¡nsito 2 (Logâ†’EC)', 'En Aduana', 'Entregado', 'Cancelado'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
 
             content.innerHTML = `
@@ -1653,7 +1664,7 @@
             <div>
                 <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">PEDIDO #${o.readable_id}</div>
                 <input type="text" id="edit-part-name" value="${o.part_name}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
-                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+                <div class="detail-sub">${o.customers?.full_name} Â· ${o.customers?.phone || '—'}</div>
             </div>
             <div style="display:flex; gap:0.5rem">
                 <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Guardar</button>
@@ -1664,26 +1675,26 @@
         <div class="detail-body">
             <!-- Vehículo -->
             <div class="detail-section">
-                <h4>🚗 Vehículo</h4>
+                <h4>ðŸš— Vehículo</h4>
                 <div class="info-grid">
                     <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
                     <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
-                    <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
+                    <div class="info-item"><div class="il">AÃ±o</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
                     <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="edit-vin" value="${o.vin || ''}" style="font-family:monospace"></div></div>
                     <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" id="edit-tracking" value="${o.tracking_number || ''}"></div></div>
                 </div>
             </div>
 
-            <!-- Repuestos Dinámicos -->
+            <!-- Repuestos DinÃ¡micos -->
             <div class="detail-section">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h4>⚙️ Repuestos</h4>
-                    <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
+                    <h4>âš™ï¸ Repuestos</h4>
+                    <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ AÃ±adir Pieza</button>
                 </div>
                 <div id="dynamic-items-container">
                     ${(() => {
                     let items = (o.items_json && Array.isArray(o.items_json)) ? o.items_json : [];
-                    // Sincronización Automática: Si no hay repuestos en el desglose, usar la Pieza Principal
+                    // Sincronización AutomÃ¡tica: Si no hay repuestos en el desglose, usar la Pieza Principal
                     if (items.length === 0 && o.part_name) {
                         items = [{ part_name: o.part_name, part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
                     }
@@ -1694,7 +1705,7 @@
                                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                                 </div>
                                 <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
-                                <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
+                                <div class="info-item"><div class="il">NÃºm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
                                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
                             </div>
                         `).join('');
@@ -1704,7 +1715,7 @@
 
             <!-- Estado -->
             <div class="detail-section">
-                <h4>📦 Estado</h4>
+                <h4>ðŸ“¦ Estado</h4>
                 <div class="status-changer">
                     <select id="det-status" onchange="updateDetailStatus('${o.id}')">${opts}</select>
                 </div>
@@ -1712,7 +1723,7 @@
 
             <!-- Financieros -->
             <div class="detail-section">
-                <h4>💰 Financieros</h4>
+                <h4>ðŸ’° Financieros</h4>
                 <div class="financial-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem">
                     <div class="fin-item"><div class="fl">Base Price (FOB)</div><div class="fv"><input type="number" id="edit-base-price" value="${o.costo_fob || o.cost_fob || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Logística</div><div class="fv"><input type="number" id="edit-logistica" value="${o.shipping_logistica || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
@@ -1733,18 +1744,18 @@
             </div>
 
             <div class="detail-section">
-                <h4>📝 Notas</h4>
+                <h4>ðŸ“ Notas</h4>
                 <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
-                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
-                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ Añadir Nota</button>
+                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="AÃ±adir nota interna..."></textarea>
+                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ AÃ±adir Nota</button>
             </div>
             <div class="detail-section">
-                <h4>🕓 Historial</h4>
+                <h4>ðŸ•“ Historial</h4>
                 <div class="history-list" id="det-history"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
             </div>
         </div>`;
 
-            // Llamar al cálculo de totales inicial al renderizar la vista
+            // Llamar al cÃ¡lculo de totales inicial al renderizar la vista
             setTimeout(recalculateTotals, 100);
         }
 
@@ -1754,7 +1765,7 @@
             panel.classList.remove('empty');
             panel.classList.remove('collapsed');
             const toggleBtn = document.getElementById('toggle-detail');
-            if (toggleBtn) toggleBtn.textContent = '↔';
+            if (toggleBtn) toggleBtn.textContent = 'â†”';
 
             content.innerHTML = `
                 <div class="detail-header">
@@ -1764,7 +1775,7 @@
 
                 <div class="detail-body">
                     <div class="detail-section">
-                        <h4>👤 Cliente</h4>
+                        <h4>ðŸ‘¤ Cliente</h4>
                         <div class="info-grid">
                             <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
@@ -1772,17 +1783,17 @@
                     </div>
 
                     <div class="detail-section">
-                        <h4>🚗 Vehículo</h4>
+                        <h4>ðŸš— Vehículo</h4>
                         <div class="info-grid">
                             <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand" placeholder="Ej: Kia"></div></div>
                             <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model" placeholder="Ej: Sportage"></div></div>
-                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
+                            <div class="info-item"><div class="il">AÃ±o</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
                             <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="new-vin" placeholder="Opcional"></div></div>
                         </div>
                     </div>
 
                     <div class="detail-section">
-                         <h4>⚙️ Detalle de Compra</h4>
+                         <h4>âš™ï¸ Detalle de Compra</h4>
                         <div class="info-grid">
                             <div class="info-item"><div class="il">Num. Parte</div><div class="iv"><input type="text" id="new-part-no" placeholder="OEM/SKU"></div></div>
                             <div class="info-item" style="grid-column: span 2"><div class="il">URL</div><div class="iv"><input type="text" id="new-url" placeholder="Link de compra"></div></div>
@@ -1803,7 +1814,7 @@
             const part = document.getElementById('new-part-name').value;
 
             if (!name || !model || !part) {
-                showToast('⚠️ Nombre, Modelo y Pieza son obligatorios', 'warning');
+                showToast('âš ï¸ Nombre, Modelo y Pieza son obligatorios', 'warning');
                 return;
             }
 
@@ -1821,7 +1832,7 @@
                 status: 'Solicitado'
             };
 
-            showToast('⏳ Creando...', 'info');
+            showToast('â³ Creando...', 'info');
 
             const res = await fetch(`${API}/api/create-order`, {
                 method: 'POST',
@@ -1830,10 +1841,10 @@
             });
 
             if (res.ok) {
-                showToast('✅ Orden creada exitosamente', 'success');
+                showToast('âœ… Orden creada exitosamente', 'success');
                 await loadData(); // Recargar lista
             } else {
-                showToast('❌ Error al crear orden', 'error');
+                showToast('âŒ Error al crear orden', 'error');
             }
         }
 
@@ -1879,14 +1890,14 @@
             });
 
             if (res.ok) {
-                showToast('✅ Cambios guardados', 'success');
+                showToast('âœ… Cambios guardados', 'success');
                 // Actualizar localmente el objeto allOrders
                 const o = allOrders.find(ord => ord.id === orderId);
                 if (o) Object.assign(o, data);
                 renderOrders(allOrders);
                 updateStats(allOrders);
             } else {
-                showToast('❌ Error al guardar', 'error');
+                showToast('âŒ Error al guardar', 'error');
             }
         }
 
@@ -1904,8 +1915,8 @@
                 if (o) o.status = newStatus;
                 renderOrders(allOrders.filter(() => true));
                 updateStats(allOrders);
-                showToast('✅ Estado actualizado', 'success');
-            } else showToast('❌ Error al actualizar', 'error');
+                showToast('âœ… Estado actualizado', 'success');
+            } else showToast('âŒ Error al actualizar', 'error');
         }
 
         async function addNote(orderId) {
@@ -1918,7 +1929,7 @@
             });
             if (res.ok) {
                 document.getElementById('det-note-input').value = '';
-                showToast('📝 Nota guardada', 'success');
+                showToast('ðŸ“ Nota guardada', 'success');
                 loadNotes(orderId);
             }
         }
@@ -1935,7 +1946,7 @@
                         <div class="note-text">${n.content}</div>
                         <div class="note-date">${new Date(n.created_at).toLocaleString()}</div>
                       </div>`).join('')
-                    : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aún.</div>';
+                    : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aÃºn.</div>';
             }
         }
 
@@ -1945,24 +1956,24 @@
         }
 
         async function deleteOrder(orderId) {
-            if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
+            if (!confirm('Â¿Seguro que deseas eliminar esta orden?')) return;
             const res = await fetch(`${API}/api/delete-order`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                 body: JSON.stringify({ orderId })
             });
             if (res.ok) {
-                showToast('🗑️ Orden eliminada', 'success');
+                showToast('ðŸ—‘ï¸ Orden eliminada', 'success');
                 allOrders = allOrders.filter(o => o.id !== orderId);
                 renderOrders(allOrders);
                 updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
+                document.getElementById('detail-panel').innerHTML = '<span>â† Selecciona una orden</span>';
                 document.getElementById('detail-panel').classList.add('empty');
-            } else showToast('❌ Error al eliminar', 'error');
+            } else showToast('âŒ Error al eliminar', 'error');
         }
 
 
-        // ══ ARIA IA CHAT ══
+        // â•â• ARIA IA CHAT â•â•
         const ariaInput = document.getElementById('aria-input');
         const ariaSend = document.getElementById('aria-send');
         const aiMessages = document.getElementById('ai-messages');
@@ -2015,7 +2026,7 @@
                 if (!res.ok) {
                     const errorData = await res.json();
                     thinking.remove();
-                    addAiMsg('assistant', `⚠️ Error del servidor: ${errorData.error || 'Problema desconocido'}`);
+                    addAiMsg('assistant', `âš ï¸ Error del servidor: ${errorData.error || 'Problema desconocido'}`);
                     return;
                 }
 
@@ -2050,8 +2061,8 @@
                  console.error('Aria Error:', e);
                  if (thinking && thinking.parentNode) thinking.remove();
  
-                 let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
-                 if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
+                 let errorMsg = 'âŒ Error de conexión o tiempo de espera agotado.';
+                 if (e.name === 'AbortError') errorMsg = 'â±ï¸ La IA estÃ¡ tardando demasiado en responder. Intente de nuevo.';
  
                  addAiMsg('assistant', errorMsg);
              } finally {
@@ -2085,7 +2096,7 @@
 
                       // Validación mínima en cliente
                       if (!orderData.customer_name || !orderData.vehicle_model) {
-                          addAiMsg('system', '❌ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO]"');
+                          addAiMsg('system', 'âŒ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO]"');
                           return;
                       }
 
@@ -2097,8 +2108,8 @@
                      });
                      if (res.ok) {
                          const result = await res.json();
-                         showToast(`✅ Orden #${result.orderId} creada`, 'success'); // Usar el ID real
-                         addAiMsg('system', `✅ Orden #${result.orderId} creada con éxito.`);
+                         showToast(`âœ… Orden #${result.orderId} creada`, 'success'); // Usar el ID real
+                         addAiMsg('system', `âœ… Orden #${result.orderId} creada con éxito.`);
                          const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
                          allOrders = await ordersRes.json();
                          renderOrders(allOrders);
@@ -2112,8 +2123,8 @@
                               const errJson = JSON.parse(errorText);
                               if (errJson.message) errorMsg = errJson.message;
                           } catch(e) {}
-                          addAiMsg('system', `❌ ${errorMsg}`);
-                          showToast('❌ Error al crear orden: ' + errorMsg, 'error');
+                          addAiMsg('system', `âŒ ${errorMsg}`);
+                          showToast('âŒ Error al crear orden: ' + errorMsg, 'error');
                       }
                  } else if (action.type === 'UPDATE_STATUS') {
                      const orderId = action.data.order_id;
@@ -2130,18 +2141,18 @@
                              found.status = action.data.new_status;
                              renderOrders(allOrders);
                              updateStats(allOrders);
-                             addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                             addAiMsg('system', `âœ… [#${found.readable_id}] Estado: ${action.data.new_status}`);
                              if (selectedOrder?.id === found.id) renderDetail(found);
-                             showToast(`✅ Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
+                             showToast(`âœ… Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al actualizar estado desde Aria:', errorText);
-                             addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
-                             showToast('❌ Error al actualizar estado', 'error');
+                             addAiMsg('system', `âŒ Error al actualizar estado de [#${found.readable_id}].`);
+                             showToast('âŒ Error al actualizar estado', 'error');
                          }
                      } else {
-                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
-                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para actualizar.`);
+                         showToast(`âš ï¸ Orden "${orderId}" no encontrada`, 'info');
                      }
                  } else if (action.type === 'DELETE_ORDER') {
                      const orderId = action.data.order_id;
@@ -2157,21 +2168,21 @@
                              allOrders = allOrders.filter(o => o.id !== found.id);
                              renderOrders(allOrders);
                              updateStats(allOrders);
-                             addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
+                             addAiMsg('system', `ðŸ—‘ï¸ [${found.readable_id}] Orden eliminada.`);
                              if (selectedOrder?.id === found.id) {
-                                 document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+                                 document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>â† Selecciona una orden</span></div>';
                                  document.getElementById('detail-panel').classList.add('empty');
                              }
-                             showToast(`🗑️ Orden #${found.readable_id} eliminada`, 'success');
+                             showToast(`ðŸ—‘ï¸ Orden #${found.readable_id} eliminada`, 'success');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al eliminar orden desde Aria:', errorText);
-                             addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
-                             showToast('❌ Error al eliminar orden', 'error');
+                             addAiMsg('system', `âŒ Error al eliminar la orden [#${found.readable_id}].`);
+                             showToast('âŒ Error al eliminar orden', 'error');
                          }
                      } else {
-                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
-                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para eliminar.`);
+                         showToast(`âš ï¸ Orden "${orderId}" no encontrada`, 'info');
                      }
                  } else if (action.type === 'ADD_NOTE') {
                      const orderId = action.data.order_id;
@@ -2184,18 +2195,18 @@
                              timeout: 10000
                          });
                          if (res.ok) {
-                             addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
+                             addAiMsg('system', `ðŸ“ Nota agregada a [#${found.readable_id}]`);
                              if (selectedOrder?.id === found.id) loadNotes(found.id);
-                             showToast(`📝 Nota agregada a orden #${found.readable_id}`, 'success');
+                             showToast(`ðŸ“ Nota agregada a orden #${found.readable_id}`, 'success');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al agregar nota desde Aria:', errorText);
-                             addAiMsg('system', `❌ Error al guardar nota en [#${found.readable_id}].`);
-                             showToast('❌ Error al agregar nota', 'error');
+                             addAiMsg('system', `âŒ Error al guardar nota en [#${found.readable_id}].`);
+                             showToast('âŒ Error al agregar nota', 'error');
                          }
                      } else {
-                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
-                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para aÃ±adir la nota.`);
+                         showToast(`âš ï¸ Orden "${orderId}" no encontrada`, 'info');
                      }
                  } else if (action.type === 'UPDATE_FIELDS') {
                      const orderId = action.data.order_id;
@@ -2247,33 +2258,33 @@
                              found.order_items = currentItems;
                              renderOrders(allOrders);
                              updateStats(allOrders);
-                             addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
+                             addAiMsg('system', `âœ… [#${found.readable_id}] Campos actualizados.`);
                              if (selectedOrder?.id === found.id) renderDetail(found);
-                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
+                             showToast(`âœ… Orden #${found.readable_id} actualizada`, 'success');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al actualizar campos desde Aria:', errorText);
-                             addAiMsg('system', `❌ Error al actualizar campos de [#${found.readable_id}].`);
-                             showToast('❌ Error al actualizar campos', 'error');
+                             addAiMsg('system', `âŒ Error al actualizar campos de [#${found.readable_id}].`);
+                             showToast('âŒ Error al actualizar campos', 'error');
                          }
                      } else {
-                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar campos.`);
-                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para actualizar campos.`);
+                         showToast(`âš ï¸ Orden "${orderId}" no encontrada`, 'info');
                      }
                  } else {
                      addAiMsg('system', 'Acción no reconocida.');
                  }
              } catch (actionError) {
                  console.error('Error al ejecutar acción de Aria:', actionError);
-                 addAiMsg('system', `❌ Error al procesar la acción: ${actionError.message || 'Desconocido'}.`);
-                 showToast('❌ Error en acción de IA', 'error');
+                 addAiMsg('system', `âŒ Error al procesar la acción: ${actionError.message || 'Desconocido'}.`);
+                 showToast('âŒ Error en acción de IA', 'error');
              }
          }
 
 
 
 
-        // ══ VOICE (NATIVE CHROME API) ══
+        // â•â• VOICE (NATIVE CHROME API) â•â•
         let recognition;
         let isAriaMuted = true; // Por defecto muteado
 
@@ -2303,7 +2314,7 @@
             isAriaMuted = !isAriaMuted;
             document.getElementById('aria-mute').classList.toggle('active', !isAriaMuted);
             if (isAriaMuted) window.speechSynthesis.cancel();
-            showToast(isAriaMuted ? '🔇 Aria silenciada' : '🔊 Aria con voz', 'info');
+            showToast(isAriaMuted ? 'ðŸ”‡ Aria silenciada' : 'ðŸ”Š Aria con voz', 'info');
         });
 
         function ariaSpeak(text) {
@@ -2319,7 +2330,7 @@
             openNewManualOrder();
         });
 
-        // ══ FUNCIONES DE FICHA MULTI-REPUESTO Y MATEMÁTICAS FINANCIERAS ══
+        // â•â• FUNCIONES DE FICHA MULTI-REPUESTO Y MATEMÃTICAS FINANCIERAS â•â•
         function addDetailItem(partName = '', partNo = '', url = '') {
             const container = document.getElementById('dynamic-items-container');
             if (!container) return;
@@ -2332,7 +2343,7 @@
                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                 </div>
                 <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
-                <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
+                <div class="info-item"><div class="il">NÃºm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}"></div></div>
             `;
             container.appendChild(div);
