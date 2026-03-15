@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
     if (!GEMINI_API_KEY && !OPENROUTER_API_KEY) {

@@ -18,11 +18,11 @@ export default async function handler(req, res) {
     }
     const { message, conversationHistory = [], adminName = 'Admin', model = process.env.DEFAULT_MODEL || '' } = req.body;
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-    // Routing: si el modelo es de Google y tenemos GEMINI_API_KEY, usar Gemini nativo.
-    // Para todo lo demás (o si no hay GEMINI_API_KEY), usar OpenRouter.
+    // Routing: si el modelo es de Google, usar Gemini nativo (GOOGLE_API_KEY o GEMINI_API_KEY).
+    // Para todo lo demás, usar OpenRouter.
     const isGoogleModel = model.startsWith('google/');
     const useGeminiNative = isGoogleModel && !!GEMINI_API_KEY;
     const useOpenRouter = !useGeminiNative && !!OPENROUTER_API_KEY;

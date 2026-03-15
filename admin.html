@@ -1362,11 +1362,17 @@
                                  <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
                              </div>
                          </div>
-                         <!-- Model Selector -->
-                          <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2);">
+                         <!-- Provider + Model Selector -->
+                          <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); flex-wrap: wrap;">
+                              <label for="aria-provider-select" style="font-weight: 600;">Proveedor:</label>
+                              <select id="aria-provider-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
+                                  <option value="all">Todos</option>
+                                  <option value="google">Google Gemini</option>
+                                  <option value="openrouter">OpenRouter</option>
+                              </select>
                               <label for="aria-model-select" style="font-weight: 600;">Modelo:</label>
-                              <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
-                                  <option value="google/gemini-2.0-flash">Cargando...</option>
+                              <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px; max-width: 200px;">
+                                  <option value="">Cargando...</option>
                               </select>
                           </div>
                      </div>
@@ -1512,23 +1518,53 @@
         document.getElementById('btn-login').addEventListener('click', doLogin);
         document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
         
-        // Cargar modelos dinÃ¡micamente
+        // Cargar modelos dinamicamente con filtro por proveedor
+        let allAriaModels = [];
+
+        function filterModelsByProvider(provider) {
+            const select = document.getElementById('aria-model-select');
+            if (!select) return;
+            let filtered = allAriaModels;
+            if (provider === 'google') filtered = allAriaModels.filter(m => m.id.startsWith('google/'));
+            else if (provider === 'openrouter') filtered = allAriaModels.filter(m => !m.id.startsWith('google/'));
+            const savedModel = localStorage.getItem('agn-admin-selected-model');
+            select.innerHTML = filtered.length
+                ? filtered.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
+                : '<option value="">Sin modelos para este proveedor</option>';
+            if (savedModel && filtered.some(m => m.id === savedModel)) {
+                select.value = savedModel;
+            } else if (filtered.length > 0) {
+                select.value = filtered[0].id;
+            }
+        }
+
         async function loadAriaModels() {
             try {
                 const res = await fetch(`${API}/api/get-models`);
                 if (!res.ok) return;
-                const models = await res.json();
-                const select = document.getElementById('aria-model-select');
-                if (!select || !models.length) return;
-                
-                select.innerHTML = models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-                
-                // Cargar preferencia guardada o usar el primero de la lista
-                const savedModel = localStorage.getItem('agn-admin-selected-model');
-                if (savedModel && models.some(m => m.id === savedModel)) {
-                    select.value = savedModel;
-                } else if (models.length > 0) {
-                    select.value = models[0].id;
+                allAriaModels = await res.json();
+                const savedProvider = localStorage.getItem('agn-admin-selected-provider') || 'all';
+                const providerSelect = document.getElementById('aria-provider-select');
+                if (providerSelect) providerSelect.value = savedProvider;
+                filterModelsByProvider(savedProvider);
+
+                // Listener proveedor
+                if (providerSelect && !providerSelect._listenerAdded) {
+                    providerSelect.addEventListener('change', () => {
+                        const p = providerSelect.value;
+                        localStorage.setItem('agn-admin-selected-provider', p);
+                        filterModelsByProvider(p);
+                    });
+                    providerSelect._listenerAdded = true;
+                }
+
+                // Listener modelo
+                const modelSelect = document.getElementById('aria-model-select');
+                if (modelSelect && !modelSelect._listenerAdded) {
+                    modelSelect.addEventListener('change', () => {
+                        localStorage.setItem('agn-admin-selected-model', modelSelect.value);
+                    });
+                    modelSelect._listenerAdded = true;
                 }
             } catch (err) { console.error('Error loading models:', err); }
         }
