@@ -42,7 +42,7 @@
             font-size: 14px;
         }
 
-        /* â•â• LOGIN â•â• */
+        /* ══ LOGIN ══ */
         #login-screen {
             display: flex;
             align-items: center;
@@ -134,7 +134,7 @@
             text-align: center;
         }
 
-        /* â•â• LAYOUT â•â• */
+        /* ══ LAYOUT ══ */
         #app {
             display: none;
             height: 100vh;
@@ -223,7 +223,7 @@
             overflow: hidden;
         }
 
-        /* â•â• PAGES â•â• */
+        /* ══ PAGES ══ */
         .page {
             display: none;
             flex: 1;
@@ -234,7 +234,7 @@
             display: flex;
         }
 
-        /* â•â• ORDERS PAGE â•â• */
+        /* ══ ORDERS PAGE ══ */
         #page-orders {
             flex-direction: row;
         }
@@ -456,10 +456,10 @@
             border: 1px solid rgba(230, 73, 55, 0.3);
         }
 
-        /* â•â• DETAIL PANEL â•â• */
+        /* ══ DETAIL PANEL ══ */
         .detail-panel {
             width: 380px;
-            /* TamaÃ±o similar a Aria */
+            /* Tamaño similar a Aria */
             border-left: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -732,7 +732,7 @@
             color: var(--text);
         }
 
-        /* â•â• AI CHAT SIDEBAR â•â• */
+        /* ══ AI CHAT SIDEBAR ══ */
         .ai-sidebar {
             width: var(--sidebar-w);
             border-left: 1px solid var(--border);
@@ -861,7 +861,7 @@
             cursor: not-allowed;
         }
 
-        /* â•â• DASHBOARD â•â• */
+        /* ══ DASHBOARD ══ */
         #page-dashboard {
             flex-direction: column;
             padding: 1.5rem;
@@ -1144,7 +1144,7 @@
         }
 
         .ai-msg.assistant::before {
-            content: "âœ¨";
+            content: "✨";
             margin-right: 5px;
             font-size: 0.8rem;
         }
@@ -1166,7 +1166,7 @@
 
 <body>
 
-    <!-- â•â•â•â•â•â• LOGIN â•â•â•â•â•â• -->
+    <!-- ══════ LOGIN ══════ -->
     <div id="login-screen">
         <div class="login-card">
             <div class="login-logo">
@@ -1185,7 +1185,7 @@
         </div>
     </div>
 
-    <!-- â•â•â•â•â•â• APP â•â•â•â•â•â• -->
+    <!-- ═══•══•═ APP ══•═•═•═•═ -->
     <div id="app">
         <nav>
             <div class="nav-brand">
@@ -1194,20 +1194,19 @@
             </div>
 
             <div class="nav-tabs">
-                <button class="tab-btn active" data-page="orders">ðŸ“‹ Ã“rdenes</button>
-                <button class="tab-btn" data-page="dashboard">ðŸ“Š Dashboard</button>
-                <button class="tab-btn" data-page="reports">ðŸ“ˆ Reportes</button>
-
+                <button class="tab-btn active" data-page="orders">📋 Orders</button>
+                <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
+                <button class="tab-btn" data-page="reports">📈 Reports</button>
             </div>
             <div class="nav-right">
-                <span class="pill" id="nav-active">0 activas</span>
+                <span class="pill" id="nav-active">0 active</span>
                 <span style="font-size:0.8rem;color:var(--text2)" id="nav-user"></span>
-                <button class="btn-sm" id="btn-logout">Salir</button>
+                <button class="btn-sm" id="btn-logout">Sign Out</button>
             </div>
         </nav>
 
         <div class="app-body">
-            <!-- â”€â”€ ORDERS PAGE â”€â”€ -->
+            <!-- ── ORDERS PAGE ── -->
             <div class="page active" id="page-orders">
                 <div class="orders-main">
                     <div class="stats-bar" id="stats-bar">
@@ -1217,56 +1216,56 @@
                         </div>
                         <div class="stat-item">
                             <div class="n" style="color:var(--yellow)" id="s-comprado">—</div>
-                            <div class="l">Comprados</div>
+                            <div class="l">Purchased</div>
                         </div>
                         <div class="stat-item">
                             <div class="n" style="color:var(--purple)" id="s-transito">—</div>
-                            <div class="l">En TrÃ¡nsito</div>
+                            <div class="l">In Transit</div>
                         </div>
                         <div class="stat-item">
                             <div class="n" style="color:var(--green)" id="s-entregado">—</div>
-                            <div class="l">Entregados</div>
+                            <div class="l">Delivered</div>
                         </div>
                     </div>
                     <div class="orders-toolbar">
                         <input type="text" class="search-box" id="search-input"
-                            placeholder="ðŸ” Buscar cliente, pieza, vehículo...">
+                            placeholder="🔍 Search customer, part, vehicle...">
                         <select class="filter-select" id="status-filter">
-                            <option value="">Todos los estados</option>
-                            <option>Solicitado</option>
-                            <option>Cotizado</option>
-                            <option>Comprado</option>
-                            <option>TrÃ¡nsito 1 (Provâ†’Log)</option>
-                            <option>TrÃ¡nsito 2 (Logâ†’EC)</option>
-                            <option>En Aduana</option>
-                            <option>Entregado</option>
-                            <option>Cancelado</option>
+                            <option value="">All statuses</option>
+                            <option>Requested</option>
+                            <option>Quoted</option>
+                            <option>Purchased</option>
+                            <option>Transit 1 (Supplier→Logistics)</option>
+                            <option>Transit 2 (Logistics→EC)</option>
+                            <option>In Customs</option>
+                            <option>Delivered</option>
+                            <option>Cancelled</option>
                         </select>
                         <button class="btn-add" id="btn-export"
-                            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">ðŸ“¥
-                            Exportar Reporte</button>
-                        <button class="btn-add" id="btn-new-order">+ Nueva Orden</button>
+                            style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
+                            Export Report</button>
+                        <button class="btn-add" id="btn-new-order">+ New Order</button>
 
                     </div>
                     <div class="orders-list" id="orders-list">
-                        <div class="empty-state">Cargando órdenes...</div>
+                        <div class="empty-state">Loading orders...</div>
                     </div>
                 </div>
 
                 <!-- Order Detail -->
                 <div class="detail-panel empty" id="detail-panel">
-                    <button class="btn-toggle-detail" id="toggle-detail" title="Expandir/Colapsar">â†”</button>
+                    <button class="btn-toggle-detail" id="toggle-detail" title="Expand/Collapse">↔</button>
                     <div id="detail-content"
                         style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
                         <div
                             style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)">
-                            <span>â† Selecciona una orden</span>
+                            <span>← Select an order</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- â”€â”€ DASHBOARD PAGE â”€â”€ -->
+            <!-- ── DASHBOARD PAGE ── -->
             <div class="page" id="page-dashboard">
                 <div class="kpi-grid">
                     <div class="kpi-card">
@@ -1280,45 +1279,44 @@
                 </div>
             </div>
 
-            <!-- â”€â”€ REPORTS PAGE â”€â”€ -->
+            <!-- ── REPORTS PAGE ── -->
             <div class="page" id="page-reports">
                 <div class="reports-container">
                     <div class="reports-filters">
                         <div class="filter-group">
-                            <label>Desde</label>
+                            <label>From</label>
                             <input type="date" id="rep-date-from">
                         </div>
                         <div class="filter-group">
-                            <label>Hasta</label>
+                            <label>To</label>
                             <input type="date" id="rep-date-to">
                         </div>
                         <div class="filter-group">
-                            <label>Marca</label>
-                            <input type="text" id="rep-brand" placeholder="Ej: Toyota">
+                            <label>Brand</label>
+                            <input type="text" id="rep-brand" placeholder="Ex: Toyota">
                         </div>
                         <div class="filter-group">
-                            <label>Modelo</label>
-                            <input type="text" id="rep-model" placeholder="Ej: Hilux">
+                            <label>Model</label>
+                            <input type="text" id="rep-model" placeholder="Ex: Hilux">
                         </div>
                         <div class="filter-group">
-                            <label>Estado</label>
+                            <label>Status</label>
                             <select id="rep-status">
-                                <option value="">Todos</option>
-                                <option>Solicitado</option>
-                                <option>Cotizado</option>
-                                <option>Comprado</option>
-                                <option>En Aduana</option>
-                                <option>Entregado</option>
-                                <option>Cancelado</option>
+                                <option value="">All</option>
+                                <option>Requested</option>
+                                <option>Quoted</option>
+                                <option>Purchased</option>
+                                <option>In Customs</option>
+                                <option>Delivered</option>
+                                <option>Cancelled</option>
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label>Cliente</label>
-                            <input type="text" id="rep-customer" placeholder="Nombre...">
+                            <label>Customer</label>
+                            <input type="text" id="rep-customer" placeholder="Name...">
                         </div>
                         <div class="filter-group" style="justify-content: flex-end;">
-                            <button class="btn-primary" id="btn-export-full" style="padding:0.6rem">Descargar
-                                Excel</button>
+                            <button class="btn-primary" id="btn-export-full" style="padding:0.6rem">Download Excel</button>
                         </div>
                     </div>
 
@@ -1327,13 +1325,13 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Vehículo</th>
-                                    <th>Pieza</th>
-                                    <th>Estado</th>
-                                    <th>Venta</th>
-                                    <th>Ganancia</th>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th>Vehicle</th>
+                                    <th>Part</th>
+                                    <th>Status</th>
+                                    <th>Sale</th>
+                                    <th>Profit</th>
                                 </tr>
                             </thead>
                             <tbody id="reports-tbody">
@@ -1348,39 +1346,39 @@
             <div class="ai-sidebar">
                  <div class="ai-header">
  
-                     <div class="aria-avatar">ðŸ¤–</div>
+                     <div class="aria-avatar">🤖</div>
                      <div style="display:flex; flex-direction: column; gap: 4px;">
                          <div style="display:flex; align-items:center; gap: 8px;">
-                             <button id="aria-mute" class="speaker-btn" title="Activar/Desactivar Voz de Aria">
+                             <button id="aria-mute" class="speaker-btn" title="Enable/Disable Aria Voice">
                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                                      <path
                                          d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
                                  </svg>
                              </button>
                              <div>
-                                 <div class="ai-title">Aria — Asistente ERP</div>
-                                 <div class="ai-subtitle">Crea y gestiona órdenes en lenguaje natural</div>
+                                 <div class="ai-title">Aria — ERP Assistant</div>
+                                 <div class="ai-subtitle">Create and manage orders using natural language</div>
                              </div>
                          </div>
                          <!-- Provider + Model Selector -->
                           <div id="admin-model-selector-container" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); flex-wrap: wrap;">
-                              <label for="aria-provider-select" style="font-weight: 600;">Proveedor:</label>
+                              <label for="aria-provider-select" style="font-weight: 600;">Provider:</label>
                               <select id="aria-provider-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px;">
-                                  <option value="all">Todos</option>
+                                  <option value="all">All</option>
                                   <option value="google">Google Gemini</option>
                                   <option value="openrouter">OpenRouter</option>
                               </select>
-                              <label for="aria-model-select" style="font-weight: 600;">Modelo:</label>
+                              <label for="aria-model-select" style="font-weight: 600;">Model:</label>
                               <select id="aria-model-select" style="padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-size: 11px; max-width: 200px;">
-                                  <option value="">Cargando...</option>
+                                  <option value="">Loading...</option>
                               </select>
                           </div>
                      </div>
                  </div>
                 <div class="ai-messages" id="ai-messages">
-                    <div class="ai-msg assistant">¡Hola! Soy Aria, su asistente ERP. Puedo crear órdenes, actualizar
-                        estados, <strong>modificar costos o precios</strong> y registrar notas. Por ejemplo, dígame:
-                        <em>"Actualiza el costo de la orden 4 a $45"</em> o <em>"Crea una orden para Juan..."</em>
+                    <div class="ai-msg assistant">Hello! I'm Aria, your ERP assistant. I can create orders, update
+                        statuses, <strong>modify costs or prices</strong> and record notes. For example, tell me:
+                        <em>"Update the cost of order 4 to $45"</em> or <em>"Create an order for Juan..."</em>
                     </div>
                 </div>
                 <!-- Visualizer and Status -->
@@ -1392,83 +1390,75 @@
                     <div class="ai-input-wrapper">
                         <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
                             rows="1"></textarea>
-                        <button id="aria-mic" class="mic-btn" title="Dictar con voz">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                <path
-                                    d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
-                            </svg>
-                        </button>
-                    </div>
-                    <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
+                <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
                 </div>
 
             </div>
         </div>
 
-        <!-- â”€â”€ DASHBOARD PAGE â”€â”€ -->
+        <!-- ── DASHBOARD PAGE ── -->
         <div class="page" id="page-dashboard">
             <div class="kpi-grid" id="kpi-grid">
                 <div class="kpi-card">
-                    <h3>Ingresos Totales</h3>
+                    <h3>Total Revenue</h3>
                     <div class="kpi-val" id="kpi-revenue" style="color:var(--green)">—</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Ganancia Total</h3>
+                    <h3>Total Profit</h3>
                     <div class="kpi-val" id="kpi-profit" style="color:var(--cyan)">—</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Ã“rdenes Activas</h3>
+                    <h3>Active Orders</h3>
                     <div class="kpi-val" id="kpi-active" style="color:var(--yellow)">—</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Entregadas</h3>
+                    <h3>Delivered</h3>
                     <div class="kpi-val" id="kpi-delivered" style="color:var(--blue)">—</div>
                 </div>
             </div>
-            <div style="color:var(--text2);font-size:0.85rem;text-align:center;padding:2rem;">MÃ¡s reportes
                 próximamente...</div>
         </div>
 
-        <!-- â”€â”€ REPORTS PAGE â”€â”€ -->
+        <!-- ── REPORTS PAGE ── -->
         <div class="page" id="page-reports">
             <div class="reports-container">
                 <div class="reports-filters">
                     <div class="filter-group">
-                        <label for="rep-date-from">Desde</label>
+                        <label for="rep-date-from">From</label>
                         <input type="date" id="rep-date-from">
                     </div>
                     <div class="filter-group">
-                        <label for="rep-date-to">Hasta</label>
+                        <label for="rep-date-to">To</label>
                         <input type="date" id="rep-date-to">
                     </div>
                     <div class="filter-group">
-                        <label for="rep-brand">Marca Vehículo</label>
-                        <input type="text" id="rep-brand" placeholder="Ej: Ford">
+                        <label for="rep-brand">Vehicle Brand</label>
+                        <input type="text" id="rep-brand" placeholder="Ex: Ford">
                     </div>
                     <div class="filter-group">
-                        <label for="rep-model">Modelo Vehículo</label>
-                        <input type="text" id="rep-model" placeholder="Ej: Focus">
+                        <label for="rep-model">Vehicle Model</label>
+                        <input type="text" id="rep-model" placeholder="Ex: Focus">
                     </div>
                     <div class="filter-group">
-                        <label for="rep-status">Estado</label>
+                        <label for="rep-status">Status</label>
                         <select id="rep-status">
-                            <option value="">Todos</option>
-                            <option>Solicitado</option>
-                            <option>Cotizado</option>
-                            <option>Comprado</option>
-                            <option>TrÃ¡nsito 1 (Provâ†’Log)</option>
-                            <option>TrÃ¡nsito 2 (Logâ†’EC)</option>
-                            <option>En Aduana</option>
-                            <option>Entregado</option>
-                            <option>Cancelado</option>
+                            <option value="">All</option>
+                            <option>Requested</option>
+                            <option>Quoted</option>
+                            <option>Purchased</option>
+                            <option>Transit 1 (Supplier→Logistics)</option>
+                            <option>Transit 2 (Logistics→EC)</option>
+                            <option>In Customs</option>
+                            <option>Delivered</option>
+                            <option>Cancelled</option>
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="rep-customer">Cliente</label>
-                        <input type="text" id="rep-customer" placeholder="Ej: Juan Pérez">
+                        <label for="rep-customer">Customer</label>
+                        <input type="text" id="rep-customer" placeholder="Ex: Juan Pérez">
                     </div>
                     <button class="btn-primary" id="btn-export-full" style="grid-column: span 2; margin-top: 1rem;">
-                        ðŸ“¥ Exportar Reporte Completo
+                        📥 Export Full Report
                     </button>
                 </div>
 
@@ -1477,13 +1467,13 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Cliente</th>
-                                <th>Vehículo</th>
-                                <th>Pieza</th>
-                                <th>Estado</th>
-                                <th>Venta</th>
-                                <th>Ganancia</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Vehicle</th>
+                                <th>Part</th>
+                                <th>Status</th>
+                                <th>Sale</th>
+                                <th>Profit</th>
                             </tr>
                         </thead>
                         <tbody id="reports-tbody">
@@ -1514,7 +1504,7 @@
             t._timeout = setTimeout(() => t.className = '', 3000);
         }
 
-        // â•â• LOGIN â•â•
+        // ══ LOGIN ══
         document.getElementById('btn-login').addEventListener('click', doLogin);
         document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
         
@@ -1530,7 +1520,7 @@
             const savedModel = localStorage.getItem('agn-admin-selected-model');
             select.innerHTML = filtered.length
                 ? filtered.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
-                : '<option value="">Sin modelos para este proveedor</option>';
+                : '<option value="">No models for this provider</option>';
             if (savedModel && filtered.some(m => m.id === savedModel)) {
                 select.value = savedModel;
             } else if (filtered.length > 0) {
@@ -1579,7 +1569,7 @@
 
             const res = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': pwd } });
             if (res.status === 401) {
-                document.getElementById('login-err').textContent = 'ContraseÃ±a incorrecta.';
+                document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
                 btn.textContent = 'Ingresar'; btn.disabled = false;
                 return;
             }
@@ -1604,7 +1594,7 @@
 
         document.getElementById('btn-logout').addEventListener('click', () => location.reload());
 
-        // â•â• NAVIGATION â•â•
+        // ══ NAVIGATION ══
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1622,11 +1612,11 @@
             const panel = document.getElementById('detail-panel');
             panel.classList.toggle('collapsed');
             const btn = document.getElementById('toggle-detail');
-            btn.textContent = panel.classList.contains('collapsed') ? 'ðŸ”Ž' : 'â†”';
+            btn.textContent = panel.classList.contains('collapsed') ? '🔍' : '↔';
         });
 
 
-        // â•â• SEARCH & FILTER â•â•
+        // ══ SEARCH & FILTER ══
         document.getElementById('search-input').addEventListener('input', filterOrders);
         document.getElementById('status-filter').addEventListener('change', filterOrders);
 
@@ -1641,28 +1631,28 @@
             renderOrders(filtered);
         }
 
-        // â•â• RENDER ORDERS â•â•
+        // ══ RENDER ORDERS ══
         function getStatusClass(status) {
             const m = {
-                'Solicitado': 's-solicitado', 'Cotizado': 's-cotizado', 'Comprado': 's-comprado',
-                'TrÃ¡nsito 1 (Provâ†’Log)': 's-transito1', 'TrÃ¡nsito 2 (Logâ†’EC)': 's-transito2',
-                'En Aduana': 's-en-aduana', 'Entregado': 's-entregado', 'Cancelado': 's-cancelado'
+                'Requested': 's-solicitado', 'Quoted': 's-cotizado', 'Purchased': 's-comprado',
+                'Transit 1 (Supplier→Logistics)': 's-transito1', 'Transit 2 (Logistics→EC)': 's-transito2',
+                'In Customs': 's-en-aduana', 'Delivered': 's-entregado', 'Cancelled': 's-cancelado'
             };
             return m[status] || 's-solicitado';
         }
 
         function renderOrders(orders) {
             const list = document.getElementById('orders-list');
-            if (!orders.length) { list.innerHTML = '<div class="empty-state">No hay órdenes que coincidan.</div>'; return; }
+            if (!orders.length) { list.innerHTML = '<div class="empty-state">No orders match.</div>'; return; }
             list.innerHTML = orders.map(o => {
-                const date = o.created_at ? new Date(o.created_at).toLocaleDateString('es-EC') : '—';
+                const date = o.created_at ? new Date(o.created_at).toLocaleDateString('en-US') : '—';
                 const vehicle = [o.vehicle_brand, o.vehicle_model, o.vehicle_year].filter(Boolean).join(' ');
                 return `<div class="order-card${selectedOrder?.id === o.id ? ' selected' : ''}" onclick="selectOrder('${o.id}')">
             <div>
                 <div class="order-id" style="font-size:0.65rem; font-weight:800; color:var(--blue); margin-bottom:0.2rem">#${o.readable_id || 'ID'}</div>
-                <div class="order-client">${o.customers?.full_name || 'Sin nombre'} <span style="color:var(--text2);font-weight:400;font-size:0.78rem">${o.customers?.phone || ''}</span></div>
+                <div class="order-client">${o.customers?.full_name || 'No name'} <span style="color:var(--text2);font-weight:400;font-size:0.78rem">${o.customers?.phone || ''}</span></div>
                 <div class="order-part">${o.part_name}${o.part_number ? ` — #${o.part_number}` : ''}</div>
-                ${vehicle ? `<div class="order-vehicle">ðŸš— ${vehicle}</div>` : ''}
+                ${vehicle ? `<div class="order-vehicle">🚗 ${vehicle}</div>` : ''}
             </div>
             <div class="order-meta">
                 <span class="sbadge ${getStatusClass(o.status)}">${o.status}</span>
@@ -1675,14 +1665,14 @@
 
         function updateStats(orders) {
             document.getElementById('s-total').textContent = orders.length;
-            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Comprado').length;
-            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('TrÃ¡nsito')).length;
-            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
-            const active = orders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
-            document.getElementById('nav-active').textContent = `${active} activas`;
+            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Purchased').length;
+            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Transit')).length;
+            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Delivered').length;
+            const active = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).length;
+            document.getElementById('nav-active').textContent = `${active} active`;
         }
 
-        // â•â• SELECT ORDER â•â•
+        // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
             document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
@@ -1690,27 +1680,23 @@
             renderDetail(selectedOrder);
             loadNotes(orderId);
             loadHistory(orderId);
-            // Financials ya vienen en la vista si usamos la correcta, pero por ahora los mostramos del objeto
-        }
-
-
-        function renderDetail(o) {
-            const panel = document.getElementById('detail-panel');
-            const content = document.getElementById('detail-content');
-            panel.classList.remove('empty');
-            panel.classList.remove('collapsed'); // Expandir al seleccionar nueva orden
-            document.getElementById('toggle-detail').textContent = 'â†”';
-
-            const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'TrÃ¡nsito 1 (Provâ†’Log)', 'TrÃ¡nsito 2 (Logâ†’EC)', 'En Aduana', 'Entregado', 'Cancelado'];
+            const statuses = ['Requested', 'Quoted', 'Purchased', 'Transit 1 (Supplier→Logistics)', 'Transit 2 (Logistics→EC)', 'In Customs', 'Delivered', 'Cancelled'];
             const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
 
             content.innerHTML = `
 
         <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
             <div>
-                <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">PEDIDO #${o.readable_id}</div>
+                <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">ORDER #${o.readable_id}</div>
                 <input type="text" id="edit-part-name" value="${o.part_name}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
-                <div class="detail-sub">${o.customers?.full_name} Â· ${o.customers?.phone || '—'}</div>
+                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+            </div>
+            <div style="display:flex; gap:0.5rem">
+                <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Save</button>
+                <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Delete</button>
+            </div>
+        </div>is.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
+                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
             </div>
             <div style="display:flex; gap:0.5rem">
                 <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Guardar</button>
@@ -1719,39 +1705,39 @@
         </div>
 
         <div class="detail-body">
-            <!-- Vehículo -->
+            <!-- Vehicle -->
             <div class="detail-section">
-                <h4>ðŸš— Vehículo</h4>
+                <h4>🚗 Vehicle</h4>
                 <div class="info-grid">
-                    <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
-                    <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
-                    <div class="info-item"><div class="il">AÃ±o</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
+                    <div class="info-item"><div class="il">Brand</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
+                    <div class="info-item"><div class="il">Model</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
+                    <div class="info-item"><div class="il">Year</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
                     <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="edit-vin" value="${o.vin || ''}" style="font-family:monospace"></div></div>
                     <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" id="edit-tracking" value="${o.tracking_number || ''}"></div></div>
                 </div>
             </div>
 
-            <!-- Repuestos DinÃ¡micos -->
+            <!-- Repuestos Dinámicos -->
             <div class="detail-section">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h4>âš™ï¸ Repuestos</h4>
-                    <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ AÃ±adir Pieza</button>
+                    <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
                 </div>
                 <div id="dynamic-items-container">
                     ${(() => {
                     let items = (o.items_json && Array.isArray(o.items_json)) ? o.items_json : [];
-                    // Sincronización AutomÃ¡tica: Si no hay repuestos en el desglose, usar la Pieza Principal
+                    // Sincronización Automática: Si no hay repuestos en el desglose, usar la Pieza Principal
                     if (items.length === 0 && o.part_name) {
                         items = [{ part_name: o.part_name, part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
                     }
                     return items.map(item => `
                             <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
                                 <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
-                                    <strong>Repuesto</strong>
+                                    <strong>Part</strong>
                                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                                 </div>
-                                <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
-                                <div class="info-item"><div class="il">NÃºm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
+                                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
+                                <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
                                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
                             </div>
                         `).join('');
@@ -1761,7 +1747,7 @@
 
             <!-- Estado -->
             <div class="detail-section">
-                <h4>ðŸ“¦ Estado</h4>
+                <h4>📦 Estado</h4>
                 <div class="status-changer">
                     <select id="det-status" onchange="updateDetailStatus('${o.id}')">${opts}</select>
                 </div>
@@ -1769,7 +1755,7 @@
 
             <!-- Financieros -->
             <div class="detail-section">
-                <h4>ðŸ’° Financieros</h4>
+                <h4>💰 Financieros</h4>
                 <div class="financial-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem">
                     <div class="fin-item"><div class="fl">Base Price (FOB)</div><div class="fv"><input type="number" id="edit-base-price" value="${o.costo_fob || o.cost_fob || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
                     <div class="fin-item"><div class="fl">Logística</div><div class="fv"><input type="number" id="edit-logistica" value="${o.shipping_logistica || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
@@ -1792,16 +1778,16 @@
             <div class="detail-section">
                 <h4>ðŸ“ Notas</h4>
                 <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
-                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="AÃ±adir nota interna..."></textarea>
-                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ AÃ±adir Nota</button>
+                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
+                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ Añadir Nota</button>
             </div>
             <div class="detail-section">
-                <h4>ðŸ•“ Historial</h4>
+                <h4>🕒 Historial</h4>
                 <div class="history-list" id="det-history"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
             </div>
         </div>`;
 
-            // Llamar al cÃ¡lculo de totales inicial al renderizar la vista
+            // Llamar al cálculo de totales inicial al renderizar la vista
             setTimeout(recalculateTotals, 100);
         }
 
@@ -1811,7 +1797,7 @@
             panel.classList.remove('empty');
             panel.classList.remove('collapsed');
             const toggleBtn = document.getElementById('toggle-detail');
-            if (toggleBtn) toggleBtn.textContent = 'â†”';
+            if (toggleBtn) toggleBtn.textContent = '↔';
 
             content.innerHTML = `
                 <div class="detail-header">
@@ -1821,7 +1807,7 @@
 
                 <div class="detail-body">
                     <div class="detail-section">
-                        <h4>ðŸ‘¤ Cliente</h4>
+                        <h4>👤 Cliente</h4>
                         <div class="info-grid">
                             <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
@@ -1829,11 +1815,11 @@
                     </div>
 
                     <div class="detail-section">
-                        <h4>ðŸš— Vehículo</h4>
+                        <h4>🚗 Vehículo</h4>
                         <div class="info-grid">
                             <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand" placeholder="Ej: Kia"></div></div>
                             <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model" placeholder="Ej: Sportage"></div></div>
-                            <div class="info-item"><div class="il">AÃ±o</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
+                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
                             <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="new-vin" placeholder="Opcional"></div></div>
                         </div>
                     </div>
@@ -1887,7 +1873,7 @@
             });
 
             if (res.ok) {
-                showToast('âœ… Orden creada exitosamente', 'success');
+                showToast('✅ Orden creada exitosamente', 'success');
                 await loadData(); // Recargar lista
             } else {
                 showToast('âŒ Error al crear orden', 'error');
@@ -1936,7 +1922,7 @@
             });
 
             if (res.ok) {
-                showToast('âœ… Cambios guardados', 'success');
+                showToast('✅ Cambios guardados', 'success');
                 // Actualizar localmente el objeto allOrders
                 const o = allOrders.find(ord => ord.id === orderId);
                 if (o) Object.assign(o, data);
@@ -1961,7 +1947,7 @@
                 if (o) o.status = newStatus;
                 renderOrders(allOrders.filter(() => true));
                 updateStats(allOrders);
-                showToast('âœ… Estado actualizado', 'success');
+                showToast('✅ Estado actualizado', 'success');
             } else showToast('âŒ Error al actualizar', 'error');
         }
 
@@ -1992,7 +1978,7 @@
                         <div class="note-text">${n.content}</div>
                         <div class="note-date">${new Date(n.created_at).toLocaleString()}</div>
                       </div>`).join('')
-                    : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aÃºn.</div>';
+                    : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aún.</div>';
             }
         }
 
@@ -2002,7 +1988,7 @@
         }
 
         async function deleteOrder(orderId) {
-            if (!confirm('Â¿Seguro que deseas eliminar esta orden?')) return;
+            if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
             const res = await fetch(`${API}/api/delete-order`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
@@ -2019,7 +2005,7 @@
         }
 
 
-        // â•â• ARIA IA CHAT â•â•
+        // ══ ARIA IA CHAT ══
         const ariaInput = document.getElementById('aria-input');
         const ariaSend = document.getElementById('aria-send');
         const aiMessages = document.getElementById('ai-messages');
@@ -2108,7 +2094,7 @@
                  if (thinking && thinking.parentNode) thinking.remove();
  
                  let errorMsg = 'âŒ Error de conexión o tiempo de espera agotado.';
-                 if (e.name === 'AbortError') errorMsg = 'â±ï¸ La IA estÃ¡ tardando demasiado en responder. Intente de nuevo.';
+                 if (e.name === 'AbortError') errorMsg = 'â±ï¸ La IA está tardando demasiado en responder. Intente de nuevo.';
  
                  addAiMsg('assistant', errorMsg);
              } finally {
@@ -2154,8 +2140,8 @@
                      });
                      if (res.ok) {
                          const result = await res.json();
-                         showToast(`âœ… Orden #${result.orderId} creada`, 'success'); // Usar el ID real
-                         addAiMsg('system', `âœ… Orden #${result.orderId} creada con éxito.`);
+                         showToast(`✅ Orden #${result.orderId} creada`, 'success'); // Usar el ID real
+                         addAiMsg('system', `✅ Orden #${result.orderId} creada con éxito.`);
                          const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
                          allOrders = await ordersRes.json();
                          renderOrders(allOrders);
@@ -2187,9 +2173,9 @@
                              found.status = action.data.new_status;
                              renderOrders(allOrders);
                              updateStats(allOrders);
-                             addAiMsg('system', `âœ… [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
                              if (selectedOrder?.id === found.id) renderDetail(found);
-                             showToast(`âœ… Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
+                             showToast(`✅ Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al actualizar estado desde Aria:', errorText);
@@ -2251,7 +2237,7 @@
                              showToast('âŒ Error al agregar nota', 'error');
                          }
                      } else {
-                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para aÃ±adir la nota.`);
+                         addAiMsg('system', `âš ï¸ No encontré la orden "${orderId}" para añadir la nota.`);
                          showToast(`âš ï¸ Orden "${orderId}" no encontrada`, 'info');
                      }
                  } else if (action.type === 'UPDATE_FIELDS') {
@@ -2304,9 +2290,9 @@
                              found.order_items = currentItems;
                              renderOrders(allOrders);
                              updateStats(allOrders);
-                             addAiMsg('system', `âœ… [#${found.readable_id}] Campos actualizados.`);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
                              if (selectedOrder?.id === found.id) renderDetail(found);
-                             showToast(`âœ… Orden #${found.readable_id} actualizada`, 'success');
+                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
                          } else {
                              const errorText = await res.text();
                              console.error('Error al actualizar campos desde Aria:', errorText);
@@ -2330,7 +2316,7 @@
 
 
 
-        // â•â• VOICE (NATIVE CHROME API) â•â•
+        // ══ VOICE (NATIVE CHROME API) ══
         let recognition;
         let isAriaMuted = true; // Por defecto muteado
 
@@ -2360,7 +2346,7 @@
             isAriaMuted = !isAriaMuted;
             document.getElementById('aria-mute').classList.toggle('active', !isAriaMuted);
             if (isAriaMuted) window.speechSynthesis.cancel();
-            showToast(isAriaMuted ? 'ðŸ”‡ Aria silenciada' : 'ðŸ”Š Aria con voz', 'info');
+            showToast(isAriaMuted ? '🔇 Aria silenciada' : '🔊 Aria con voz', 'info');
         });
 
         function ariaSpeak(text) {
@@ -2376,7 +2362,7 @@
             openNewManualOrder();
         });
 
-        // â•â• FUNCIONES DE FICHA MULTI-REPUESTO Y MATEMÃTICAS FINANCIERAS â•â•
+        // ══ FUNCIONES DE FICHA MULTI-REPUESTO Y MATEMÁTICAS FINANCIERAS ══
         function addDetailItem(partName = '', partNo = '', url = '') {
             const container = document.getElementById('dynamic-items-container');
             if (!container) return;
@@ -2389,7 +2375,7 @@
                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                 </div>
                 <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
-                <div class="info-item"><div class="il">NÃºm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
+                <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}"></div></div>
             `;
             container.appendChild(div);
