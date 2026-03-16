@@ -20,9 +20,15 @@ export default async function handler(req, res) {
     const { orderId, newStatus } = req.body;
 
     const validStatuses = [
-        'Solicitado', 'Cotizado', 'Comprado',
-        'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)',
-        'En Aduana', 'Entregado', 'Cancelado'
+        'Solicitado',
+        'Cotizado',
+        'Comprado',
+        'Tránsito 1 (Prov→Log)',
+        'Tránsito 2 (Log→EC)',
+        'En Aduana',
+        'Entregado',
+        'Recogido en Local',
+        'Cancelado'
     ];
     if (!orderId || !newStatus || !validStatuses.includes(newStatus)) {
         return res.status(400).json({

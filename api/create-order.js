@@ -94,6 +94,7 @@ export default async function handler(req, res) {
             partsList = [{
                 part_name,
                 part_number: part_number || '',
+                quantity: 1,
                 cost_fob: parseFloat(cost_fob) || 0,
                 sale_price: parseFloat(sale_price) || 0,
                 vendor_name: vendor_name || '',
@@ -114,13 +115,13 @@ export default async function handler(req, res) {
                 customer_id: customer.id,
                 part_name: safeString(basePartName, 'Orden de Repuestos'),
                 vin: safeString(vin, ''),
-                vehicle_brand: safeString(vehicle_brand, 'N/A'),
                 vehicle_model: safeString(vehicle_model, 'N/A'),
                 vehicle_year: safeString(vehicle_year, 'N/A'),
                 status: safeString(status, 'Solicitado'),
                 tracking_number: safeString(tracking_number, ''),
                 estimated_delivery_client: estimated_delivery_client || null,
-                notes: safeString(notes, '')
+                notes: safeString(notes, ''),
+                items_json: partsList // Sincronización crucial para el Panel de Admin
             }])
             .select().single();
 

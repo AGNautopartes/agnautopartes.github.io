@@ -593,7 +593,18 @@ document.addEventListener('DOMContentLoaded', function () {
             trackingResults.innerHTML = '';
             orders.forEach(order => {
                 const date = new Date(order.updated_at).toLocaleDateString('es-EC');
-                const statusClass = `status-${order.status.toLowerCase().replace(/\s+/g, '-')}`;
+                const statusMap = {
+                    'Solicitado': 'solicitado',
+                    'Cotizado': 'cotizado',
+                    'Comprado': 'comprado',
+                    'Tránsito 1 (Prov→Log)': 'transito',
+                    'Tránsito 2 (Log→EC)': 'transito',
+                    'En Aduana': 'aduana',
+                    'Entregado': 'entregado',
+                    'Recogido en Local': 'recogido',
+                    'Cancelado': 'cancelado'
+                };
+                const statusClass = `status-${statusMap[order.status] || 'solicitado'}`;
                 const card = document.createElement('div');
                 card.className = 'order-card fade-in is-visible';
                 card.innerHTML = `
