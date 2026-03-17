@@ -2148,92 +2148,49 @@
                   const data = await res.json();
                   thinking.remove();
   
-                  let responseText = data.response; // Viene del backend (api/admin-chat.js)
-  
-                  // === PARSE Y EJECUTAR TODAS LAS ACCIONES DESDE RESPONSE_TEXT ===
-                  // Ignoramos data.action del backend ya que puede ser unreliable con múltiples acciones
+                  let responseText = data.response; 
                   const actionRegex = /\[ACTION:.*?\]/g;
                   let actions = [];
                   let match;
                   
-                   // Extraer todos los bloques de acción - versión robusta para JSON truncado
                    while ((match = actionRegex.exec(responseText)) !== null) {
                        try {
-                           let actionJson = match[0].substring(8, match[0].length - 1); // Quitar [ACTION: y ]
-                           console.log('Raw action block:', match[0]); // Debug
-                           console.log('Initial actionJson:', actionJson); // Debug
-                           
-                           // Intentar parsear el JSON directamente
+                           let actionJson = match[0].substring(8, match[0].length - 1);
                            let action = null;
-                           let actionJsonForLog = actionJson; // Guardar para logging en caso de error
                            try {
                                action = JSON.parse(actionJson);
                            } catch (e1) {
-                               // Si falla, intentar corregir JSON truncado comúnmente
-                               console.log('Initial parse failed, attempting fixes...');
-                               
-                               // Contar llaves y corchetes abiertos vs cerrados
                                let openBraces = (actionJson.match(/\{/g) || []).length;
                                let closeBraces = (actionJson.match(/\}/g) || []).length;
                                let openBrackets = (actionJson.match(/\[/g) || []).length;
                                let closeBrackets = (actionJson.match(/\]/g) || []).length;
                                
-                               console.log(`Braces: ${openBraces} open, ${closeBraces} close`);
-                               console.log(`Brackets: ${openBrackets} open, ${closeBrackets} close`);
-                               
-                               // Agregar corchetes de cierre faltantes
-                               while (closeBrackets < openBrackets) {
-                                   actionJson += ']';
-                                   closeBrackets++;
-                               }
-                               
-                               // Agregar llaves de cierre faltantes
-                               while (closeBraces < openBraces) {
-                                   actionJson += '}';
-                                   closeBrackets++;
-                               }
-                               
-                               console.log('Fixed actionJson:', actionJson);
+                               while (closeBrackets < openBrackets) { actionJson += ']'; closeBrackets++; }
+                               while (closeBraces < openBraces) { actionJson += '}'; closeBraces++; }
                                action = JSON.parse(actionJson);
                            }
-                           
-                           console.log('Parsed action:', action); // Debug
-                           actions.push(action);
+                           if (action) actions.push(action);
                        } catch (e) {
-                           console.error('Error parsing action block:', match[0], e);
-                           console.error('Raw actionJson:', actionJsonForLog || actionJson);
+                           console.error('Error parsing action block:', e);
                        }
                    }
                   
-                  // Remover todos los bloques de acción de la responseText para mostrar solo el texto al usuario
                   let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
+                  if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
   
-                  // Si queda texto vacío después de remover acciones, usar un mensaje por defecto
-                  if (!cleanResponseText && actions.length > 0) {
-                      cleanResponseText = "De acuerdo, procedo con esas acciones.";
-                  }
-  
-                  // Mostrar el mensaje limpio al usuario
                   if (cleanResponseText) {
                       addAiMsg('assistant', cleanResponseText);
                       ariaHistory.push({ role: 'assistant', content: cleanResponseText });
                       ariaSpeak(cleanResponseText);
                   }
                   
-                  // Ejecutar todas las acciones encontradas
                   for (const action of actions) {
-                      if (action && action.type) {
-                          await executeAriaAction(action);
-                      }
+                      if (action && action.type) await executeAriaAction(action);
                   }
              } catch (e) {
                  console.error('Aria Error:', e);
                  if (thinking && thinking.parentNode) thinking.remove();
- 
-                 let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
-                 if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
- 
-                 addAiMsg('assistant', errorMsg);
+                 addAiMsg('assistant', '❌ Error de conexión o tiempo de espera agotado.');
              } finally {
                  ariaSend.disabled = false;
              }
