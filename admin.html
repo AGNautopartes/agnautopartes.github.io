@@ -1251,6 +1251,7 @@
                         <button class="btn-add" id="btn-export"
                             style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                             Export Report</button>
+                        <button class="btn-add" id="btn-delete-all" onclick="deleteAllOrders()" style="background:var(--red); color:white; border:none; margin-right:0.5rem">🗑️ Eliminar Todo (PRUEBAS)</button>
                         <button class="btn-add" id="btn-new-order">+ New Order</button>
 
                     </div>
@@ -1579,31 +1580,53 @@
             const name = document.getElementById('login-name').value.trim() || 'Admin';
             if (!pwd) return;
             const btn = document.getElementById('btn-login');
+            const err = document.getElementById('login-err');
+            err.textContent = '';
             btn.textContent = 'Verificando...'; btn.disabled = true;
 
-            const res = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': pwd } });
-            if (res.status === 401) {
-                document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
-                btn.textContent = 'Ingresar'; btn.disabled = false;
-                return;
-            }
-             adminPass = pwd; adminName = name;
-             allOrders = await res.json();
-             document.getElementById('login-screen').style.display = 'none';
-             document.getElementById('app').style.display = 'flex';
-             document.getElementById('nav-user').textContent = name;
-             renderOrders(allOrders);
-             updateStats(allOrders);
+            try {
+                const res = await fetch(`${API}/api/get-all-orders`, { 
+                    headers: { 'x-admin-password': pwd } 
+                });
 
-             // Inicializar selector de modelo IA en admin
-             const adminModelSelector = document.getElementById('aria-model-select');
-             if (adminModelSelector) {
-                 const savedModel = localStorage.getItem('agn-admin-selected-model');
-                 if (savedModel) { adminModelSelector.value = savedModel; }
-                 adminModelSelector.addEventListener('change', () => {
-                     localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
-                 });
-             }
+                if (res.status === 401) {
+                    err.textContent = 'Contraseña incorrecta.';
+                    btn.textContent = 'Ingresar'; btn.disabled = false;
+                    return;
+                }
+
+                if (!res.ok) {
+                    err.textContent = `Error del servidor (${res.status}). Intente de nuevo.`;
+                    btn.textContent = 'Ingresar'; btn.disabled = false;
+                    return;
+                }
+
+                const data = await res.json();
+                
+                // Si la respuesta no es un array (ej. un objeto de error 500 que pasó el res.ok anterior)
+                if (!Array.isArray(data)) {
+                    err.textContent = 'Respuesta inesperada del servidor.';
+                    btn.textContent = 'Ingresar'; btn.disabled = false;
+                    return;
+                }
+
+                adminPass = pwd; adminName = name;
+                allOrders = data;
+                
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('nav-user').textContent = name;
+                
+                renderOrders(allOrders);
+                updateStats(allOrders);
+
+                // Guardar login básico en session
+                sessionStorage.setItem('agn-admin-logged', 'true');
+            } catch (e) {
+                console.error('Login error:', e);
+                err.textContent = 'Error de conexión. Verifique su internet.';
+                btn.textContent = 'Ingresar'; btn.disabled = false;
+            }
         }
 
         document.getElementById('btn-logout').addEventListener('click', () => location.reload());
@@ -2048,6 +2071,22 @@
             } else showToast('❌ Error al eliminar', 'error');
         }
 
+        async function deleteAllOrders() {
+            if (!confirm('Peligro: ¿Seguro que deseas eliminar TODAS las órdenes? Esta acción es irreversible y es solo para LIMPIAR PRUEBAS.')) return;
+            const res = await fetch(`${API}/api/delete-all-orders`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
+            });
+            if (res.ok) {
+                showToast('🗑️ Todas las órdenes han sido eliminadas', 'success');
+                allOrders = [];
+                renderOrders(allOrders);
+                updateStats(allOrders);
+                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
+                document.getElementById('detail-panel').classList.add('empty');
+            } else showToast('❌ Error al eliminar todas las órdenes', 'error');
+        }
+
 
         // ══ ARIA IA CHAT ══
         const ariaInput = document.getElementById('aria-input');
@@ -2163,23 +2202,6 @@
                        } catch (e) {
                            console.error('Error parsing action block:', match[0], e);
                            console.error('Raw actionJson:', actionJsonForLog || actionJson);
-                       }
-                               
-                               // Agregar llaves de cierre faltantes
-                               while (closeBraces < openBraces) {
-                                   actionJson += '}';
-                                   closeBraces++;
-                               }
-                               
-                               console.log('Fixed actionJson:', actionJson);
-                               action = JSON.parse(actionJson);
-                           }
-                           
-                           console.log('Parsed action:', action); // Debug
-                           actions.push(action);
-                       } catch (e) {
-                           console.error('Error parsing action block:', match[0], e);
-                           console.error('Raw actionJson:', actionJson);
                        }
                    }
                   

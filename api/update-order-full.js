@@ -4,14 +4,33 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método no permitido' });
 
     const adminPassword = req.headers['x-admin-password'];
-    let user = null;
-    try {
-        const { data } = await supabase.from('admin_users').select('username').eq('password_hash', adminPassword).eq('is_active', true).limit(1).maybeSingle();
-        user = data;
-    } catch (e) {
-        // Fallback to Env validation if RLS fails
+    if (!adminPassword) {
+        return res.status(401).json({ message: 'No autorizado (debe proporcionar contraseña)' });
     }
-    if (!user && adminPassword !== process.env.PASSWORD_ADMIN) return res.status(401).json({ message: 'No autorizado' });
+
+    // 1. Validar por env var (más directo)
+    const passEnv = process.env.ADMIN_PASSWORD || process.env.PASSWORD_ADMIN;
+    let isAuthed = (passEnv && adminPassword === passEnv);
+
+    // 2. Si no pasó por env var, validar por DB
+    if (!isAuthed) {
+        try {
+            const { data: user } = await supabase
+                .from('admin_users')
+                .select('username')
+                .eq('password_hash', adminPassword)
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (user) isAuthed = true;
+        } catch (e) {
+            console.error("Supabase admin auth error:", e);
+        }
+    }
+
+    if (!isAuthed) {
+        return res.status(401).json({ message: 'No autorizado' });
+    }
 
     const {
         orderId,
