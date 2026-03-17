@@ -1404,9 +1404,9 @@
                                  <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
                              </svg>
                          </button>
-                     <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
+                         <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
                      </div>
-
+                 </div>
             </div>
         </div>
 
@@ -1504,6 +1504,7 @@
     <div id="toast"></div>
 
     <script>
+        console.log('AGN Admin Script: Starting...');
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
@@ -1520,8 +1521,23 @@
         }
 
         // ══ LOGIN ══
-        document.getElementById('btn-login').addEventListener('click', doLogin);
-        document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
+        console.log('AGN Admin Script: Attaching login listeners...');
+        const loginBtn = document.getElementById('btn-login');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                console.log('Login button clicked!');
+                doLogin();
+            });
+        } else {
+            console.error('Login button NOT FOUND!');
+        }
+        
+        document.getElementById('login-pass').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                console.log('Enter pressed in password field');
+                doLogin();
+            }
+        });
         
         // Cargar modelos dinamicamente con filtro por proveedor
         let allAriaModels = [];
@@ -1930,10 +1946,24 @@
 
             if (res.ok) {
                 showToast('✅ Orden creada', 'success');
-                await loadData();
+                loadData(); // Cargar de nuevo
             } else {
                 showToast('❌ Error al crear', 'error');
             }
+        }
+
+        async function loadData() {
+            if (!adminPass) return;
+            try {
+                const res = await fetch(`${API}/api/get-all-orders`, { 
+                    headers: { 'x-admin-password': adminPass } 
+                });
+                if (res.ok) {
+                    allOrders = await res.json();
+                    renderOrders(allOrders);
+                    updateStats(allOrders);
+                }
+            } catch (e) { console.error('Error loadData:', e); }
         }
 
         async function updateManualOrder(orderId) {
@@ -1982,23 +2012,8 @@
             }
         }
 
-        function addDetailItem(partName = '', partNo = '', url = '') {
-            const container = document.getElementById('dynamic-items-container');
-            if (!container) return;
-            const div = document.createElement('div');
-            div.className = 'info-grid dynamic-item';
-            div.style = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
-            div.innerHTML = `
-                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <strong style="font-size:0.75rem; color:var(--text2)">REPUESTO</strong>
-                    <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()" style="padding:2px 6px">×</button>
-                </div>
-                <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
-                <div class="info-item"><div class="il">Cod. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
-                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}"></div></div>
-            `;
-            container.appendChild(div);
-        }
+        // addDetailItem se movió abajo para evitar duplicados
+
 
         async function updateDetailStatus(orderId) {
             const newStatus = document.getElementById('det-status').value;
@@ -2174,16 +2189,16 @@
                            console.error('Error parsing action block:', e);
                        }
                    }
-                  
+
                   let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
                   if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
-  
+
                   if (cleanResponseText) {
                       addAiMsg('assistant', cleanResponseText);
                       ariaHistory.push({ role: 'assistant', content: cleanResponseText });
                       ariaSpeak(cleanResponseText);
                   }
-                  
+
                   for (const action of actions) {
                       if (action && action.type) await executeAriaAction(action);
                   }
@@ -2195,7 +2210,7 @@
                  ariaSend.disabled = false;
              }
          }
- 
+
         async function executeAriaAction(action) {
             try {
                 if (action.type === 'DELETE_ORDER') {
@@ -2491,4 +2506,3 @@
 </body>
 
 </html>
-```
