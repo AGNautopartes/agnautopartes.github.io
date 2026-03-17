@@ -2117,12 +2117,64 @@
                   let actions = [];
                   let match;
                   
-                   // Extraer todos los bloques de acción
+                   // Extraer todos los bloques de acción - versión robusta para JSON truncado
                    while ((match = actionRegex.exec(responseText)) !== null) {
                        try {
-                           const actionJson = match[0].substring(8, match[0].length - 1); // Quitar [ACTION: y ]
-                           console.log('Parsing action JSON:', actionJson); // Debug
-                           const action = JSON.parse(actionJson);
+                           let actionJson = match[0].substring(8, match[0].length - 1); // Quitar [ACTION: y ]
+                           console.log('Raw action block:', match[0]); // Debug
+                           console.log('Initial actionJson:', actionJson); // Debug
+                           
+                           // Intentar parsear el JSON directamente
+                           let action = null;
+                           let actionJsonForLog = actionJson; // Guardar para logging en caso de error
+                           try {
+                               action = JSON.parse(actionJson);
+                           } catch (e1) {
+                               // Si falla, intentar corregir JSON truncado comúnmente
+                               console.log('Initial parse failed, attempting fixes...');
+                               
+                               // Contar llaves y corchetes abiertos vs cerrados
+                               let openBraces = (actionJson.match(/\{/g) || []).length;
+                               let closeBraces = (actionJson.match(/\}/g) || []).length;
+                               let openBrackets = (actionJson.match(/\[/g) || []).length;
+                               let closeBrackets = (actionJson.match(/\]/g) || []).length;
+                               
+                               console.log(`Braces: ${openBraces} open, ${closeBraces} close`);
+                               console.log(`Brackets: ${openBrackets} open, ${closeBrackets} close`);
+                               
+                               // Agregar corchetes de cierre faltantes
+                               while (closeBrackets < openBrackets) {
+                                   actionJson += ']';
+                                   closeBrackets++;
+                               }
+                               
+                               // Agregar llaves de cierre faltantes
+                               while (closeBraces < openBraces) {
+                                   actionJson += '}';
+                                   closeBrackets++;
+                               }
+                               
+                               console.log('Fixed actionJson:', actionJson);
+                               action = JSON.parse(actionJson);
+                           }
+                           
+                           console.log('Parsed action:', action); // Debug
+                           actions.push(action);
+                       } catch (e) {
+                           console.error('Error parsing action block:', match[0], e);
+                           console.error('Raw actionJson:', actionJsonForLog || actionJson);
+                       }
+                               
+                               // Agregar llaves de cierre faltantes
+                               while (closeBraces < openBraces) {
+                                   actionJson += '}';
+                                   closeBraces++;
+                               }
+                               
+                               console.log('Fixed actionJson:', actionJson);
+                               action = JSON.parse(actionJson);
+                           }
+                           
                            console.log('Parsed action:', action); // Debug
                            actions.push(action);
                        } catch (e) {
