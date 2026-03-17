@@ -1394,12 +1394,17 @@
                 <div id="aria-visualizer" class="voice-visualizer">
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                 </div>
-                <div class="ai-input-area">
-                    <div class="ai-input-wrapper">
-                        <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
-                            rows="1"></textarea>
-                <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
-                </div>
+                 <div class="ai-input-area">
+                     <div class="ai-input-wrapper">
+                         <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
+                             rows="1"></textarea>
+                         <button id="aria-mic" class="mic-btn" title="Dictar con voz">
+                             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                 <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
+                             </svg>
+                         </button>
+                     <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
+                     </div>
 
             </div>
         </div>
@@ -2248,15 +2253,58 @@
                                 selectedOrder = { ...found };
                                 renderDetail(selectedOrder);
                             }
-                            showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Action Error:', e);
-                addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
-            }
-        }
+                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
+                         }
+                     }
+                 } else if (action.type === 'CREATE_ORDER') {
+                     const name = action.data.fields.customer_name;
+                     const model = action.data.fields.vehicle_model;
+                     const part = action.data.fields.part_name;
+ 
+                     if (!name || !model || !part) {
+                         addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
+                         return;
+                     }
+ 
+                     const data = {
+                         customer_name: name,
+                         customer_phone: action.data.fields.customer_phone || 'N/A',
+                         customer_email: action.data.fields.customer_email || '',
+                         vehicle_brand: action.data.fields.vehicle_brand || 'N/A',
+                         vehicle_model: model,
+                         vehicle_year: action.data.fields.vehicle_year || 'N/A',
+                         part_name: part,
+                         part_number: action.data.fields.part_number || '',
+                         cost_fob: parseFloat(action.data.fields.cost_fob || 0),
+                         sale_price: parseFloat(action.data.fields.sale_price || 0),
+                         vendor_name: action.data.fields.vendor_name || '',
+                         supplier_url: action.data.fields.supplier_url || '',
+                         status: action.data.fields.status || 'Solicitado',
+                         tracking_number: action.data.fields.tracking_number || '',
+                         estimated_delivery_client: action.data.fields.estimated_delivery_client || '',
+                         notes: action.data.fields.notes || '',
+                         created_by: action.data.fields.created_by || adminName
+                     };
+ 
+                     const res = await fetch(`${API}/api/create-order`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                         body: JSON.stringify(data)
+                     });
+ 
+                     if (res.ok) {
+                         addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
+                         await loadData();
+                     } else {
+                         const errorData = await res.json();
+                         addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
+                     }
+                 }
+             } catch (e) {
+                 console.error('Action Error:', e);
+                 addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
+             }
+         }
 
 
 
@@ -2282,10 +2330,13 @@
 
         }
 
-        document.getElementById('aria-mic').addEventListener('click', () => {
-            if (!recognition) return showToast('Voz no soportada en este navegador', 'error');
-            recognition.start();
-        });
+         const ariaMicBtn = document.getElementById('aria-mic');
+         if (ariaMicBtn) {
+             ariaMicBtn.addEventListener('click', () => {
+                 if (!recognition) return showToast('Voz no soportada en este navegador', 'error');
+                 recognition.start();
+             });
+         }
 
         document.getElementById('aria-mute').addEventListener('click', () => {
             isAriaMuted = !isAriaMuted;
