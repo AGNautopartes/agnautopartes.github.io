@@ -2375,13 +2375,16 @@
                           body: JSON.stringify(data)
                       });
   
-                      if (res.ok) {
-                          addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
-                          await loadData();
-                      } else {
-                          const errorData = await res.json();
-                          addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
-                      }
+                       if (res.ok) {
+                           addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
+                           const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                           allOrders = await ordersRes.json();
+                           renderOrders(allOrders);
+                           updateStats(allOrders);
+                       } else {
+                           const errorData = await res.json();
+                           addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
+                       }
                   }
              } catch (e) {
                  console.error('Action Error:', e);
