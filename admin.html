@@ -2106,33 +2106,49 @@
                     return;
                 }
 
-                 const data = await res.json();
-                 thinking.remove();
- 
-                 let responseText = data.response; // Viene del backend (api/admin-chat.js)
-                 let action = data.action; // Viene del backend
- 
-                 // Remover el bloque [ACTION:...] del texto si existe
-                 if (action && responseText) {
-                     const startToken = '[ACTION:';
-                     const startIdx = responseText.indexOf(startToken);
-                     if (startIdx !== -1) {
-                         const endIdx = responseText.lastIndexOf(']');
-                         if (endIdx > startIdx) {
-                             responseText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
-                         }
-                     }
-                 }
- 
-                 if (responseText) {
-                     addAiMsg('assistant', responseText);
-                     ariaHistory.push({ role: 'assistant', content: responseText });
-                     ariaSpeak(responseText);
-                 }
-                 
-                 if (action) {
-                     await executeAriaAction(action);
-                 }
+                  const data = await res.json();
+                  thinking.remove();
+  
+                  let responseText = data.response; // Viene del backend (api/admin-chat.js)
+  
+                  // === PARSE Y EJECUTAR TODAS LAS ACCIONES DESDE RESPONSE_TEXT ===
+                  // Ignoramos data.action del backend ya que puede ser unreliable con múltiples acciones
+                  const actionRegex = /\[ACTION:.*?\]/g;
+                  let actions = [];
+                  let match;
+                  
+                  // Extraer todos los bloques de acción
+                  while ((match = actionRegex.exec(responseText)) !== null) {
+                      try {
+                          const actionJson = match[0].substring(8, match[0].length - 1); // Quitar [ACTION: y ]
+                          const action = JSON.parse(actionJson);
+                          actions.push(action);
+                      } catch (e) {
+                          console.error('Error parsing action block:', match[0], e);
+                      }
+                  }
+                  
+                  // Remover todos los bloques de acción de la responseText para mostrar solo el texto al usuario
+                  let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
+  
+                  // Si queda texto vacío después de remover acciones, usar un mensaje por defecto
+                  if (!cleanResponseText && actions.length > 0) {
+                      cleanResponseText = "De acuerdo, procedo con esas acciones.";
+                  }
+  
+                  // Mostrar el mensaje limpio al usuario
+                  if (cleanResponseText) {
+                      addAiMsg('assistant', cleanResponseText);
+                      ariaHistory.push({ role: 'assistant', content: cleanResponseText });
+                      ariaSpeak(cleanResponseText);
+                  }
+                  
+                  // Ejecutar todas las acciones encontradas
+                  for (const action of actions) {
+                      if (action && action.type) {
+                          await executeAriaAction(action);
+                      }
+                  }
              } catch (e) {
                  console.error('Aria Error:', e);
                  if (thinking && thinking.parentNode) thinking.remove();
