@@ -2256,50 +2256,62 @@
                              showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
                          }
                      }
-                 } else if (action.type === 'CREATE_ORDER') {
-                     const name = action.data.fields.customer_name;
-                     const model = action.data.fields.vehicle_model;
-                     const part = action.data.fields.part_name;
- 
-                     if (!name || !model || !part) {
-                         addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
-                         return;
-                     }
- 
-                     const data = {
-                         customer_name: name,
-                         customer_phone: action.data.fields.customer_phone || 'N/A',
-                         customer_email: action.data.fields.customer_email || '',
-                         vehicle_brand: action.data.fields.vehicle_brand || 'N/A',
-                         vehicle_model: model,
-                         vehicle_year: action.data.fields.vehicle_year || 'N/A',
-                         part_name: part,
-                         part_number: action.data.fields.part_number || '',
-                         cost_fob: parseFloat(action.data.fields.cost_fob || 0),
-                         sale_price: parseFloat(action.data.fields.sale_price || 0),
-                         vendor_name: action.data.fields.vendor_name || '',
-                         supplier_url: action.data.fields.supplier_url || '',
-                         status: action.data.fields.status || 'Solicitado',
-                         tracking_number: action.data.fields.tracking_number || '',
-                         estimated_delivery_client: action.data.fields.estimated_delivery_client || '',
-                         notes: action.data.fields.notes || '',
-                         created_by: action.data.fields.created_by || adminName
-                     };
- 
-                     const res = await fetch(`${API}/api/create-order`, {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                         body: JSON.stringify(data)
-                     });
- 
-                     if (res.ok) {
-                         addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
-                         await loadData();
-                     } else {
-                         const errorData = await res.json();
-                         addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
-                     }
-                 }
+                  } else if (action.type === 'CREATE_ORDER') {
+                      // Handle different possible action structures
+                      let fields = {};
+                      
+                      // Try different possible structures
+                      if (action.data && action.data.fields) {
+                          fields = action.data.fields;
+                      } else if (action.data) {
+                          fields = action.data;
+                      } else {
+                          fields = action;
+                      }
+  
+                      const name = fields.customer_name || fields.cliente || fields.name || fields.nombre || '';
+                      const model = fields.vehicle_model || fields.modelo || fields.carro || fields.model || '';
+                      const part = fields.part_name || fields.main_part || fields.pieza || fields.repuesto || '';
+  
+                      if (!name || !model || !part) {
+                          addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
+                          return;
+                      }
+  
+                      const data = {
+                          customer_name: name,
+                          customer_phone: fields.customer_phone || fields.telefono || fields.phone || 'N/A',
+                          customer_email: fields.customer_email || fields.email || fields.correo || '',
+                          vehicle_brand: fields.vehicle_brand || fields.marca || fields.brand || 'N/A',
+                          vehicle_model: model,
+                          vehicle_year: fields.vehicle_year || fields.ano || fields.year || 'N/A',
+                          part_name: part,
+                          part_number: fields.part_number || fields.numero_pieza || '',
+                          cost_fob: parseFloat(fields.cost_fob || fields.costo || 0),
+                          sale_price: parseFloat(fields.sale_price || fields.precio || 0),
+                          vendor_name: fields.vendor_name || fields.vendedor || '',
+                          supplier_url: fields.supplier_url || fields.url || '',
+                          status: fields.status || 'Solicitado',
+                          tracking_number: fields.tracking_number || '',
+                          estimated_delivery_client: fields.estimated_delivery_client || '',
+                          notes: fields.notes || fields.notas || '',
+                          created_by: fields.created_by || adminName
+                      };
+  
+                      const res = await fetch(`${API}/api/create-order`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                          body: JSON.stringify(data)
+                      });
+  
+                      if (res.ok) {
+                          addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
+                          await loadData();
+                      } else {
+                          const errorData = await res.json();
+                          addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
+                      }
+                  }
              } catch (e) {
                  console.error('Action Error:', e);
                  addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
