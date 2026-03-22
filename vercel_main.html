@@ -1251,7 +1251,6 @@
                         <button class="btn-add" id="btn-export"
                             style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                             Export Report</button>
-                        <button class="btn-add" id="btn-delete-all" onclick="deleteAllOrders()" style="background:var(--red); color:white; border:none; margin-right:0.5rem">🗑️ Eliminar Todo (PRUEBAS)</button>
                         <button class="btn-add" id="btn-new-order">+ New Order</button>
 
                     </div>
@@ -1404,9 +1403,9 @@
                                  <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
                              </svg>
                          </button>
-                         <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
+                     <button class="ai-send" id="aria-send" style="margin-left:0.5rem">â†‘</button>
                      </div>
-                 </div>
+
             </div>
         </div>
 
@@ -1504,7 +1503,6 @@
     <div id="toast"></div>
 
     <script>
-        console.log('AGN Admin Script: Starting...');
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
@@ -1521,23 +1519,8 @@
         }
 
         // ══ LOGIN ══
-        console.log('AGN Admin Script: Attaching login listeners...');
-        const loginBtn = document.getElementById('btn-login');
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                console.log('Login button clicked!');
-                doLogin();
-            });
-        } else {
-            console.error('Login button NOT FOUND!');
-        }
-        
-        document.getElementById('login-pass').addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                console.log('Enter pressed in password field');
-                doLogin();
-            }
-        });
+        document.getElementById('btn-login').addEventListener('click', doLogin);
+        document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
         
         // Cargar modelos dinamicamente con filtro por proveedor
         let allAriaModels = [];
@@ -1596,53 +1579,31 @@
             const name = document.getElementById('login-name').value.trim() || 'Admin';
             if (!pwd) return;
             const btn = document.getElementById('btn-login');
-            const err = document.getElementById('login-err');
-            err.textContent = '';
             btn.textContent = 'Verificando...'; btn.disabled = true;
 
-            try {
-                const res = await fetch(`${API}/api/get-all-orders`, { 
-                    headers: { 'x-admin-password': pwd } 
-                });
-
-                if (res.status === 401) {
-                    err.textContent = 'Contraseña incorrecta.';
-                    btn.textContent = 'Ingresar'; btn.disabled = false;
-                    return;
-                }
-
-                if (!res.ok) {
-                    err.textContent = `Error del servidor (${res.status}). Intente de nuevo.`;
-                    btn.textContent = 'Ingresar'; btn.disabled = false;
-                    return;
-                }
-
-                const data = await res.json();
-                
-                // Si la respuesta no es un array (ej. un objeto de error 500 que pasó el res.ok anterior)
-                if (!Array.isArray(data)) {
-                    err.textContent = 'Respuesta inesperada del servidor.';
-                    btn.textContent = 'Ingresar'; btn.disabled = false;
-                    return;
-                }
-
-                adminPass = pwd; adminName = name;
-                allOrders = data;
-                
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                document.getElementById('nav-user').textContent = name;
-                
-                renderOrders(allOrders);
-                updateStats(allOrders);
-
-                // Guardar login básico en session
-                sessionStorage.setItem('agn-admin-logged', 'true');
-            } catch (e) {
-                console.error('Login error:', e);
-                err.textContent = 'Error de conexión. Verifique su internet.';
+            const res = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': pwd } });
+            if (res.status === 401) {
+                document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
                 btn.textContent = 'Ingresar'; btn.disabled = false;
+                return;
             }
+             adminPass = pwd; adminName = name;
+             allOrders = await res.json();
+             document.getElementById('login-screen').style.display = 'none';
+             document.getElementById('app').style.display = 'flex';
+             document.getElementById('nav-user').textContent = name;
+             renderOrders(allOrders);
+             updateStats(allOrders);
+
+             // Inicializar selector de modelo IA en admin
+             const adminModelSelector = document.getElementById('aria-model-select');
+             if (adminModelSelector) {
+                 const savedModel = localStorage.getItem('agn-admin-selected-model');
+                 if (savedModel) { adminModelSelector.value = savedModel; }
+                 adminModelSelector.addEventListener('change', () => {
+                     localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
+                 });
+             }
         }
 
         document.getElementById('btn-logout').addEventListener('click', () => location.reload());
@@ -1892,20 +1853,10 @@
             content.innerHTML = `
                 <div class="detail-header">
                     <div style="font-size:0.75rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">✨ NUEVA ORDEN MANUAL</div>
-                    <input type="text" id="new-part-name" placeholder="Título de la Orden (Autosync)" readonly style="font-size:1.1rem; font-weight:700; background:none; border:none; color:var(--text2); width:100%; border-bottom:1px solid var(--border); padding: 5px 0;">
+                    <input type="text" id="new-part-name" placeholder="Repuesto principal" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid var(--blue); padding: 5px 0;">
                 </div>
 
                 <div class="detail-body">
-                    <div class="detail-section">
-                        <h4>⚙️ Piezas / Repuestos</h4>
-                        <div id="new-items-container">
-                            <!-- Items dinámicos se insertan aquí -->
-                        </div>
-                        <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
-                    </div>
-
-                    <script>setTimeout(addNewOrderPart, 10);</script>
-
                     <div class="detail-section">
                         <h4>👤 Cliente</h4>
                         <div class="info-grid">
@@ -1933,20 +1884,9 @@
         async function saveNewManualOrder() {
             const name = document.getElementById('new-cust-name').value;
             const model = document.getElementById('new-model').value;
-            
-            // Recopilar items
-            const items = [];
-            document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
-                items.push({
-                    part_name: el.querySelector('.dyn-part-name').value,
-                    part_number: el.querySelector('.dyn-part-no').value,
-                    supplier_url: el.querySelector('.dyn-url').value
-                });
-            });
+            const part = document.getElementById('new-part-name').value;
 
-            if (!name || !model || items.length === 0 || !items[0].part_name) {
-                return showToast('Nombre, Modelo y al menos una Pieza son obligatorios', 'warning');
-            }
+            if (!name || !model || !part) return showToast('Nombre, Modelo y Pieza son obligatorios', 'warning');
 
             const data = {
                 customer_name: name,
@@ -1954,62 +1894,23 @@
                 vehicle_brand: document.getElementById('new-brand').value,
                 vehicle_model: model,
                 vehicle_year: document.getElementById('new-year').value,
-                main_part: items[0].part_name, // Primer item es el principal
+                main_part: part,
                 status: 'Solicitado',
-                created_by: adminName,
-                items_json: items
+                created_by: adminName
             };
 
             const res = await fetch(`${API}/api/create-order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-token': window.token || '', 'x-admin-password': adminPass },
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                 body: JSON.stringify(data)
             });
 
             if (res.ok) {
                 showToast('✅ Orden creada', 'success');
-                loadData(); // Cargar de nuevo
+                await loadData();
             } else {
                 showToast('❌ Error al crear', 'error');
             }
-        }
-
-        function addNewOrderPart() {
-            const container = document.getElementById('new-items-container');
-            const idx = container.querySelectorAll('.dynamic-item').length;
-            const div = document.createElement('div');
-            div.className = 'info-grid dynamic-item';
-            div.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
-            div.innerHTML = `
-                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx+1}</strong>
-                    ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); syncNewTitle();" style="padding:2px 6px">×</button>` : ''}
-                </div>
-                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()"></div></div>
-                <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
-                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
-            `;
-            container.appendChild(div);
-        }
-
-        function syncNewTitle() {
-            const first = document.querySelector('#new-items-container .dyn-part-name');
-            const title = document.getElementById('new-part-name');
-            if (first && title) title.value = first.value || 'Nueva Orden';
-        }
-
-        async function loadData() {
-            if (!adminPass) return;
-            try {
-                const res = await fetch(`${API}/api/get-all-orders`, { 
-                    headers: { 'x-admin-password': adminPass } 
-                });
-                if (res.ok) {
-                    allOrders = await res.json();
-                    renderOrders(allOrders);
-                    updateStats(allOrders);
-                }
-            } catch (e) { console.error('Error loadData:', e); }
         }
 
         async function updateManualOrder(orderId) {
@@ -2058,8 +1959,23 @@
             }
         }
 
-        // addDetailItem se movió abajo para evitar duplicados
-
+        function addDetailItem(partName = '', partNo = '', url = '') {
+            const container = document.getElementById('dynamic-items-container');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'info-grid dynamic-item';
+            div.style = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
+            div.innerHTML = `
+                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <strong style="font-size:0.75rem; color:var(--text2)">REPUESTO</strong>
+                    <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()" style="padding:2px 6px">×</button>
+                </div>
+                <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
+                <div class="info-item"><div class="il">Cod. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
+                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}"></div></div>
+            `;
+            container.appendChild(div);
+        }
 
         async function updateDetailStatus(orderId) {
             const newStatus = document.getElementById('det-status').value;
@@ -2132,22 +2048,6 @@
             } else showToast('❌ Error al eliminar', 'error');
         }
 
-        async function deleteAllOrders() {
-            if (!confirm('Peligro: ¿Seguro que deseas eliminar TODAS las órdenes? Esta acción es irreversible y es solo para LIMPIAR PRUEBAS.')) return;
-            const res = await fetch(`${API}/api/delete-all-orders`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
-            });
-            if (res.ok) {
-                showToast('🗑️ Todas las órdenes han sido eliminadas', 'success');
-                allOrders = [];
-                renderOrders(allOrders);
-                updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
-                document.getElementById('detail-panel').classList.add('empty');
-            } else showToast('❌ Error al eliminar todas las órdenes', 'error');
-        }
-
 
         // ══ ARIA IA CHAT ══
         const ariaInput = document.getElementById('aria-input');
@@ -2209,54 +2109,114 @@
                   const data = await res.json();
                   thinking.remove();
   
-                  let responseText = data.response; 
+                  let responseText = data.response; // Viene del backend (api/admin-chat.js)
+  
+                  // === PARSE Y EJECUTAR TODAS LAS ACCIONES DESDE RESPONSE_TEXT ===
+                  // Ignoramos data.action del backend ya que puede ser unreliable con múltiples acciones
                   const actionRegex = /\[ACTION:.*?\]/g;
                   let actions = [];
                   let match;
                   
+                   // Extraer todos los bloques de acción - versión robusta para JSON truncado
                    while ((match = actionRegex.exec(responseText)) !== null) {
                        try {
-                           let actionJson = match[0].substring(8, match[0].length - 1);
+                           let actionJson = match[0].substring(8, match[0].length - 1); // Quitar [ACTION: y ]
+                           console.log('Raw action block:', match[0]); // Debug
+                           console.log('Initial actionJson:', actionJson); // Debug
+                           
+                           // Intentar parsear el JSON directamente
                            let action = null;
+                           let actionJsonForLog = actionJson; // Guardar para logging en caso de error
                            try {
                                action = JSON.parse(actionJson);
                            } catch (e1) {
+                               // Si falla, intentar corregir JSON truncado comúnmente
+                               console.log('Initial parse failed, attempting fixes...');
+                               
+                               // Contar llaves y corchetes abiertos vs cerrados
                                let openBraces = (actionJson.match(/\{/g) || []).length;
                                let closeBraces = (actionJson.match(/\}/g) || []).length;
                                let openBrackets = (actionJson.match(/\[/g) || []).length;
                                let closeBrackets = (actionJson.match(/\]/g) || []).length;
                                
-                               while (closeBrackets < openBrackets) { actionJson += ']'; closeBrackets++; }
-                               while (closeBraces < openBraces) { actionJson += '}'; closeBraces++; }
+                               console.log(`Braces: ${openBraces} open, ${closeBraces} close`);
+                               console.log(`Brackets: ${openBrackets} open, ${closeBrackets} close`);
+                               
+                               // Agregar corchetes de cierre faltantes
+                               while (closeBrackets < openBrackets) {
+                                   actionJson += ']';
+                                   closeBrackets++;
+                               }
+                               
+                               // Agregar llaves de cierre faltantes
+                               while (closeBraces < openBraces) {
+                                   actionJson += '}';
+                                   closeBrackets++;
+                               }
+                               
+                               console.log('Fixed actionJson:', actionJson);
                                action = JSON.parse(actionJson);
                            }
-                           if (action) actions.push(action);
+                           
+                           console.log('Parsed action:', action); // Debug
+                           actions.push(action);
                        } catch (e) {
-                           console.error('Error parsing action block:', e);
+                           console.error('Error parsing action block:', match[0], e);
+                           console.error('Raw actionJson:', actionJsonForLog || actionJson);
+                       }
+                               
+                               // Agregar llaves de cierre faltantes
+                               while (closeBraces < openBraces) {
+                                   actionJson += '}';
+                                   closeBraces++;
+                               }
+                               
+                               console.log('Fixed actionJson:', actionJson);
+                               action = JSON.parse(actionJson);
+                           }
+                           
+                           console.log('Parsed action:', action); // Debug
+                           actions.push(action);
+                       } catch (e) {
+                           console.error('Error parsing action block:', match[0], e);
+                           console.error('Raw actionJson:', actionJson);
                        }
                    }
-
+                  
+                  // Remover todos los bloques de acción de la responseText para mostrar solo el texto al usuario
                   let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
-                  if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
-
+  
+                  // Si queda texto vacío después de remover acciones, usar un mensaje por defecto
+                  if (!cleanResponseText && actions.length > 0) {
+                      cleanResponseText = "De acuerdo, procedo con esas acciones.";
+                  }
+  
+                  // Mostrar el mensaje limpio al usuario
                   if (cleanResponseText) {
                       addAiMsg('assistant', cleanResponseText);
                       ariaHistory.push({ role: 'assistant', content: cleanResponseText });
                       ariaSpeak(cleanResponseText);
                   }
-
+                  
+                  // Ejecutar todas las acciones encontradas
                   for (const action of actions) {
-                      if (action && action.type) await executeAriaAction(action);
+                      if (action && action.type) {
+                          await executeAriaAction(action);
+                      }
                   }
              } catch (e) {
                  console.error('Aria Error:', e);
                  if (thinking && thinking.parentNode) thinking.remove();
-                 addAiMsg('assistant', '❌ Error de conexión o tiempo de espera agotado.');
+ 
+                 let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
+                 if (e.name === 'AbortError') errorMsg = '⏱️ La IA está tardando demasiado en responder. Intente de nuevo.';
+ 
+                 addAiMsg('assistant', errorMsg);
              } finally {
                  ariaSend.disabled = false;
              }
          }
-
+ 
         async function executeAriaAction(action) {
             try {
                 if (action.type === 'DELETE_ORDER') {
@@ -2552,3 +2512,4 @@
 </body>
 
 </html>
+```

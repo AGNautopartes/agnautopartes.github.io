@@ -450,16 +450,10 @@
             border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
-        .s-recogido {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--cyan);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
         .s-cancelado {
-            background: rgba(239, 68, 68, 0.15);
+            background: rgba(230, 73, 55, 0.15);
             color: var(--accent);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(230, 73, 55, 0.3);
         }
 
         /* ══ DETAIL PANEL ══ */
@@ -1237,21 +1231,19 @@
                         <input type="text" class="search-box" id="search-input"
                             placeholder="🔍 Search customer, part, vehicle...">
                         <select class="filter-select" id="status-filter">
-                            <option value="">Todos los estados</option>
-                            <option>Solicitado</option>
-                            <option>Cotizado</option>
-                            <option>Comprado</option>
-                            <option>Tránsito 1 (Prov→Log)</option>
-                            <option>Tránsito 2 (Log→EC)</option>
-                            <option>En Aduana</option>
-                            <option>Entregado</option>
-                            <option>Recogido en Local</option>
-                            <option>Cancelado</option>
+                            <option value="">All statuses</option>
+                            <option>Requested</option>
+                            <option>Quoted</option>
+                            <option>Purchased</option>
+                            <option>Transit 1 (Supplier→Logistics)</option>
+                            <option>Transit 2 (Logistics→EC)</option>
+                            <option>In Customs</option>
+                            <option>Delivered</option>
+                            <option>Cancelled</option>
                         </select>
                         <button class="btn-add" id="btn-export"
                             style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                             Export Report</button>
-                        <button class="btn-add" id="btn-delete-all" onclick="deleteAllOrders()" style="background:var(--red); color:white; border:none; margin-right:0.5rem">🗑️ Eliminar Todo (PRUEBAS)</button>
                         <button class="btn-add" id="btn-new-order">+ New Order</button>
 
                     </div>
@@ -1316,7 +1308,6 @@
                                 <option>Purchased</option>
                                 <option>In Customs</option>
                                 <option>Delivered</option>
-                                <option>Recogido en Local</option>
                                 <option>Cancelled</option>
                             </select>
                         </div>
@@ -1395,18 +1386,13 @@
                 <div id="aria-visualizer" class="voice-visualizer">
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                 </div>
-                 <div class="ai-input-area">
-                     <div class="ai-input-wrapper">
-                         <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
-                             rows="1"></textarea>
-                         <button id="aria-mic" class="mic-btn" title="Dictar con voz">
-                             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                 <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.73 6.23 6 6.72V21h2v-3.28c3.27-.48 6-3.3 6-6.72h-1.7z" />
-                             </svg>
-                         </button>
-                         <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
-                     </div>
-                 </div>
+                <div class="ai-input-area">
+                    <div class="ai-input-wrapper">
+                        <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
+                            rows="1"></textarea>
+                <button class="ai-send" id="aria-send" style="margin-left:0.5rem">↑</button>
+                </div>
+
             </div>
         </div>
 
@@ -1456,16 +1442,15 @@
                     <div class="filter-group">
                         <label for="rep-status">Status</label>
                         <select id="rep-status">
-                            <option value="">Todos</option>
-                            <option>Solicitado</option>
-                            <option>Cotizado</option>
-                            <option>Comprado</option>
-                            <option>Tránsito 1 (Prov→Log)</option>
-                            <option>Tránsito 2 (Log→EC)</option>
-                            <option>En Aduana</option>
-                            <option>Entregado</option>
-                            <option>Recogido en Local</option>
-                            <option>Cancelado</option>
+                            <option value="">All</option>
+                            <option>Requested</option>
+                            <option>Quoted</option>
+                            <option>Purchased</option>
+                            <option>Transit 1 (Supplier→Logistics)</option>
+                            <option>Transit 2 (Logistics→EC)</option>
+                            <option>In Customs</option>
+                            <option>Delivered</option>
+                            <option>Cancelled</option>
                         </select>
                     </div>
                     <div class="filter-group">
@@ -1504,7 +1489,6 @@
     <div id="toast"></div>
 
     <script>
-        console.log('AGN Admin Script: Starting...');
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
@@ -1521,23 +1505,8 @@
         }
 
         // ══ LOGIN ══
-        console.log('AGN Admin Script: Attaching login listeners...');
-        const loginBtn = document.getElementById('btn-login');
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                console.log('Login button clicked!');
-                doLogin();
-            });
-        } else {
-            console.error('Login button NOT FOUND!');
-        }
-        
-        document.getElementById('login-pass').addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                console.log('Enter pressed in password field');
-                doLogin();
-            }
-        });
+        document.getElementById('btn-login').addEventListener('click', doLogin);
+        document.getElementById('login-pass').addEventListener('keypress', e => e.key === 'Enter' && doLogin());
         
         // Cargar modelos dinamicamente con filtro por proveedor
         let allAriaModels = [];
@@ -1636,6 +1605,16 @@
                 renderOrders(allOrders);
                 updateStats(allOrders);
 
+                // Inicializar selector de modelo IA en admin
+                const adminModelSelector = document.getElementById('aria-model-select');
+                if (adminModelSelector) {
+                    const savedModel = localStorage.getItem('agn-admin-selected-model');
+                    if (savedModel) { adminModelSelector.value = savedModel; }
+                    adminModelSelector.addEventListener('change', () => {
+                        localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
+                    });
+                }
+                
                 // Guardar login básico en session
                 sessionStorage.setItem('agn-admin-logged', 'true');
             } catch (e) {
@@ -1644,39 +1623,6 @@
                 btn.textContent = 'Ingresar'; btn.disabled = false;
             }
         }
-
-        document.getElementById('btn-logout').addEventListener('click', () => location.reload());
-
-        // ══ NAVIGATION ══
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                const pageId = `page-${btn.dataset.page}`;
-                document.getElementById(pageId).classList.add('active');
-                if (btn.dataset.page === 'dashboard') updateDashboard();
-                if (btn.dataset.page === 'reports') renderReports();
-            });
-        });
-
-        // Toggle Detail Panel
-        document.getElementById('toggle-detail').addEventListener('click', () => {
-            const panel = document.getElementById('detail-panel');
-            panel.classList.toggle('collapsed');
-            const btn = document.getElementById('toggle-detail');
-            btn.textContent = panel.classList.contains('collapsed') ? '🔍' : '↔';
-        });
-
-
-        // ══ SEARCH & FILTER ══
-        document.getElementById('search-input').addEventListener('input', filterOrders);
-        document.getElementById('status-filter').addEventListener('change', filterOrders);
-
-        function filterOrders() {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            const st = document.getElementById('status-filter').value;
-            const filtered = allOrders.filter(o => {
                 const matchQ = !q || [o.customers?.full_name, o.customers?.phone, o.part_name, o.vehicle_brand, o.vehicle_model].some(v => (v || '').toLowerCase().includes(q));
                 const matchSt = !st || o.status === st;
                 return matchQ && matchSt;
@@ -1687,15 +1633,9 @@
         // ══ RENDER ORDERS ══
         function getStatusClass(status) {
             const m = {
-                'Solicitado': 's-solicitado',
-                'Cotizado': 's-cotizado',
-                'Comprado': 's-comprado',
-                'Tránsito 1 (Prov→Log)': 's-transito1',
-                'Tránsito 2 (Log→EC)': 's-transito2',
-                'En Aduana': 's-en-aduana',
-                'Entregado': 's-entregado',
-                'Recogido en Local': 's-recogido',
-                'Cancelado': 's-cancelado'
+                'Requested': 's-solicitado', 'Quoted': 's-cotizado', 'Purchased': 's-comprado',
+                'Transit 1 (Supplier→Logistics)': 's-transito1', 'Transit 2 (Logistics→EC)': 's-transito2',
+                'In Customs': 's-en-aduana', 'Delivered': 's-entregado', 'Cancelled': 's-cancelado'
             };
             return m[status] || 's-solicitado';
         }
@@ -1724,159 +1664,128 @@
 
         function updateStats(orders) {
             document.getElementById('s-total').textContent = orders.length;
-            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Comprado').length;
-            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Tránsito')).length;
-            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
-            const active = orders.filter(o => !['Entregado', 'Recogido en Local', 'Cancelado'].includes(o.status)).length;
-            document.getElementById('nav-active').textContent = `${active} activos`;
+            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Purchased').length;
+            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Transit')).length;
+            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Delivered').length;
+            const active = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).length;
+            document.getElementById('nav-active').textContent = `${active} active`;
         }
 
         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
-            if (!selectedOrder) return;
-            
             document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
-            const cards = document.querySelectorAll('.order-card');
-            cards.forEach(card => {
-                if (card.getAttribute('onclick')?.includes(orderId)) card.classList.add('selected');
-            });
-            
+            document.querySelector(`.order-card[onclick="selectOrder('${orderId}')"]`)?.classList.add('selected');
             renderDetail(selectedOrder);
             loadNotes(orderId);
             loadHistory(orderId);
-        }
-
-        function renderDetail(o) {
-            const panel = document.getElementById('detail-panel');
-            const content = document.getElementById('detail-content');
-            if (!o) return;
-            
-            panel.classList.remove('empty');
-            
-            const statuses = ['Solicitado', 'Cotizado', 'Comprado', 'Tránsito 1 (Prov→Log)', 'Tránsito 2 (Log→EC)', 'En Aduana', 'Entregado', 'Recogido en Local', 'Cancelado'];
-            const statusOpts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
+            const statuses = ['Requested', 'Quoted', 'Purchased', 'Transit 1 (Supplier→Logistics)', 'Transit 2 (Logistics→EC)', 'In Customs', 'Delivered', 'Cancelled'];
+            const opts = statuses.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('');
 
             content.innerHTML = `
-                <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
-                    <div>
-                        <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">ORDER #${o.readable_id || 'ID'}</div>
-                        <input type="text" id="edit-part-name" value="${o.part_name || ''}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
-                        <div class="detail-sub">${o.customers?.full_name || 'No name'} · ${o.customers?.phone || '—'}</div>
-                    </div>
-                    <div style="display:flex; gap:0.5rem">
-                        <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Save</button>
-                        <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Delete</button>
-                    </div>
+
+        <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div>
+                <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">ORDER #${o.readable_id}</div>
+                <input type="text" id="edit-part-name" value="${o.part_name}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
+                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+            </div>
+            <div style="display:flex; gap:0.5rem">
+                <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Save</button>
+                <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Delete</button>
+            </div>
+        </div>is.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
+                <div class="detail-sub">${o.customers?.full_name} · ${o.customers?.phone || '—'}</div>
+            </div>
+            <div style="display:flex; gap:0.5rem">
+                <button class="btn-action btn-blue" onclick="updateManualOrder('${o.id}')">Guardar</button>
+                <button class="btn-action btn-danger" onclick="deleteOrder('${o.id}')">Eliminar</button>
+            </div>
+        </div>
+
+        <div class="detail-body">
+            <!-- Vehicle -->
+            <div class="detail-section">
+                <h4>🚗 Vehicle</h4>
+                <div class="info-grid">
+                    <div class="info-item"><div class="il">Brand</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
+                    <div class="info-item"><div class="il">Model</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
+                    <div class="info-item"><div class="il">Year</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
+                    <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="edit-vin" value="${o.vin || ''}" style="font-family:monospace"></div></div>
+                    <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" id="edit-tracking" value="${o.tracking_number || ''}"></div></div>
                 </div>
+            </div>
 
-                <div class="detail-body">
-                    <div class="detail-section">
-                        <h4>🚗 Vehicle</h4>
-                        <div class="info-grid">
-                            <div class="info-item"><div class="il">Brand</div><div class="iv"><input type="text" id="edit-brand" value="${o.vehicle_brand || ''}"></div></div>
-                            <div class="info-item"><div class="il">Model</div><div class="iv"><input type="text" id="edit-model" value="${o.vehicle_model || ''}"></div></div>
-                            <div class="info-item"><div class="il">Year</div><div class="iv"><input type="text" id="edit-year" value="${o.vehicle_year || ''}"></div></div>
-                            <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="edit-vin" value="${o.vin || ''}" style="font-family:monospace"></div></div>
-                            <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" id="edit-tracking" value="${o.tracking_number || ''}"></div></div>
-                        </div>
-                    </div>
-
-                    <div class="detail-section">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h4>⚙️ Repuestos</h4>
-                            <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
-                        </div>
-                        <div id="dynamic-items-container">
-                            ${(() => {
-                                let items = o.items_json;
-                                if (!Array.isArray(items)) {
-                                    try { items = JSON.parse(o.items_json); } catch(e) { items = []; }
-                                }
-                                if (!items || items.length === 0) {
-                                    items = [{ part_name: o.part_name || '', part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
-                                }
-                                return items.map((item, idx) => `
-                                    <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
-                                        <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                                            <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx+1}</strong>
-                                            ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()" style="padding:2px 6px">×</button>` : ''}
-                                        </div>
-                                        <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
-                                        <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
-                                        <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
-                                    </div>
-                                `).join('');
-                            })()}
-                        </div>
-                    </div>
-
-                    <div class="detail-section">
-                        <h4>📦 Estado</h4>
-                        <div class="status-changer">
-                            <select id="det-status" onchange="updateDetailStatus('${o.id}')">${statusOpts}</select>
-                        </div>
-                    </div>
-
-                    <div class="detail-section">
-                        <h4>💰 Financieros</h4>
-                        <div class="financial-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem">
-                            <div class="fin-item">
-                                <div class="fl">Base Price (FOB)</div>
-                                <div class="fv" style="display:flex; align-items:center; gap:5px">
-                                    <input type="number" id="edit-base-price" value="${o.costo_fob || 0}" step="0.01" oninput="recalculateTotals()">
-                                    <input type="checkbox" id="paid-fob" ${o.is_paid_fob ? 'checked' : ''} title="Paid to Supplier?">
+            <!-- Repuestos Dinámicos -->
+            <div class="detail-section">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4>⚙️ Repuestos</h4>
+                    <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
+                </div>
+                <div id="dynamic-items-container">
+                    ${(() => {
+                    let items = (o.items_json && Array.isArray(o.items_json)) ? o.items_json : [];
+                    // Sincronización Automática: Si no hay repuestos en el desglose, usar la Pieza Principal
+                    if (items.length === 0 && o.part_name) {
+                        items = [{ part_name: o.part_name, part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
+                    }
+                    return items.map(item => `
+                            <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
+                                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
+                                    <strong>Part</strong>
+                                    <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                                 </div>
+                                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
+                                <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
+                                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
                             </div>
-                            <div class="fin-item">
-                                <div class="fl">Logística</div>
-                                <div class="fv" style="display:flex; align-items:center; gap:5px">
-                                    <input type="number" id="edit-logistica" value="${o.shipping_logistica || 0}" step="0.01" oninput="recalculateTotals()">
-                                    <input type="checkbox" id="paid-log" ${o.is_paid_logistics ? 'checked' : ''} title="Paid Logistics?">
-                                </div>
-                            </div>
-                            <div class="fin-item">
-                                <div class="fl">Shipping EC</div>
-                                <div class="fv" style="display:flex; align-items:center; gap:5px">
-                                    <input type="number" id="edit-shipping-ec" value="${o.shipping_ecuador || 0}" step="0.01" oninput="recalculateTotals()">
-                                    <input type="checkbox" id="paid-ec" ${o.is_paid_ec ? 'checked' : ''} title="Paid Shipping EC?">
-                                </div>
-                            </div>
-                            <div class="fin-item">
-                                <div class="fl">Ad Valorem</div>
-                                <div class="fv" style="display:flex; align-items:center; gap:5px">
-                                    <input type="number" id="edit-advalorem" value="${o.ad_valorem || 0}" step="0.01" oninput="recalculateTotals()">
-                                    <input type="checkbox" id="paid-adu" ${o.is_paid_aduana ? 'checked' : ''} title="Paid Customs?">
-                                </div>
-                            </div>
-                            
-                            <div class="fin-item"><div class="fl">Shipping/Aduana</div><div class="fv"><input type="number" id="edit-shipping-aduana" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-                            <div class="fin-item"><div class="fl">Costo Total</div><div class="fv"><input type="number" id="calc-costo-total" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-                            
-                            <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
-                            
-                            <div class="fin-item"><div class="fl">Margen (%)</div><div class="fv"><input type="number" id="edit-margen" value="${((o.margen_markdown || 0.30) * 100).toFixed(1)}" step="0.1" oninput="recalculateTotals()"></div></div>
-                            <div class="fin-item"><div class="fl">Precio Venta (Sbt)</div><div class="fv"><input type="number" id="edit-sale" value="${o.precio_venta || 0}" step="0.01" oninput="recalculateTotals(true)"></div></div>
-                            <div class="fin-item"><div class="fl">IVA Venta (15%)</div><div class="fv"><input type="number" id="edit-iva-vta" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-                            <div class="fin-item"><div class="fl">Total Cliente</div><div class="fv"><input type="number" id="calc-total-iva" value="0" readonly style="background:var(--surface2); font-weight:bold; color:var(--blue)"></div></div>
-                            
-                            <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
-                            <div class="fin-item"><div class="fl">Comisión Vend.</div><div class="fv"><input type="number" id="edit-comision" value="${o.comision_vendedor || 0}" step="0.01"></div></div>
-                        </div>
-                    </div>
+                        `).join('');
+                })()}
+                </div>
+            </div>
 
-                    <div class="detail-section">
-                        <h4>📝 Notas</h4>
-                        <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
-                        <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
-                        <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ Añadir Nota</button>
-                    </div>
-                    <div class="detail-section">
-                        <h4>🕒 Historial</h4>
-                        <div class="history-list" id="det-history"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
-                    </div>
-                </div>`;
-            
+            <!-- Estado -->
+            <div class="detail-section">
+                <h4>📦 Estado</h4>
+                <div class="status-changer">
+                    <select id="det-status" onchange="updateDetailStatus('${o.id}')">${opts}</select>
+                </div>
+            </div>
+
+            <!-- Financieros -->
+            <div class="detail-section">
+                <h4>💰 Financieros</h4>
+                <div class="financial-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem">
+                    <div class="fin-item"><div class="fl">Base Price (FOB)</div><div class="fv"><input type="number" id="edit-base-price" value="${o.costo_fob || o.cost_fob || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Logística</div><div class="fv"><input type="number" id="edit-logistica" value="${o.shipping_logistica || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Shipping EC</div><div class="fv"><input type="number" id="edit-shipping-ec" value="${o.shipping_ecuador || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Ad Valorem</div><div class="fv"><input type="number" id="edit-advalorem" value="${o.ad_valorem || 0}" step="0.01" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Shipping/Aduana</div><div class="fv"><input type="number" id="edit-shipping-aduana" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
+                    
+                    <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
+                    <div class="fin-item"><div class="fl">Costo Total</div><div class="fv"><input type="number" id="calc-costo-total" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
+                    
+                    <div class="fin-item"><div class="fl">Margen (%)</div><div class="fv"><input type="number" id="edit-margen" value="${((o.margen_markdown || 0.30) * 100)}" step="0.1" oninput="recalculateTotals()"></div></div>
+                    <div class="fin-item"><div class="fl">Precio Venta (Sbt)</div><div class="fv"><input type="number" id="edit-sale" value="${o.precio_venta || o.sale_price || 0}" step="0.01" oninput="recalculateTotals(true)"></div></div>
+                    <div class="fin-item"><div class="fl">IVA Venta (15%)</div><div class="fv"><input type="number" id="edit-iva-vta" value="0" readonly style="background:var(--bg-card); color:var(--text2)"></div></div>
+                    <div class="fin-item" style="grid-column:1/-1; border-top:1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
+                    <div class="fin-item"><div class="fl">Total Cliente</div><div class="fv"><input type="number" id="calc-total-iva" value="0" readonly style="background:var(--bg-card); font-weight:bold; color:var(--blue)"></div></div>
+                    <div class="fin-item"><div class="fl">Comisión Vend.</div><div class="fv"><input type="number" id="edit-comision" value="${o.comision_vendedor || 0}" step="0.01"></div></div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>ðŸ“ Notas</h4>
+                <div class="notes-list" id="det-notes"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
+                <textarea class="note-input" id="det-note-input" style="margin-top:0.5rem" placeholder="Añadir nota interna..."></textarea>
+                <button class="btn-action btn-sm" style="margin-top:0.5rem;width:100%; border-color:var(--blue); color:var(--blue)" onclick="addNote('${o.id}')">+ Añadir Nota</button>
+            </div>
+            <div class="detail-section">
+                <h4>🕒 Historial</h4>
+                <div class="history-list" id="det-history"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
+            </div>
+        </div>`;
+
             // Llamar al cálculo de totales inicial al renderizar la vista
             setTimeout(recalculateTotals, 100);
         }
@@ -1891,21 +1800,11 @@
 
             content.innerHTML = `
                 <div class="detail-header">
-                    <div style="font-size:0.75rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">✨ NUEVA ORDEN MANUAL</div>
-                    <input type="text" id="new-part-name" placeholder="Título de la Orden (Autosync)" readonly style="font-size:1.1rem; font-weight:700; background:none; border:none; color:var(--text2); width:100%; border-bottom:1px solid var(--border); padding: 5px 0;">
+                    <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">NUEVA ORDEN MANUAL</div>
+                    <input type="text" id="new-part-name" placeholder="Repuesto principal (Ej: Faros LED)" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid var(--blue); padding: 5px 0;">
                 </div>
 
                 <div class="detail-body">
-                    <div class="detail-section">
-                        <h4>⚙️ Piezas / Repuestos</h4>
-                        <div id="new-items-container">
-                            <!-- Items dinámicos se insertan aquí -->
-                        </div>
-                        <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
-                    </div>
-
-                    <script>setTimeout(addNewOrderPart, 10);</script>
-
                     <div class="detail-section">
                         <h4>👤 Cliente</h4>
                         <div class="info-grid">
@@ -1917,14 +1816,24 @@
                     <div class="detail-section">
                         <h4>🚗 Vehículo</h4>
                         <div class="info-grid">
-                            <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
-                            <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
-                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year"></div></div>
+                            <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand" placeholder="Ej: Kia"></div></div>
+                            <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model" placeholder="Ej: Sportage"></div></div>
+                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year" placeholder="Ej: 2022"></div></div>
+                            <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="new-vin" placeholder="Opcional"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                         <h4>⚙️ Detalle de Compra</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Num. Parte</div><div class="iv"><input type="text" id="new-part-no" placeholder="OEM/SKU"></div></div>
+                            <div class="info-item" style="grid-column: span 2"><div class="il">URL</div><div class="iv"><input type="text" id="new-url" placeholder="Link de compra"></div></div>
+                            <div class="info-item"><div class="il">Costo FOB</div><div class="iv"><input type="number" id="new-fob" value="0" step="0.01"></div></div>
                         </div>
                     </div>
 
                     <div style="margin-top:20px">
-                        <button class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
+                        <button class="btn-primary" style="width:100%; padding: 12px;" onclick="saveNewManualOrder()">Crear Orden</button>
                     </div>
                 </div>
             `;
@@ -1933,19 +1842,11 @@
         async function saveNewManualOrder() {
             const name = document.getElementById('new-cust-name').value;
             const model = document.getElementById('new-model').value;
-            
-            // Recopilar items
-            const items = [];
-            document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
-                items.push({
-                    part_name: el.querySelector('.dyn-part-name').value,
-                    part_number: el.querySelector('.dyn-part-no').value,
-                    supplier_url: el.querySelector('.dyn-url').value
-                });
-            });
+            const part = document.getElementById('new-part-name').value;
 
-            if (!name || !model || items.length === 0 || !items[0].part_name) {
-                return showToast('Nombre, Modelo y al menos una Pieza son obligatorios', 'warning');
+            if (!name || !model || !part) {
+                showToast('⚠️ Nombre, Modelo y Pieza son obligatorios', 'warning');
+                return;
             }
 
             const data = {
@@ -1954,65 +1855,32 @@
                 vehicle_brand: document.getElementById('new-brand').value,
                 vehicle_model: model,
                 vehicle_year: document.getElementById('new-year').value,
-                main_part: items[0].part_name, // Primer item es el principal
-                status: 'Solicitado',
-                created_by: adminName,
-                items_json: items
+                vin: document.getElementById('new-vin').value,
+                part_name: part,
+                part_number: document.getElementById('new-part-no').value,
+                supplier_url: document.getElementById('new-url').value,
+                cost_fob: parseFloat(document.getElementById('new-fob').value) || 0,
+                status: 'Solicitado'
             };
+
+            showToast('🛠️ Creando...', 'info');
 
             const res = await fetch(`${API}/api/create-order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-token': window.token || '', 'x-admin-password': adminPass },
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                 body: JSON.stringify(data)
             });
 
             if (res.ok) {
-                showToast('✅ Orden creada', 'success');
-                loadData(); // Cargar de nuevo
+                showToast('✅ Orden creada exitosamente', 'success');
+                await loadData(); // Recargar lista
             } else {
-                showToast('❌ Error al crear', 'error');
+                showToast('❌ Error al crear orden', 'error');
             }
         }
 
-        function addNewOrderPart() {
-            const container = document.getElementById('new-items-container');
-            const idx = container.querySelectorAll('.dynamic-item').length;
-            const div = document.createElement('div');
-            div.className = 'info-grid dynamic-item';
-            div.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
-            div.innerHTML = `
-                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx+1}</strong>
-                    ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); syncNewTitle();" style="padding:2px 6px">×</button>` : ''}
-                </div>
-                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()"></div></div>
-                <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
-                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
-            `;
-            container.appendChild(div);
-        }
-
-        function syncNewTitle() {
-            const first = document.querySelector('#new-items-container .dyn-part-name');
-            const title = document.getElementById('new-part-name');
-            if (first && title) title.value = first.value || 'Nueva Orden';
-        }
-
-        async function loadData() {
-            if (!adminPass) return;
-            try {
-                const res = await fetch(`${API}/api/get-all-orders`, { 
-                    headers: { 'x-admin-password': adminPass } 
-                });
-                if (res.ok) {
-                    allOrders = await res.json();
-                    renderOrders(allOrders);
-                    updateStats(allOrders);
-                }
-            } catch (e) { console.error('Error loadData:', e); }
-        }
-
         async function updateManualOrder(orderId) {
+            // Recopilar items multi-repuesto
             const items = [];
             document.querySelectorAll('.dynamic-item').forEach(el => {
                 items.push({
@@ -2024,12 +1892,15 @@
 
             const data = {
                 orderId,
+                part_name: document.getElementById('edit-part-name').value,
                 vehicle_brand: document.getElementById('edit-brand').value,
                 vehicle_model: document.getElementById('edit-model').value,
                 vehicle_year: document.getElementById('edit-year').value,
                 vin: document.getElementById('edit-vin').value,
                 tracking_number: document.getElementById('edit-tracking').value,
                 status: document.getElementById('det-status').value,
+
+                // Financieros
                 costo_fob: parseFloat(document.getElementById('edit-base-price').value) || 0,
                 shipping_logistica: parseFloat(document.getElementById('edit-logistica').value) || 0,
                 shipping_ecuador: parseFloat(document.getElementById('edit-shipping-ec').value) || 0,
@@ -2037,12 +1908,11 @@
                 margen_markdown: (parseFloat(document.getElementById('edit-margen').value) || 0) / 100,
                 precio_venta: parseFloat(document.getElementById('edit-sale').value) || 0,
                 comision_vendedor: parseFloat(document.getElementById('edit-comision').value) || 0,
-                items_json: items,
-                is_paid_fob: document.getElementById('paid-fob').checked,
-                is_paid_logistics: document.getElementById('paid-log').checked,
-                is_paid_ec: document.getElementById('paid-ec').checked,
-                is_paid_aduana: document.getElementById('paid-adu').checked
+
+                // JSONB
+                items_json: items
             };
+
 
             const res = await fetch(`${API}/api/update-order-full`, {
                 method: 'POST',
@@ -2052,13 +1922,16 @@
 
             if (res.ok) {
                 showToast('✅ Cambios guardados', 'success');
-                loadData();
+                // Actualizar localmente el objeto allOrders
+                const o = allOrders.find(ord => ord.id === orderId);
+                if (o) Object.assign(o, data);
+                renderOrders(allOrders);
+                updateStats(allOrders);
             } else {
                 showToast('❌ Error al guardar', 'error');
             }
         }
 
-        // addDetailItem se movió abajo para evitar duplicados
 
 
         async function updateDetailStatus(orderId) {
@@ -2071,12 +1944,10 @@
             if (res.ok) {
                 const o = allOrders.find(o => o.id === orderId);
                 if (o) o.status = newStatus;
-                renderOrders(allOrders);
+                renderOrders(allOrders.filter(() => true));
                 updateStats(allOrders);
                 showToast('✅ Estado actualizado', 'success');
-            } else {
-                showToast('❌ Error al actualizar', 'error');
-            }
+            } else showToast('❌ Error al actualizar', 'error');
         }
 
         async function addNote(orderId) {
@@ -2089,7 +1960,7 @@
             });
             if (res.ok) {
                 document.getElementById('det-note-input').value = '';
-                showToast('📝 Nota guardada', 'success');
+                showToast('ðŸ“ Nota guardada', 'success');
                 loadNotes(orderId);
             }
         }
@@ -2123,7 +1994,7 @@
                 body: JSON.stringify({ orderId })
             });
             if (res.ok) {
-                showToast('🗑️ Orden eliminada', 'success');
+                showToast('ðŸ—‘ï¸ Orden eliminada', 'success');
                 allOrders = allOrders.filter(o => o.id !== orderId);
                 renderOrders(allOrders);
                 updateStats(allOrders);
@@ -2132,20 +2003,18 @@
             } else showToast('❌ Error al eliminar', 'error');
         }
 
-        async function deleteAllOrders() {
-            if (!confirm('Peligro: ¿Seguro que deseas eliminar TODAS las órdenes? Esta acción es irreversible y es solo para LIMPIAR PRUEBAS.')) return;
-            const res = await fetch(`${API}/api/delete-all-orders`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
-            });
-            if (res.ok) {
-                showToast('🗑️ Todas las órdenes han sido eliminadas', 'success');
-                allOrders = [];
-                renderOrders(allOrders);
-                updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
-                document.getElementById('detail-panel').classList.add('empty');
-            } else showToast('❌ Error al eliminar todas las órdenes', 'error');
+        async function loadData() {
+            if (!adminPass) return;
+            try {
+                const res = await fetch(`${API}/api/get-all-orders`, { 
+                    headers: { 'x-admin-password': adminPass } 
+                });
+                if (res.ok) {
+                    allOrders = await res.json();
+                    renderOrders(allOrders);
+                    updateStats(allOrders);
+                }
+            } catch (e) { console.error('Error loadData:', e); }
         }
 
 
@@ -2206,229 +2075,254 @@
                     return;
                 }
 
-                  const data = await res.json();
-                  thinking.remove();
-  
-                  let responseText = data.response; 
-                  const actionRegex = /\[ACTION:.*?\]/g;
-                  let actions = [];
-                  let match;
-                  
-                   while ((match = actionRegex.exec(responseText)) !== null) {
-                       try {
-                           let actionJson = match[0].substring(8, match[0].length - 1);
-                           let action = null;
-                           try {
-                               action = JSON.parse(actionJson);
-                           } catch (e1) {
-                               let openBraces = (actionJson.match(/\{/g) || []).length;
-                               let closeBraces = (actionJson.match(/\}/g) || []).length;
-                               let openBrackets = (actionJson.match(/\[/g) || []).length;
-                               let closeBrackets = (actionJson.match(/\]/g) || []).length;
-                               
-                               while (closeBrackets < openBrackets) { actionJson += ']'; closeBrackets++; }
-                               while (closeBraces < openBraces) { actionJson += '}'; closeBraces++; }
-                               action = JSON.parse(actionJson);
-                           }
-                           if (action) actions.push(action);
-                       } catch (e) {
-                           console.error('Error parsing action block:', e);
-                       }
-                   }
-
-                  let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
-                  if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
-
-                  if (cleanResponseText) {
-                      addAiMsg('assistant', cleanResponseText);
-                      ariaHistory.push({ role: 'assistant', content: cleanResponseText });
-                      ariaSpeak(cleanResponseText);
-                  }
-
-                  for (const action of actions) {
-                      if (action && action.type) await executeAriaAction(action);
-                  }
+                 const data = await res.json();
+                 thinking.remove();
+ 
+                 let responseText = data.response; // Viene del backend (api/admin-chat.js)
+                 let action = data.action; // Viene del backend
+ 
+                 // Remover el bloque [ACTION:...] del texto si existe
+                 if (action && responseText) {
+                     const startToken = '[ACTION:';
+                     const startIdx = responseText.indexOf(startToken);
+                     if (startIdx !== -1) {
+                         const endIdx = responseText.lastIndexOf(']');
+                         if (endIdx > startIdx) {
+                             responseText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
+                         }
+                     }
+                 }
+ 
+                 if (responseText) {
+                     addAiMsg('assistant', responseText);
+                     ariaHistory.push({ role: 'assistant', content: responseText });
+                     ariaSpeak(responseText);
+                 }
+                 
+                 if (action) {
+                     await executeAriaAction(action);
+                 }
              } catch (e) {
                  console.error('Aria Error:', e);
                  if (thinking && thinking.parentNode) thinking.remove();
-                 addAiMsg('assistant', '❌ Error de conexión o tiempo de espera agotado.');
+ 
+                 let errorMsg = '❌ Error de conexión o tiempo de espera agotado.';
+                 if (e.name === 'AbortError') errorMsg = 'â±ï¸ La IA está tardando demasiado en responder. Intente de nuevo.';
+ 
+                 addAiMsg('assistant', errorMsg);
              } finally {
                  ariaSend.disabled = false;
              }
          }
-
-        async function executeAriaAction(action) {
-            try {
-                if (action.type === 'DELETE_ORDER') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/delete-order`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            allOrders = allOrders.filter(o => o.id !== found.id);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
-                            if (selectedOrder?.id === found.id) {
-                                document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
-                                document.getElementById('detail-panel').classList.add('empty');
-                            }
-                            showToast(`🗑️ Orden #${found.readable_id} eliminada`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
-                    }
-                } else if (action.type === 'UPDATE_STATUS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const newStatus = action.data.new_status;
-                        const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, newStatus }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            found.status = newStatus;
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder.status = newStatus;
-                                renderDetail(selectedOrder);
-                            }
-                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${newStatus}`);
-                            showToast(`✅ Estado actualizado: ${newStatus}`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error actualizando estado de [#${found.readable_id}].`);
-                        }
-                    }
-                } else if (action.type === 'ADD_NOTE') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/add-note`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
-                            if (selectedOrder?.id === found.id) loadNotes(found.id);
-                            showToast(`📝 Nota agregada a #${found.readable_id}`, 'success');
-                        }
-                    }
-                } else if (action.type === 'UPDATE_FIELDS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const currentItems = Array.isArray(found.items_json) ? [...found.items_json] : [];
-                        const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
-
-                        ariaItems.forEach(newItem => {
-                            const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
-                            const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
-                            if (idx !== -1) {
-                                currentItems[idx] = { ...currentItems[idx], ...itemObj };
-                            } else {
-                                currentItems.push(itemObj);
-                            }
-                        });
-
-                        const updateData = {
-                            orderId: found.id,
-                            ...action.data.fields,
-                            items_json: currentItems
-                        };
-
-                        const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify(updateData),
-                            timeout: 15000
-                        });
-                        if (res.ok) {
-                            Object.assign(found, updateData);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder = { ...found };
-                                renderDetail(selectedOrder);
-                            }
-                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
-                         }
-                     }
-                  } else if (action.type === 'CREATE_ORDER') {
-                      // Handle different possible action structures
-                      let fields = {};
+ 
+         async function executeAriaAction(action) {
+             console.log('Executing Aria Action:', action);
+             try {
+                  if (action.type === 'CREATE_ORDER') {
+                      console.log('=== CREATE_ORDER RAW ===');
+                      console.log('action.data:', JSON.stringify(action.data));
                       
-                      // Try different possible structures
-                      if (action.data && action.data.fields) {
-                          fields = action.data.fields;
-                      } else if (action.data) {
-                          fields = action.data;
-                      } else {
-                          fields = action;
-                      }
-  
-                      const name = fields.customer_name || fields.cliente || fields.name || fields.nombre || '';
-                      const model = fields.vehicle_model || fields.modelo || fields.carro || fields.model || '';
-                      const part = fields.part_name || fields.main_part || fields.pieza || fields.repuesto || '';
-  
-                      if (!name || !model || !part) {
-                          addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
+                      // Extraer campos directamente - el servidor ahora acepta cualquier nombre
+                      const data = action.data || {};
+                      
+                      const orderData = {
+                          customer_name: data.customer_name || data.client_name || data.cliente || data.name || data.nombre || '',
+                          vehicle_model: data.vehicle_model || data.modelo || data.carro || data.model || '',
+                          vehicle_brand: data.vehicle_brand || data.marca || data.brand || 'N/A',
+                          vehicle_year: data.vehicle_year || data.ano || data.year || 'N/A',
+                          main_part: data.main_part || data.part_name || data.pieza || data.repuesto || 'Repuesto sin especificar',
+                          customer_phone: 'N/A',
+                          status: 'Solicitado',
+                          created_by: adminName,
+                          notes: 'Creado por Aria'
+                      };
+                      
+                      console.log('Enviando:', orderData);
+
+                      // Validación mínima en cliente
+                      if (!orderData.customer_name || !orderData.vehicle_model) {
+                          addAiMsg('system', '❌ No pude entender la orden. Por favor, usa formato: "crea orden para [NOMBRE], [MARCA] [MODELO]"');
                           return;
                       }
-  
-                      const data = {
-                          customer_name: name,
-                          customer_phone: fields.customer_phone || fields.telefono || fields.phone || 'N/A',
-                          customer_email: fields.customer_email || fields.email || fields.correo || '',
-                          vehicle_brand: fields.vehicle_brand || fields.marca || fields.brand || 'N/A',
-                          vehicle_model: model,
-                          vehicle_year: fields.vehicle_year || fields.ano || fields.year || 'N/A',
-                          part_name: part,
-                          part_number: fields.part_number || fields.numero_pieza || '',
-                          cost_fob: parseFloat(fields.cost_fob || fields.costo || 0),
-                          sale_price: parseFloat(fields.sale_price || fields.precio || 0),
-                          vendor_name: fields.vendor_name || fields.vendedor || '',
-                          supplier_url: fields.supplier_url || fields.url || '',
-                          status: fields.status || 'Solicitado',
-                          tracking_number: fields.tracking_number || '',
-                          estimated_delivery_client: fields.estimated_delivery_client || '',
-                          notes: fields.notes || fields.notas || '',
-                          created_by: fields.created_by || adminName
-                      };
-  
-                      const res = await fetch(`${API}/api/create-order`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                          body: JSON.stringify(data)
-                      });
-  
-                       if (res.ok) {
-                           addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
-                           const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
-                           allOrders = await ordersRes.json();
-                           renderOrders(allOrders);
-                           updateStats(allOrders);
-                       } else {
-                           const errorData = await res.json();
-                           addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
-                       }
-                  }
-             } catch (e) {
-                 console.error('Action Error:', e);
-                 addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
+
+                     const res = await fetchWithTimeout(`${API}/api/create-order`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                         body: JSON.stringify({ ...orderData, created_by: adminName }),
+                         timeout: 10000
+                     });
+                     if (res.ok) {
+                         const result = await res.json();
+                         showToast(`✅ Orden #${result.orderId} creada`, 'success'); // Usar el ID real
+                         addAiMsg('system', `✅ Orden #${result.orderId} creada con éxito.`);
+                         const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
+                         allOrders = await ordersRes.json();
+                         renderOrders(allOrders);
+                         updateStats(allOrders);
+                      } else {
+                          const errorText = await res.text();
+                          console.error('Error al crear orden desde Aria:', errorText);
+                          // Intentar parsear el error para dar mejor feedback
+                          let errorMsg = 'Error al crear la orden en la base de datos.';
+                          try {
+                              const errJson = JSON.parse(errorText);
+                              if (errJson.message) errorMsg = errJson.message;
+                          } catch(e) {}
+                          addAiMsg('system', `❌ ${errorMsg}`);
+                          showToast('❌ Error al crear orden: ' + errorMsg, 'error');
+                      }
+                 } else if (action.type === 'UPDATE_STATUS') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+ 
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id, newStatus: action.data.new_status }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             found.status = action.data.new_status;
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${action.data.new_status}`);
+                             if (selectedOrder?.id === found.id) renderDetail(found);
+                             showToast(`✅ Orden #${found.readable_id} actualizada a ${action.data.new_status}`, 'info');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al actualizar estado desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al actualizar estado de [#${found.readable_id}].`);
+                             showToast('❌ Error al actualizar estado', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'DELETE_ORDER') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/delete-order`, {
+                             method: 'DELETE',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             allOrders = allOrders.filter(o => o.id !== found.id);
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `ðŸ—‘ï¸ [${found.readable_id}] Orden eliminada.`);
+                             if (selectedOrder?.id === found.id) {
+                                 document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+                                 document.getElementById('detail-panel').classList.add('empty');
+                             }
+                             showToast(`ðŸ—‘ï¸ Orden #${found.readable_id} eliminada`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al eliminar orden desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
+                             showToast('❌ Error al eliminar orden', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'ADD_NOTE') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         const res = await fetchWithTimeout(`${API}/api/add-note`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
+                             timeout: 10000
+                         });
+                         if (res.ok) {
+                             addAiMsg('system', `ðŸ“ Nota agregada a [#${found.readable_id}]`);
+                             if (selectedOrder?.id === found.id) loadNotes(found.id);
+                             showToast(`ðŸ“ Nota agregada a orden #${found.readable_id}`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al agregar nota desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al guardar nota en [#${found.readable_id}].`);
+                             showToast('❌ Error al agregar nota', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para añadir la nota.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else if (action.type === 'UPDATE_FIELDS') {
+                     const orderId = action.data.order_id;
+                     const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
+                     if (found) {
+                         // Algoritmo de Reconciliación (Merge Inteligente)
+                         const currentItems = Array.isArray(found.order_items) ? [...found.order_items] : [];
+                         const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
+ 
+                         ariaItems.forEach(newItem => {
+                             const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
+                             const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
+                             if (idx !== -1) {
+                                 currentItems[idx] = { ...currentItems[idx], ...itemObj };
+                             } else {
+                                 currentItems.push(itemObj);
+                             }
+                         });
+ 
+                         const updateData = {
+                             orderId: found.id,
+                             part_name: action.data.fields.part_name || found.part_name,
+                             part_number: action.data.fields.part_number || found.part_number,
+                             cost_fob: action.data.fields.cost_fob || found.cost_fob,
+                             sale_price: action.data.fields.sale_price || found.sale_price,
+                             vendor_name: action.data.fields.vendor_name || found.vendor_name,
+                             supplier_url: action.data.fields.supplier_url || found.supplier_url,
+                             items_json: currentItems // Enviar el array de ítems actualizado
+                         };
+ 
+                         // Fusionar otros campos que no sean items_json
+                         const otherFieldsToUpdate = {};
+                         for (const key in action.data.fields) {
+                             if (key !== 'items_json') {
+                                 otherFieldsToUpdate[key] = action.data.fields[key];
+                             }
+                         }
+ 
+                         const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                             body: JSON.stringify({ ...updateData, ...otherFieldsToUpdate, orderId: found.id }),
+                             timeout: 15000
+                         });
+                         if (res.ok) {
+                             // Actualizar la orden en allOrders y selectedOrder
+                             Object.assign(found, { ...updateData, ...otherFieldsToUpdate });
+                             // Actualizar order_items en found con el nuevo currentItems
+                             found.order_items = currentItems;
+                             renderOrders(allOrders);
+                             updateStats(allOrders);
+                             addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
+                             if (selectedOrder?.id === found.id) renderDetail(found);
+                             showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
+                         } else {
+                             const errorText = await res.text();
+                             console.error('Error al actualizar campos desde Aria:', errorText);
+                             addAiMsg('system', `❌ Error al actualizar campos de [#${found.readable_id}].`);
+                             showToast('❌ Error al actualizar campos', 'error');
+                         }
+                     } else {
+                         addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para actualizar campos.`);
+                         showToast(`⚠️ Orden "${orderId}" no encontrada`, 'info');
+                     }
+                 } else {
+                     addAiMsg('system', 'Acción no reconocida.');
+                 }
+             } catch (actionError) {
+                 console.error('Error al ejecutar acción de Aria:', actionError);
+                 addAiMsg('system', `❌ Error al procesar la acción: ${actionError.message || 'Desconocido'}.`);
+                 showToast('❌ Error en acción de IA', 'error');
              }
          }
 
@@ -2456,13 +2350,10 @@
 
         }
 
-         const ariaMicBtn = document.getElementById('aria-mic');
-         if (ariaMicBtn) {
-             ariaMicBtn.addEventListener('click', () => {
-                 if (!recognition) return showToast('Voz no soportada en este navegador', 'error');
-                 recognition.start();
-             });
-         }
+        document.getElementById('aria-mic').addEventListener('click', () => {
+            if (!recognition) return showToast('Voz no soportada en este navegador', 'error');
+            recognition.start();
+        });
 
         document.getElementById('aria-mute').addEventListener('click', () => {
             isAriaMuted = !isAriaMuted;
@@ -2552,3 +2443,4 @@
 </body>
 
 </html>
+```

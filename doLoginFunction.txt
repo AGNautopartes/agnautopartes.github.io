@@ -1,0 +1,58 @@
+        async function doLogin() {
+            const pwd = document.getElementById('login-pass').value.trim();
+            const name = document.getElementById('login-name').value.trim() || 'Admin';
+            if (!pwd) return;
+            const btn = document.getElementById('btn-login');
+            btn.textContent = 'Verificando...'; btn.disabled = true;
+
+            const res = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': pwd } });
+            if (res.status === 401) {
+                document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
+                btn.textContent = 'Ingresar'; btn.disabled = false;
+                return;
+            }
+             adminPass = pwd; adminName = name;
+             allOrders = await res.json();
+             document.getElementById('login-screen').style.display = 'none';
+             document.getElementById('app').style.display = 'flex';
+             document.getElementById('nav-user').textContent = name;
+             renderOrders(allOrders);
+             updateStats(allOrders);
+
+             // Inicializar selector de modelo IA en admin
+             const adminModelSelector = document.getElementById('aria-model-select');
+             if (adminModelSelector) {
+                 const savedModel = localStorage.getItem('agn-admin-selected-model');
+                 if (savedModel) { adminModelSelector.value = savedModel; }
+                 adminModelSelector.addEventListener('change', () => {
+                     localStorage.setItem('agn-admin-selected-model', adminModelSelector.value);
+                 });
+             }
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', () => location.reload());
+
+        // ══ NAVIGATION ══
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const pageId = `page-${btn.dataset.page}`;
+                document.getElementById(pageId).classList.add('active');
+                if (btn.dataset.page === 'dashboard') updateDashboard();
+                if (btn.dataset.page === 'reports') renderReports();
+            });
+        });
+
+        // Toggle Detail Panel
+        document.getElementById('toggle-detail').addEventListener('click', () => {
+            const panel = document.getElementById('detail-panel');
+            panel.classList.toggle('collapsed');
+            const btn = document.getElementById('toggle-detail');
+            btn.textContent = panel.classList.contains('collapsed') ? '🔍' : '↔';
+        });
+
+
+        // ══ SEARCH & FILTER ══
+        document.getElementById('search-input').addEventListener('input', filterOrders);
