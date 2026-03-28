@@ -1875,6 +1875,10 @@
                         <h4>🕒 Historial</h4>
                         <div class="history-list" id="det-history"><div style="color:var(--text2);font-size:0.78rem">Cargando...</div></div>
                     </div>
+
+                    <div style="margin-top:20px; padding-bottom:20px">
+                        <button class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="updateManualOrder('${o.id}')">💾 GUARDAR CAMBIOS</button>
+                    </div>
                 </div>`;
             
             // Llamar al cálculo de totales inicial al renderizar la vista
@@ -1904,8 +1908,6 @@
                         <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
                     </div>
 
-                    <script>setTimeout(addNewOrderPart, 10);</script>
-
                     <div class="detail-section">
                         <h4>👤 Cliente</h4>
                         <div class="info-grid">
@@ -1928,49 +1930,62 @@
                     </div>
                 </div>
             `;
+            // Inicializar con la primera pieza (ahora fuera del innerHTML para que sí funcione)
+            setTimeout(addNewOrderPart, 10);
         }
 
         async function saveNewManualOrder() {
-            const name = document.getElementById('new-cust-name').value;
-            const model = document.getElementById('new-model').value;
+            const name = document.getElementById('new-cust-name').value.trim();
+            const model = document.getElementById('new-model').value.trim();
             
             // Recopilar items
             const items = [];
             document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
-                items.push({
-                    part_name: el.querySelector('.dyn-part-name').value,
-                    part_number: el.querySelector('.dyn-part-no').value,
-                    supplier_url: el.querySelector('.dyn-url').value
-                });
+                const pName = el.querySelector('.dyn-part-name').value.trim();
+                if (pName) {
+                    items.push({
+                        part_name: pName,
+                        part_number: el.querySelector('.dyn-part-no').value.trim(),
+                        supplier_url: el.querySelector('.dyn-url').value.trim()
+                    });
+                }
             });
 
-            if (!name || !model || items.length === 0 || !items[0].part_name) {
+            if (!name || !model || items.length === 0) {
                 return showToast('Nombre, Modelo y al menos una Pieza son obligatorios', 'warning');
             }
 
             const data = {
                 customer_name: name,
-                customer_phone: document.getElementById('new-cust-phone').value,
-                vehicle_brand: document.getElementById('new-brand').value,
+                customer_phone: document.getElementById('new-cust-phone').value.trim(),
+                vehicle_brand: document.getElementById('new-brand').value.trim(),
                 vehicle_model: model,
-                vehicle_year: document.getElementById('new-year').value,
-                main_part: items[0].part_name, // Primer item es el principal
+                vehicle_year: document.getElementById('new-year').value.trim(),
+                main_part: items[0].part_name, 
                 status: 'Solicitado',
                 created_by: adminName,
                 items_json: items
             };
 
-            const res = await fetch(`${API}/api/create-order`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-token': window.token || '', 'x-admin-password': adminPass },
-                body: JSON.stringify(data)
-            });
+            try {
+                const res = await fetch(`${API}/api/create-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                    body: JSON.stringify(data)
+                });
 
-            if (res.ok) {
-                showToast('✅ Orden creada', 'success');
-                loadData(); // Cargar de nuevo
-            } else {
-                showToast('❌ Error al crear', 'error');
+                if (res.ok) {
+                    showToast('✅ Orden creada', 'success');
+                    loadData(); 
+                    if (typeof closeDetail === 'function') closeDetail();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    console.error('API Error Create:', err);
+                    showToast('❌ Error al crear: ' + (err.message || ''), 'error');
+                }
+            } catch (e) {
+                console.error('Fetch Error Create:', e);
+                showToast('❌ Error de conexión', 'error');
             }
         }
 
@@ -2013,48 +2028,59 @@
         }
 
         async function updateManualOrder(orderId) {
-            const items = [];
-            document.querySelectorAll('.dynamic-item').forEach(el => {
-                items.push({
-                    part_name: el.querySelector('.dyn-part-name').value,
-                    part_number: el.querySelector('.dyn-part-no').value,
-                    supplier_url: el.querySelector('.dyn-url').value
+            try {
+                const items = [];
+                // Selector más específico para evitar cruces con el formulario de Nueva Orden
+                document.querySelectorAll('#dynamic-items-container .dynamic-item').forEach(el => {
+                    const nameInput = el.querySelector('.dyn-part-name');
+                    if (nameInput) {
+                        items.push({
+                            part_name: nameInput.value.trim(),
+                            part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
+                            supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
+                        });
+                    }
                 });
-            });
 
-            const data = {
-                orderId,
-                vehicle_brand: document.getElementById('edit-brand').value,
-                vehicle_model: document.getElementById('edit-model').value,
-                vehicle_year: document.getElementById('edit-year').value,
-                vin: document.getElementById('edit-vin').value,
-                tracking_number: document.getElementById('edit-tracking').value,
-                status: document.getElementById('det-status').value,
-                costo_fob: parseFloat(document.getElementById('edit-base-price').value) || 0,
-                shipping_logistica: parseFloat(document.getElementById('edit-logistica').value) || 0,
-                shipping_ecuador: parseFloat(document.getElementById('edit-shipping-ec').value) || 0,
-                ad_valorem: parseFloat(document.getElementById('edit-advalorem').value) || 0,
-                margen_markdown: (parseFloat(document.getElementById('edit-margen').value) || 0) / 100,
-                precio_venta: parseFloat(document.getElementById('edit-sale').value) || 0,
-                comision_vendedor: parseFloat(document.getElementById('edit-comision').value) || 0,
-                items_json: items,
-                is_paid_fob: document.getElementById('paid-fob').checked,
-                is_paid_logistics: document.getElementById('paid-log').checked,
-                is_paid_ec: document.getElementById('paid-ec').checked,
-                is_paid_aduana: document.getElementById('paid-adu').checked
-            };
+                const data = {
+                    orderId,
+                    vehicle_brand: document.getElementById('edit-brand').value.trim(),
+                    vehicle_model: document.getElementById('edit-model').value.trim(),
+                    vehicle_year: document.getElementById('edit-year').value.trim(),
+                    vin: document.getElementById('edit-vin').value.trim(),
+                    tracking_number: document.getElementById('edit-tracking').value.trim(),
+                    status: document.getElementById('det-status').value,
+                    costo_fob: parseFloat(document.getElementById('edit-base-price').value) || 0,
+                    shipping_logistica: parseFloat(document.getElementById('edit-logistica').value) || 0,
+                    shipping_ecuador: parseFloat(document.getElementById('edit-shipping-ec').value) || 0,
+                    ad_valorem: parseFloat(document.getElementById('edit-advalorem').value) || 0,
+                    margen_markdown: (parseFloat(document.getElementById('edit-margen').value) || 0) / 100,
+                    precio_venta: parseFloat(document.getElementById('edit-sale').value) || 0,
+                    comision_vendedor: parseFloat(document.getElementById('edit-comision').value) || 0,
+                    items_json: items,
+                    is_paid_fob: document.getElementById('paid-fob').checked,
+                    is_paid_logistics: document.getElementById('paid-log').checked,
+                    is_paid_ec: document.getElementById('paid-ec').checked,
+                    is_paid_aduana: document.getElementById('paid-adu').checked
+                };
 
-            const res = await fetch(`${API}/api/update-order-full`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                body: JSON.stringify(data)
-            });
+                const res = await fetch(`${API}/api/update-order-full`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                    body: JSON.stringify(data)
+                });
 
-            if (res.ok) {
-                showToast('✅ Cambios guardados', 'success');
-                loadData();
-            } else {
-                showToast('❌ Error al guardar', 'error');
+                if (res.ok) {
+                    showToast('✅ Cambios guardados', 'success');
+                    loadData();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    console.error('API Error Update:', err);
+                    showToast('❌ Error al guardar: ' + (err.message || ''), 'error');
+                }
+            } catch (e) {
+                console.error('Fetch Error Update:', e);
+                showToast('❌ Error de conexión', 'error');
             }
         }
 
