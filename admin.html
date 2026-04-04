@@ -1191,13 +1191,10 @@
         </div>
     </div>
 
-    <!-- ═══•══•═ APP ══•═•═•═•═ -->
+    <!-- ═ ═ ═•═ ═•═  APP ═ ═•═•═•═•═  -->
     <div id="app">
         <nav>
-            <div class="nav-brand">
-                <img src="images/logo-agn.png" style="height:24px; margin-right:8px; vertical-align:middle;">
-                <span>AGN</span> ERP
-            </div>
+            <div class="nav-brand">AGN <span>ERP</span> <small style="font-size:0.6rem;opacity:0.5;margin-left:5px">v1.2</small></div>
 
             <div class="nav-tabs">
                 <button class="tab-btn active" data-page="orders">📋 Orders</button>
@@ -1505,11 +1502,13 @@
 
     <script>
         console.log('AGN Admin Script: Starting...');
+        let allOrders = [];
+        let ariaHistory = [];
+        let adminPass = '';
+        let adminName = 'Admin';
         const API = window.location.origin;
 
-        let adminPass = '', adminName = 'Admin';
-        let allOrders = [], selectedOrder = null;
-        let ariaHistory = [];
+        let selectedOrder = null;
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
