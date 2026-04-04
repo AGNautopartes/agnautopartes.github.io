@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const vin = body.vin || '';
     
     // Ítems
-    const items = body.items;
+    const items = body.items || body.items_json;
     const part_name = body.part_name || body.main_part || body.pieza || body.repuesto || '';
     const part_number = body.part_number || body.numero_pieza || '';
     const cost_fob = body.cost_fob || body.costo || 0;
