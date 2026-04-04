@@ -1211,7 +1211,7 @@
 
     <!-- ══════ LOGIN ══════ -->
     <div id="login-screen">
-        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.8); color:#00ff00; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #00ff00;">V202604041730</div>
+        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.8); color:#00ff00; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #00ff00;">V202604041721</div>
         <div class="login-card">
             <div class="login-logo">
                 <img src="images/logo-agn.png"
@@ -2006,8 +2006,8 @@
                 }
             });
 
-            if (!name || !model || items.length === 0) {
-                return showToast('Nombre, Modelo y al menos una Pieza son obligatorios', 'warning');
+            if (!name || !model) {
+                return showToast('Nombre y Modelo son obligatorios', 'warning');
             }
 
             const data = {
