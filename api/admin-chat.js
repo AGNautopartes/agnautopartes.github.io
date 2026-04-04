@@ -5,19 +5,17 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Método no permitido' });
     }
 
+    // 1. Validar Autenticación
     const adminPassword = req.headers['x-admin-password'];
-    if (!adminPassword) {
-        return res.status(401).json({ message: 'No autorizado (debe proporcionar contraseña)' });
-    }
+    let isAuthed = false;
 
-    // 1. Validar por env var (más directo)
-    const passEnv = process.env.ADMIN_PASSWORD || process.env.PASSWORD_ADMIN;
-    let isAuthed = (passEnv && adminPassword === passEnv);
-
-    // 2. Si no pasó por env var, validar por DB
-    if (!isAuthed) {
+    // Prioridad 1: Contraseña en Env
+    if (adminPassword === process.env.PASSWORD_ADMIN || adminPassword === process.env.ADMIN_PASSWORD) {
+        isAuthed = true;
+    } else {
+        // Prioridad 2: Buscar en Tabla admin_users (Supabase)
         try {
-            const { data: user } = await supabase
+            const { data: user, error: userError } = await supabase
                 .from('admin_users')
                 .select('username')
                 .eq('password_hash', adminPassword)
@@ -25,15 +23,18 @@ export default async function handler(req, res) {
                 .maybeSingle();
 
             if (user) isAuthed = true;
-        } catch (e) {
-            console.error("Supabase admin auth error:", e);
+            if (userError) console.error('Supabase Auth Error:', userError);
+        } catch (authErr) {
+            console.error('Critical Auth Error:', authErr);
         }
     }
 
     if (!isAuthed) {
         return res.status(401).json({ message: 'No autorizado' });
     }
-    const { message, conversationHistory = [], adminName = 'Admin', model = process.env.DEFAULT_MODEL || '' } = req.body;
+
+    // 2. Extraer parámetros
+    const { message, conversationHistory = [], adminName = 'Admin', model = 'google/gemini-1.5-flash' } = req.body;
 
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;

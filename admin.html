@@ -1658,6 +1658,8 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 document.getElementById('nav-user').textContent = adminName;
+                
+                // Cargar datos iniciales
                 loadData();
                 loadAriaModels();
             }
@@ -1669,16 +1671,20 @@
             location.reload();
         });
 
-        // ══ NAVIGATION ══
+        // ═ ═  NAVIGATION ═ ═ 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                const page = btn.getAttribute('data-page');
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 btn.classList.add('active');
-                const pageId = `page-${btn.dataset.page}`;
-                document.getElementById(pageId).classList.add('active');
-                if (btn.dataset.page === 'dashboard') updateDashboard();
-                if (btn.dataset.page === 'reports') renderReports();
+
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                const targetPage = document.getElementById(`page-${page}`);
+                if (targetPage) targetPage.classList.add('active');
+                
+                // Lógica de actualización de página
+                if (page === 'dashboard') updateDashboard();
+                if (page === 'reports') renderReports();
             });
         });
 
@@ -1691,7 +1697,7 @@
         });
 
 
-        // ══ SEARCH & FILTER ══
+        // ═ ═  SEARCH & FILTER ═ ═ 
         document.getElementById('search-input').addEventListener('input', filterOrders);
         document.getElementById('status-filter').addEventListener('change', filterOrders);
 
@@ -1706,7 +1712,7 @@
             renderOrders(filtered);
         }
 
-        // ══ RENDER ORDERS ══
+        // ═ ═  RENDER ORDERS ═ ═ 
         function getStatusClass(status) {
             const m = {
                 'Solicitado': 's-solicitado',
@@ -1753,7 +1759,7 @@
             document.getElementById('nav-active').textContent = `${active} activos`;
         }
 
-        // ══ SELECT ORDER ══
+        // ═ ═  SELECT ORDER ═ ═ 
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
             if (!selectedOrder) return;
@@ -1947,6 +1953,7 @@
                             <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
                             <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
                             <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year"></div></div>
+                            <div class="info-item"><div class="il">VIN</div><div class="iv"><input type="text" id="new-vin" placeholder="Opcional"></div></div>
                         </div>
                     </div>
 
@@ -1986,7 +1993,8 @@
                 vehicle_brand: document.getElementById('new-brand').value.trim(),
                 vehicle_model: model,
                 vehicle_year: document.getElementById('new-year').value.trim(),
-                main_part: items[0].part_name, 
+                vin: document.getElementById('new-vin').value.trim(),
+                items: items,
                 status: 'Solicitado',
                 created_by: adminName,
                 items_json: items
