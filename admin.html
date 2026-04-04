@@ -1189,7 +1189,9 @@
             <button class="btn-primary" id="btn-login">Sign In</button>
             <div class="login-error" id="login-err"></div>
         </div>
+        <div id="v-tag" style="position:fixed; top:10px; right:10px; background:rgba(0,0,0,0.8); color:#00ff00; padding:4px 8px; border-radius:4px; font-family:monospace; font-size:10px; z-index:10000; border:1px solid #00ff00;">V202604041603</div>
     </div>
+
 
     <!-- ═ ═ ═•═ ═•═  APP ═ ═•═•═•═•═  -->
     <div id="app">
@@ -1501,16 +1503,64 @@
     <div id="toast"></div>
 
     <script>
-        console.log('AGN Admin Script: Starting...');
-        if (document.getElementById('btn-login')) {
-            document.getElementById('btn-login').addEventListener('click', login);
+        console.log('AGN Admin Script: Starting V202604041603...');
+        
+        // Función login global
+        async function login() {
+            const pwd = document.getElementById('login-pass').value.trim();
+            const name = document.getElementById('login-name').value.trim() || 'Admin';
+            if (!pwd) return;
+            const btn = document.getElementById('btn-login');
+            const err = document.getElementById('login-err');
+            if (err) err.textContent = '';
+            if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+
+            try {
+                const res = await fetch(`${window.location.origin}/api/get-all-orders`, { 
+                    headers: { 'x-admin-password': pwd } 
+                });
+
+                if (res.status === 401) {
+                    if (err) err.textContent = 'Contraseña incorrecta.';
+                    if (btn) { btn.textContent = 'Ingresar'; btn.disabled = false; }
+                    return;
+                }
+
+                if (!res.ok) {
+                    if (err) err.textContent = `Error del servidor (${res.status}). Intente de nuevo.`;
+                    if (btn) { btn.textContent = 'Ingresar'; btn.disabled = false; }
+                    return;
+                }
+
+                const data = await res.json();
+                if (!Array.isArray(data)) throw new Error('Invalid data format');
+
+                adminPass = pwd; adminName = name;
+                allOrders = data;
+                
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('nav-user').textContent = name;
+                
+                renderOrders(allOrders);
+                updateStats(allOrders);
+                
+                sessionStorage.setItem('agn-admin-pass', pwd);
+                sessionStorage.setItem('agn-admin-name', name);
+                sessionStorage.setItem('agn-admin-logged', 'true');
+            } catch (e) {
+                console.error('Login error:', e);
+                if (err) err.textContent = 'Error de conexión / Server error.';
+                if (btn) { btn.textContent = 'Ingresar'; btn.disabled = false; }
+            }
         }
-        // También permitir Enter en el campo de contraseña
-        if (document.getElementById('login-pass')) {
-            document.getElementById('login-pass').addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') login();
-            });
-        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('btn-login');
+            if (btn) btn.addEventListener('click', login);
+            const passInput = document.getElementById('login-pass');
+            if (passInput) passInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') login(); });
+        });
 
         const API = window.location.origin;
 
