@@ -1502,10 +1502,16 @@
 
     <script>
         console.log('AGN Admin Script: Starting...');
-        let allOrders = [];
-        let ariaHistory = [];
-        let adminPass = '';
-        let adminName = 'Admin';
+        if (document.getElementById('btn-login')) {
+            document.getElementById('btn-login').addEventListener('click', login);
+        }
+        // También permitir Enter en el campo de contraseña
+        if (document.getElementById('login-pass')) {
+            document.getElementById('login-pass').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') login();
+            });
+        }
+
         const API = window.location.origin;
 
         let selectedOrder = null;
