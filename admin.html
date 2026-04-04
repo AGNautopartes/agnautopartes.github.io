@@ -136,7 +136,7 @@
 
         /* ══ LAYOUT ══ */
         #app {
-            display: none;
+            display: none; /* Se activa al validar auth */
             height: 100vh;
             flex-direction: column;
         }
@@ -1636,16 +1636,38 @@
                 renderOrders(allOrders);
                 updateStats(allOrders);
 
-                // Guardar login básico en session
+                // Persistencia en sesión (para no perder auth al recargar)
+                sessionStorage.setItem('agn-admin-pass', pwd);
+                sessionStorage.setItem('agn-admin-name', name);
                 sessionStorage.setItem('agn-admin-logged', 'true');
             } catch (e) {
                 console.error('Login error:', e);
-                err.textContent = 'Error de conexión. Verifique su internet.';
+                err.textContent = 'Error de conexión / Server error.';
                 btn.textContent = 'Ingresar'; btn.disabled = false;
             }
         }
 
-        document.getElementById('btn-logout').addEventListener('click', () => location.reload());
+        // Recuperar sesión al cargar
+        async function checkSession() {
+            const isLogged = sessionStorage.getItem('agn-admin-logged');
+            const savedPass = sessionStorage.getItem('agn-admin-pass');
+            const savedName = sessionStorage.getItem('agn-admin-name');
+            if (isLogged === 'true' && savedPass) {
+                adminPass = savedPass;
+                adminName = savedName || 'Admin';
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('nav-user').textContent = adminName;
+                loadData();
+                loadAriaModels();
+            }
+        }
+        checkSession();
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            sessionStorage.clear();
+            location.reload();
+        });
 
         // ══ NAVIGATION ══
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1794,7 +1816,7 @@
                                     try { items = JSON.parse(o.items_json); } catch(e) { items = []; }
                                 }
                                 if (!items || items.length === 0) {
-                                    items = [{ part_name: o.part_name || '', part_number: o.part_number || '', supplier_url: o.supplier_url || '' }];
+                                    items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
                                 }
                                 return items.map((item, idx) => `
                                     <div class="info-grid dynamic-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
@@ -1804,6 +1826,9 @@
                                         </div>
                                         <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" value="${item.part_name || ''}"></div></div>
                                         <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" value="${item.part_number || ''}"></div></div>
+                                        <div class="info-item"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="${item.quantity || 1}"></div></div>
+                                        <div class="info-item"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}"></div></div>
+                                        <div class="info-item"><div class="il">Price (Sbt)</div><div class="iv"><input type="number" class="dyn-sale" value="${item.sale_price || 0}"></div></div>
                                         <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
                                     </div>
                                 `).join('');
@@ -2037,6 +2062,9 @@
                         items.push({
                             part_name: nameInput.value.trim(),
                             part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
+                            quantity: parseInt(el.querySelector('.dyn-qty')?.value) || 1,
+                            cost_fob: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
+                            sale_price: parseFloat(el.querySelector('.dyn-sale')?.value) || 0,
                             supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
                         });
                     }
@@ -2044,6 +2072,7 @@
 
                 const data = {
                     orderId,
+                    part_name: document.getElementById('edit-part-name').value.trim(),
                     vehicle_brand: document.getElementById('edit-brand').value.trim(),
                     vehicle_model: document.getElementById('edit-model').value.trim(),
                     vehicle_year: document.getElementById('edit-year').value.trim(),
@@ -2063,6 +2092,8 @@
                     is_paid_ec: document.getElementById('paid-ec').checked,
                     is_paid_aduana: document.getElementById('paid-adu').checked
                 };
+
+                console.log('Sending Update Payload:', data);
 
                 const res = await fetch(`${API}/api/update-order-full`, {
                     method: 'POST',
@@ -2574,7 +2605,32 @@
             const elTotal = document.getElementById('calc-total-iva');
             if (elTotal) elTotal.value = (ventaActual + iva).toFixed(2);
         }
+        // ═ ═  DASHBOARD & REPORTS LOGIC (Restore missing) ═ ═ 
+        function updateDashboard() {
+            if (!allOrders.length) return;
+            const active = allOrders.filter(o => !['Entregado', 'Cancelado'].includes(o.status)).length;
+            const delivered = allOrders.filter(o => o.status === 'Entregado').length;
+            document.getElementById('kpi-active').textContent = active;
+            document.getElementById('kpi-delivered').textContent = delivered;
+        }
+
+        function renderReports() {
+            const tbody = document.getElementById('reports-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = allOrders.map(o => `
+                <tr>
+                    <td>#${o.readable_id || o.id.substring(0, 4)}</td>
+                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                    <td>${o.customers?.full_name || '—'}</td>
+                    <td>${o.vehicle_brand || ''} ${o.vehicle_model || ''}</td>
+                    <td>${o.part_name || 'Repuesto'}</td>
+                    <td><span class="sbadge ${getStatusClass(o.status)}">${o.status}</span></td>
+                    <td>$${(o.precio_venta || 0).toFixed(2)}</td>
+                    <td>$${((o.precio_venta || 0) - (o.costo_fob || 0)).toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
     </script>
 </body>
-
 </html>

@@ -215,6 +215,11 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
         return res.status(200).json({ response: displayText, action: action });
 
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        console.error('ADMIN-CHAT CRITICAL ERROR:', error);
+        // Devolvemos el mensaje de error específico para diagnóstico en el UI
+        return res.status(500).json({ 
+            error: error.message || 'Error desconocido',
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+        });
     }
 }

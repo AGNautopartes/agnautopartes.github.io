@@ -34,6 +34,7 @@ export default async function handler(req, res) {
 
     const {
         orderId,
+        part_name, supplier_url, // Added missing fields
         vin, vehicle_brand, vehicle_model, vehicle_year,
         tracking_number, status,
         costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
@@ -46,6 +47,8 @@ export default async function handler(req, res) {
 
     try {
         const updateData = {};
+        if (part_name !== undefined) updateData.part_name = part_name;
+        if (supplier_url !== undefined) updateData.supplier_url = supplier_url;
         if (vin !== undefined) updateData.vin = vin;
         if (vehicle_brand !== undefined) updateData.vehicle_brand = vehicle_brand;
         if (vehicle_model !== undefined) updateData.vehicle_model = vehicle_model;
