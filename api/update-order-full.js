@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
         margen_markdown, precio_venta, comision_vendedor,
         items_json, // Array JSONB
-        is_paid_fob, is_paid_logistics, is_paid_ec, is_paid_aduana
+        is_paid_fob, is_paid_logistics, is_paid_ec
     } = req.body;
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
@@ -66,10 +66,7 @@ export default async function handler(req, res) {
         if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
 
         if (items_json !== undefined) updateData.items_json = items_json;
-        if (is_paid_fob !== undefined) updateData.is_paid_fob = is_paid_fob;
-        if (is_paid_logistics !== undefined) updateData.is_paid_logistics = is_paid_logistics;
-        if (is_paid_ec !== undefined) updateData.is_paid_ec = is_paid_ec;
-        if (is_paid_aduana !== undefined) updateData.is_paid_aduana = is_paid_aduana;
+        // is_paid_* columns removed - not present in current Supabase schema
 
         updateData.updated_at = new Date().toISOString();
 
