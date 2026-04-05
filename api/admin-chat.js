@@ -1,5 +1,5 @@
 import supabase from '../supabase-client.js';
-
+export const maxDuration = 30;
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -132,7 +132,7 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'HTTP-Referer': 'https://agnautopartes.github.io', 
+                    'HTTP-Referer': 'https://agnautopartes.github.io',
                     'X-Title': 'AGN Autopartes ERP'
                 },
                 body: JSON.stringify({
@@ -219,9 +219,9 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
     } catch (error) {
         console.error('ADMIN-CHAT CRITICAL ERROR:', error);
         // Devolvemos el mensaje de error específico para diagnóstico en el UI
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: error.message || 'Error desconocido',
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 }
