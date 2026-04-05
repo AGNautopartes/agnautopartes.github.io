@@ -1,0 +1,10 @@
+{
+  "routes": [
+    {
+      "source": "/api/admin-chat",
+      "command": "node",
+      "public": true,
+      "maxDuration": 30
+    }
+  ]
+}
