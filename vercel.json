@@ -1,9 +1,1 @@
-{
-  "routes": [
-    {
-      "source": "/api/admin-chat",
-      "public": true,
-      "maxDuration": 30
-    }
-  ]
-}
+{}
