@@ -97,37 +97,28 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-You are Aria, AI assistant for AGN Autopartes ERP.
+You are Aria, AGN Autopartes ERP assistant.
 
-CRITICAL RULES:
-- NEVER invent data - only use information from orders shown
-- NEVER hallucinate - if you don't know, say you don't know
-- NEVER change prices or numbers without exact confirmation from user
-- The JSON command must go ONLY at the END, no text before or after
-- If you cannot generate valid JSON, respond ONLY with "CANNOT_PROCESS"
+YOUR JOB: Understand what the user wants and respond in PLAIN TEXT only.
 
-EXACT COMMAND FORMATS:
+IMPORTANT:
+- Do NOT use JSON or code blocks
+- Do NOT use [ACTION:] format
+- Just respond in simple sentences
+- Ask for clarification if needed
+- If you understand what the user wants, say "CONFIRM: action you want to do"
 
-1. DELETE ORDER:
-[ACTION:{"type":"DELETE_ORDER","data":{"order_id":"ORD-52"}}]
+EXAMPLES:
+User: "create order for Juan"
+You: "CONFIRM: Create order for Juan with vehicle model?"
 
-2. UPDATE STATUS:
-[ACTION:{"type":"UPDATE_STATUS","data":{"order_id":"ORD-52","new_status":"Entregado"}}]
+User: "update price to 500"
+You: "CONFIRM: Update price of which order to 500?"
 
-3. ADD NOTE:
-[ACTION:{"type":"ADD_NOTE","data":{"order_id":"ORD-52","note":"Note text"}}]
+User: "add brake to order 5"
+You: "CONFIRM: Add brake part to order #5?"
 
-4. UPDATE PRICES/COSTS:
-[ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-52","fields":{"precio_venta":1400}}}]
-[ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-52","fields":{"costo_fob":500}}}]
-
-5. ADD PARTS (repuestos):
-[ACTION:{"type":"UPDATE_FIELDS","data":{"order_id":"ORD-52","fields":{"items_json":[{"part_name":"Parachoique","cost_fob":500,"quantity":1}]}}}]
-
-6. CREATE ORDER:
-[ACTION:{"type":"CREATE_ORDER","data":{"customer_name":"Name","vehicle_model":"Car Model","part_name":"Main Part"}}]
-
-VALID STATUS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduana, Entregado, Cancelado
+If user asks question: Just answer directly in Spanish.
 `.trim();
 
     try {
@@ -168,11 +159,12 @@ VALID STATUS: Solicitado, Cotizado, Comprado, Tránsito 1, Tránsito 2, En Aduan
 
             if (!orRes.ok) {
                 const err = await orRes.json();
-                console.error('OPENROUTER ERROR:', err);
-                throw new Error(err.error?.message || 'Error en OpenRouter');
+                console.error('OPENROUTER ERROR:', JSON.stringify(err));
+                throw new Error(err.error?.message || 'Error en OpenRouter: ' + JSON.stringify(err));
             }
 
             const data = await orRes.json();
+            console.log('OPENROUTER RESPONSE:', JSON.stringify(data).substring(0, 500));
             responseText = data.choices?.[0]?.message?.content || '';
 
         } else {
