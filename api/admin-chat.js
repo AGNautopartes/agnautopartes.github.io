@@ -37,8 +37,14 @@ export default async function handler(req, res) {
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
     const model = req.body.model || 'openrouter/free';
 
+    console.log('=== ARIA DEBUG ===');
+    console.log('Model recibido:', model);
+
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    
+    console.log('GEMINI_API_KEY configurada:', !!GEMINI_API_KEY);
+    console.log('OPENROUTER_API_KEY configurada:', !!OPENROUTER_API_KEY);
 
     // Routing: si el modelo es de Google, usar Gemini nativo (GOOGLE_API_KEY o GEMINI_API_KEY).
     // Para todo lo demás, usar OpenRouter.
@@ -46,11 +52,17 @@ export default async function handler(req, res) {
     const useGeminiNative = isGoogleModel && !!GEMINI_API_KEY;
     const useOpenRouter = !useGeminiNative && !!OPENROUTER_API_KEY;
 
+    console.log('isGoogleModel:', isGoogleModel);
+    console.log('useGeminiNative:', useGeminiNative);
+    console.log('useOpenRouter:', useOpenRouter);
+
     if (!useGeminiNative && !useOpenRouter) {
+        console.log('ERROR: No hay API key disponible');
         return res.status(500).json({ error: 'No hay API key disponible para el modelo seleccionado. Configura GEMINI_API_KEY u OPENROUTER_API_KEY en Vercel.' });
     }
 
-    const { data: existingOrders } = await supabase
+    console.log('Consultando Supabase orders...');
+    const { data: existingOrders, error: ordersError } = await supabase
         .from('orders')
         .select(`
             readable_id, part_name, status, vehicle_brand, vehicle_model, vehicle_year, costo_fob,
@@ -59,6 +71,12 @@ export default async function handler(req, res) {
         `)
         .order('created_at', { ascending: false })
         .limit(20);
+
+    if (ordersError) {
+        console.error('ERROR consultando orders:', ordersError);
+    } else {
+        console.log('Orders consultadas:', existingOrders?.length || 0);
+    }
 
     const ordersContext = (existingOrders || []).map(o => {
         const vBrand = o.vehicle_brand || 'N/A';
