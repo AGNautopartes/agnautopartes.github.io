@@ -111,9 +111,6 @@ If user wants to ADD note: ask for order ID and note text.
 Just respond in Spanish, be helpful.
 `.trim();
 
-If you understand and have all info, give the action at the end.
-`.trim();
-
     try {
         let responseText;
 
