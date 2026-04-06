@@ -97,18 +97,18 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-You are Aria, assistant for AGN Autopartes ERP.
+Eres Aria. Ayudas con ordenes de AGN Autopartes.
 
-You help manage orders. When user asks for action, respond simply.
+Si el usuario quiere:
+- CREAR orden: Di exactamente: [CREATE_ORDER:cliente|vehiculo|parte]
+- ACTUALIZAR estado: Di exactamente: [UPDATE_STATUS:id|estado]
+- ACTUALIZAR costo: Di exactamente: [UPDATE_COST:id|costo]
+- AÑADIR parte: Di exactamente: [ADD_PART:id|parte|costo]
+- AÑADIR nota: Di exactamente: [ADD_NOTE:id|nota]
+- ELIMINAR orden: Di exactamente: [DELETE_ORDER:id]
 
-If user wants to CREATE order: ask for customer name, vehicle model, part name.
-If user wants to UPDATE status: ask for order ID and new status.
-If user wants to UPDATE price/cost: ask for order ID and new price/cost.
-If user wants to ADD part: ask for order ID, part name, cost.
-If user wants to DELETE order: ask for order ID to confirm.
-If user wants to ADD note: ask for order ID and note text.
-
-Just respond in Spanish, be helpful.
+Si falta informacion, pregunta en español normal lo que necesitas.
+NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
 `.trim();
 
     try {
@@ -196,14 +196,39 @@ Just respond in Spanish, be helpful.
             responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
 
-        // Just return the response as text - no action parsing
+        // Detectar si la respuesta contiene una accion ejecutable
+        const actionMatch = responseText.match(/\[([A-Z_]+):([^\]]+)\]/);
+        
         let displayText = responseText;
+        let actionDetected = false;
+        let actionType = null;
+        let actionData = null;
+
+        if (actionMatch) {
+            actionDetected = true;
+            actionType = actionMatch[1];
+            actionData = actionMatch[2];
+            console.log('=== ARIA ACTION DETECTED ===');
+            console.log('Action:', actionType);
+            console.log('Data:', actionData);
+        }
 
         if (!displayText) {
             displayText = "Lo siento, no pude procesar esa solicitud.";
         }
 
-        return res.status(200).json({ response: displayText, _debug: { model, useOpenRouter, useGeminiNative, ordersCount: existingOrders?.length || 0 } });
+        return res.status(200).json({ 
+            response: displayText, 
+            _debug: { 
+                model, 
+                useOpenRouter, 
+                useGeminiNative, 
+                ordersCount: existingOrders?.length || 0,
+                actionDetected,
+                actionType,
+                actionData
+            } 
+        });
 
     } catch (error) {
         console.error('ADMIN-CHAT CRITICAL ERROR:', error);
