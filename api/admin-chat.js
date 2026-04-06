@@ -203,6 +203,7 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
         let actionDetected = false;
         let actionType = null;
         let actionData = null;
+        let actionResult = null;
 
         if (actionMatch) {
             actionDetected = true;
@@ -211,6 +212,30 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
             console.log('=== ARIA ACTION DETECTED ===');
             console.log('Action:', actionType);
             console.log('Data:', actionData);
+            
+            // Ejecutar la accion si es CREATE_ORDER
+            if (actionType === 'CREATE_ORDER') {
+                actionResult = await executeCreateOrder(actionData, req);
+            }
+        }
+
+        // Si se ejecuto una accion, usar su resultado
+        if (actionResult) {
+            displayText = actionResult.message || "Accion ejecutada exitosamente";
+            return res.status(200).json({ 
+                response: displayText,
+                _debug: { 
+                    model, 
+                    useOpenRouter, 
+                    useGeminiNative, 
+                    ordersCount: existingOrders?.length || 0,
+                    actionDetected,
+                    actionType,
+                    actionData,
+                    actionExecuted: true,
+                    actionResult
+                } 
+            });
         }
 
         if (!displayText) {
@@ -238,5 +263,68 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
             _debug: { model, useOpenRouter, useGeminiNative }
         });
+    }
+}
+
+// Funcion para ejecutar CREATE_ORDER
+async function executeCreateOrder(actionData, req) {
+    const parts = actionData.split('|').map(s => s.trim());
+    const customerName = parts[0];
+    const vehicleModel = parts[1];
+    const partName = parts[2];
+    
+    console.log('=== EJECUTANDO CREATE_ORDER ===');
+    console.log('customerName:', customerName);
+    console.log('vehicleModel:', vehicleModel);
+    console.log('partName:', partName);
+    
+    if (!customerName || !vehicleModel || !partName) {
+        return { 
+            message: "Datos incompletos para crear orden. Necesito: cliente|vehiculo|parte",
+            error: true 
+        };
+    }
+
+    try {
+        // Obtener el password del header para pasar a la llamada interna
+        const adminPassword = req.headers['x-admin-password'];
+        
+        const createOrderRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/create-order` 
+            : 'http://localhost:3000/api/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': adminPassword
+            },
+            body: JSON.stringify({
+                cliente: customerName,
+                modelo: vehicleModel,
+                pieza: partName
+            })
+        });
+
+        const result = await createOrderRes.json();
+        
+        if (!createOrderRes.ok) {
+            console.error('CREATE_ORDER ERROR:', result);
+            return { 
+                message: `Error al crear orden: ${result.message || 'Error desconocido'}`,
+                error: true 
+            };
+        }
+
+        console.log('CREATE_ORDER SUCCESS:', result);
+        return { 
+            message: `Orden creada exitosamente para ${customerName}. Vehiculo: ${vehicleModel}, Parte: ${partName}. ID: ${result.orderId}`,
+            orderId: result.orderId,
+            customerId: result.customerId
+        };
+    } catch (error) {
+        console.error('Error ejecutando CREATE_ORDER:', error);
+        return { 
+            message: `Error interno al crear orden: ${error.message}`,
+            error: true 
+        };
     }
 }
