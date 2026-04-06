@@ -1,5 +1,5 @@
 import supabase from '../supabase-client.js';
-export const maxDuration = 30;
+export const maxDuration = 60;
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -280,6 +280,7 @@ async function executeCreateOrder(actionData, req) {
     const partName = parts[4] || '';
     
     console.log('=== EJECUTANDO CREATE_ORDER ===');
+    console.log('Input data:', actionData);
     console.log('customerName:', customerName);
     console.log('vehicleBrand:', vehicleBrand);
     console.log('vehicleModel:', vehicleModel);
@@ -288,17 +289,20 @@ async function executeCreateOrder(actionData, req) {
     
     if (!customerName || !partName) {
         return { 
-            message: "Datos incompletos para crear orden. Necesito: cliente|marca|modelo|año|parte",
+            message: "Datos incompletos. Formato: cliente|marca|modelo|año|parte",
             error: true 
         };
     }
 
     try {
         const adminPassword = req.headers['x-admin-password'];
-        
-        const createOrderRes = await fetch(process.env.VERCEL_URL 
+        const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/create-order` 
-            : 'http://localhost:3000/api/create-order', {
+            : 'http://localhost:3000/api/create-order';
+        
+        console.log('Calling create-order API:', apiUrl);
+        
+        const createOrderRes = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -307,25 +311,37 @@ async function executeCreateOrder(actionData, req) {
             body: JSON.stringify({
                 cliente: customerName,
                 marca: vehicleBrand,
-                modelo: vehicleModel || vehicleBrand + ' ' + vehicleModel,
+                modelo: vehicleModel || vehicleBrand,
                 ano: vehicleYear,
                 pieza: partName
             })
         });
 
-        const result = await createOrderRes.json();
-        
+        // Check if response is OK and has content
         if (!createOrderRes.ok) {
-            console.error('CREATE_ORDER ERROR:', result);
+            const errorResult = await createOrderRes.json().catch(() => ({ message: 'Error sin respuesta' }));
+            console.error('CREATE_ORDER ERROR:', errorResult);
             return { 
-                message: `Error al crear orden: ${result.message || 'Error desconocido'}`,
+                message: `Error: ${errorResult.message || 'Error desconocido'}`,
                 error: true 
             };
         }
 
-        console.log('CREATE_ORDER SUCCESS:', result);
+        const resultText = await createOrderRes.text();
+        console.log('create-order raw response:', resultText);
+        
+        if (!resultText || resultText.trim() === '') {
+            return { 
+                message: 'Error: Respuesta vacía del servidor',
+                error: true 
+            };
+        }
+        
+        const result = JSON.parse(resultText);
+        console.log('create-order result:', result);
+
         return { 
-            message: `Orden creada exitosamente para ${customerName}. Vehiculo: ${vehicleBrand} ${vehicleModel} ${vehicleYear}. Parte: ${partName}. ID: ${result.orderId}`,
+            message: `Orden creada: ${customerName} - ${vehicleBrand} ${vehicleModel} ${vehicleYear} - ${partName}. ID: ${result.orderId}`,
             orderId: result.orderId,
             customerId: result.customerId,
             refreshRequired: true
@@ -333,7 +349,7 @@ async function executeCreateOrder(actionData, req) {
     } catch (error) {
         console.error('Error ejecutando CREATE_ORDER:', error);
         return { 
-            message: `Error interno al crear orden: ${error.message}`,
+            message: `Error: ${error.message}`,
             error: true 
         };
     }
