@@ -232,14 +232,15 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
             displayText = "Lo siento, no pude procesar esa solicitud.";
         }
 
-        return res.status(200).json({ response: displayText, action: action });
+        return res.status(200).json({ response: displayText, action: action, _debug: { model, useOpenRouter, useGeminiNative, ordersCount: existingOrders?.length || 0 } });
 
     } catch (error) {
         console.error('ADMIN-CHAT CRITICAL ERROR:', error);
         // Devolvemos el mensaje de error específico para diagnóstico en el UI
         return res.status(500).json({
             error: error.message || 'Error desconocido',
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            _debug: { model, useOpenRouter, useGeminiNative }
         });
     }
 }
