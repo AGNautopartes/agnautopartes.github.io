@@ -12,7 +12,12 @@ export default async function handler(req, res) {
     const passEnv = process.env.ADMIN_PASSWORD || process.env.PASSWORD_ADMIN;
     let isAuthed = (passEnv && adminPassword === passEnv);
 
-    // 2. Si no pasó por env var, validar por DB
+    // 2. Si no hay password en env, aceptar cualquier password para desarrollo
+    if (!passEnv && adminPassword) {
+        isAuthed = true;
+    }
+
+    // 3. Si no pasó por env var, validar por DB
     if (!isAuthed) {
         try {
             const { data: user } = await supabase
