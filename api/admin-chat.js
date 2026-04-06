@@ -156,8 +156,8 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'HTTP-Referer': 'https://agnautopartes.github.io',
-                    'X-Title': 'AGN Autopartes ERP'
+                    'HTTP-Referer': 'https://agnautopartes-two.vercel.app',
+                    'X-OpenRouter-Title': 'AGN Autopartes ERP'
                 },
                 body: JSON.stringify({
                     model: model,
