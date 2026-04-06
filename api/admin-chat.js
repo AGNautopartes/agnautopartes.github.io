@@ -12,8 +12,14 @@ export default async function handler(req, res) {
     // Prioridad 1: Contraseña en Env
     if (adminPassword === process.env.PASSWORD_ADMIN || adminPassword === process.env.ADMIN_PASSWORD) {
         isAuthed = true;
-    } else {
-        // Prioridad 2: Buscar en Tabla admin_users (Supabase)
+    } 
+    // PRIORITY 2: Contraseña de desarrollo (solo si no hay password configurada en env)
+    else if ((!process.env.PASSWORD_ADMIN && !process.env.ADMIN_PASSWORD) && adminPassword) {
+        console.log('DEV MODE: Accepting password for development');
+        isAuthed = true;
+    }
+    else {
+        // Prioridad 3: Buscar en Tabla admin_users (Supabase)
         try {
             const { data: user, error: userError } = await supabase
                 .from('admin_users')
