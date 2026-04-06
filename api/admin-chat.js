@@ -100,9 +100,11 @@ export default async function handler(req, res) {
 Eres Aria. Ayudas con ordenes de AGN Autopartes.
 
 Si el usuario quiere:
-- CREAR orden: Di exactamente: [CREATE_ORDER:cliente|vehiculo|parte]
+- CREAR orden: Di exactamente: [CREATE_ORDER:cliente|marca|modelo|año|parte]
 - ACTUALIZAR estado: Di exactamente: [UPDATE_STATUS:id|estado]
 - ACTUALIZAR costo: Di exactamente: [UPDATE_COST:id|costo]
+- ACTUALIZAR vehiculo: Di exactamente: [UPDATE_VEHICLE:id|marca|modelo|año]
+- EDITAR cliente: Di exactamente: [UPDATE_CUSTOMER:id|tipo_dato|valor]
 - AÑADIR parte: Di exactamente: [ADD_PART:id|parte|costo]
 - AÑADIR nota: Di exactamente: [ADD_NOTE:id|nota]
 - ELIMINAR orden: Di exactamente: [DELETE_ORDER:id]
@@ -222,8 +224,10 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
         // Si se ejecuto una accion, usar su resultado
         if (actionResult) {
             displayText = actionResult.message || "Accion ejecutada exitosamente";
+            const needsRefresh = actionResult.refreshRequired === true;
             return res.status(200).json({ 
                 response: displayText,
+                refreshOrders: needsRefresh,
                 _debug: { 
                     model, 
                     useOpenRouter, 
@@ -270,23 +274,26 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
 async function executeCreateOrder(actionData, req) {
     const parts = actionData.split('|').map(s => s.trim());
     const customerName = parts[0];
-    const vehicleModel = parts[1];
-    const partName = parts[2];
+    const vehicleBrand = parts[1] || '';
+    const vehicleModel = parts[2] || '';
+    const vehicleYear = parts[3] || '';
+    const partName = parts[4] || '';
     
     console.log('=== EJECUTANDO CREATE_ORDER ===');
     console.log('customerName:', customerName);
+    console.log('vehicleBrand:', vehicleBrand);
     console.log('vehicleModel:', vehicleModel);
+    console.log('vehicleYear:', vehicleYear);
     console.log('partName:', partName);
     
-    if (!customerName || !vehicleModel || !partName) {
+    if (!customerName || !partName) {
         return { 
-            message: "Datos incompletos para crear orden. Necesito: cliente|vehiculo|parte",
+            message: "Datos incompletos para crear orden. Necesito: cliente|marca|modelo|año|parte",
             error: true 
         };
     }
 
     try {
-        // Obtener el password del header para pasar a la llamada interna
         const adminPassword = req.headers['x-admin-password'];
         
         const createOrderRes = await fetch(process.env.VERCEL_URL 
@@ -299,7 +306,9 @@ async function executeCreateOrder(actionData, req) {
             },
             body: JSON.stringify({
                 cliente: customerName,
-                modelo: vehicleModel,
+                marca: vehicleBrand,
+                modelo: vehicleModel || vehicleBrand + ' ' + vehicleModel,
+                ano: vehicleYear,
                 pieza: partName
             })
         });
@@ -316,9 +325,10 @@ async function executeCreateOrder(actionData, req) {
 
         console.log('CREATE_ORDER SUCCESS:', result);
         return { 
-            message: `Orden creada exitosamente para ${customerName}. Vehiculo: ${vehicleModel}, Parte: ${partName}. ID: ${result.orderId}`,
+            message: `Orden creada exitosamente para ${customerName}. Vehiculo: ${vehicleBrand} ${vehicleModel} ${vehicleYear}. Parte: ${partName}. ID: ${result.orderId}`,
             orderId: result.orderId,
-            customerId: result.customerId
+            customerId: result.customerId,
+            refreshRequired: true
         };
     } catch (error) {
         console.error('Error ejecutando CREATE_ORDER:', error);

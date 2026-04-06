@@ -2314,6 +2314,12 @@
                 const data = await res.json();
                 thinking.remove();
 
+                // Auto-refresh orders if needed
+                if (data.refreshOrders === true) {
+                    console.log('Orden creada, actualizando lista...');
+                    await loadOrders();
+                }
+
                 let responseText = data.response;
                 const actionRegex = /\[ACTION:.*?\]/g;
                 let actions = [];
