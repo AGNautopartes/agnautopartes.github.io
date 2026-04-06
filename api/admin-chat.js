@@ -160,9 +160,14 @@ FORMATOS DE ACCIÓN (SIEMPRE AL FINAL):
                     'X-OpenRouter-Title': 'AGN Autopartes ERP'
                 },
                 body: JSON.stringify({
-                    model: model,
+                    model: model.trim(),
                     messages: messagesForAPI
                 })
+            });
+
+            console.log('OPENROUTER REQUEST:', {
+                model: model.trim(),
+                messagesCount: messagesForAPI.length
             });
 
             if (!orRes.ok) {
