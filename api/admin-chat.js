@@ -215,9 +215,11 @@ NUNCA digas nada mas que el formato [ACCION:...] o una pregunta normal.
             console.log('Action:', actionType);
             console.log('Data:', actionData);
             
-            // Ejecutar la accion si es CREATE_ORDER
+            // Ejecutar la accion
             if (actionType === 'CREATE_ORDER') {
                 actionResult = await executeCreateOrder(actionData, req);
+            } else if (actionType === 'UPDATE_VEHICLE') {
+                actionResult = await executeUpdateVehicle(actionData, req);
             }
         }
 
@@ -348,6 +350,85 @@ async function executeCreateOrder(actionData, req) {
         };
     } catch (error) {
         console.error('Error ejecutando CREATE_ORDER:', error);
+        return { 
+            message: `Error: ${error.message}`,
+            error: true 
+        };
+    }
+}
+
+// Funcion para ejecutar UPDATE_VEHICLE
+async function executeUpdateVehicle(actionData, req) {
+    const parts = actionData.split('|').map(s => s.trim());
+    const orderId = parts[0];
+    const vehicleBrand = parts[1] || '';
+    const vehicleModel = parts[2] || '';
+    const vehicleYear = parts[3] || '';
+    
+    console.log('=== EJECUTANDO UPDATE_VEHICLE ===');
+    console.log('orderId:', orderId);
+    console.log('vehicleBrand:', vehicleBrand);
+    console.log('vehicleModel:', vehicleModel);
+    console.log('vehicleYear:', vehicleYear);
+    
+    if (!orderId) {
+        return { 
+            message: "Datos incompletos. Formato: id|marca|modelo|año",
+            error: true 
+        };
+    }
+
+    try {
+        const adminPassword = req.headers['x-admin-password'];
+        const apiUrl = process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
+            : 'http://localhost:3000/api/update-order-full';
+        
+        console.log('Calling update-order-full API:', apiUrl);
+        
+        const updateRes = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': adminPassword
+            },
+            body: JSON.stringify({
+                orderId: orderId,
+                vehicle_brand: vehicleBrand,
+                vehicle_model: vehicleModel || vehicleBrand,
+                vehicle_year: vehicleYear
+            })
+        });
+
+        if (!updateRes.ok) {
+            const errorResult = await updateRes.json().catch(() => ({ message: 'Error sin respuesta' }));
+            console.error('UPDATE_VEHICLE ERROR:', errorResult);
+            return { 
+                message: `Error: ${errorResult.message || 'Error desconocido'}`,
+                error: true 
+            };
+        }
+
+        const resultText = await updateRes.text();
+        console.log('update-order-full raw response:', resultText);
+        
+        if (!resultText || resultText.trim() === '') {
+            return { 
+                message: 'Error: Respuesta vacía del servidor',
+                error: true 
+            };
+        }
+        
+        const result = JSON.parse(resultText);
+        console.log('update-order-full result:', result);
+
+        return { 
+            message: `Vehiculo actualizado: ${vehicleBrand} ${vehicleModel} ${vehicleYear}. ID: ${orderId}`,
+            orderId: orderId,
+            refreshRequired: true
+        };
+    } catch (error) {
+        console.error('Error ejecutando UPDATE_VEHICLE:', error);
         return { 
             message: `Error: ${error.message}`,
             error: true 
