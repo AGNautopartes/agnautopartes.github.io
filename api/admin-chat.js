@@ -99,26 +99,48 @@ export default async function handler(req, res) {
     const SYSTEM_PROMPT = `
 You are Aria, AGN Autopartes ERP assistant.
 
-YOUR JOB: Understand what the user wants and respond in PLAIN TEXT only.
+CRITICAL: You MUST use action tags at the END of every response when user asks for action.
 
-IMPORTANT:
-- Do NOT use JSON or code blocks
-- Do NOT use [ACTION:] format
-- Just respond in simple sentences
-- Ask for clarification if needed
-- If you understand what the user wants, say "CONFIRM: action you want to do"
+ACTION TAGS - USE THESE EXACTLY:
 
-EXAMPLES:
-User: "create order for Juan"
-You: "CONFIRM: Create order for Juan with vehicle model?"
+To CREATE order:
+[CREATE|customer|vehicle|part]
+Example: [CREATE|Juan Perez|Toyota Hilux|Filtro Aire]
 
-User: "update price to 500"
-You: "CONFIRM: Update price of which order to 500?"
+To UPDATE status:
+[STATUS|order_id|status]
+Example: [STATUS|ORD-52|Comprado]
 
-User: "add brake to order 5"
-You: "CONFIRM: Add brake part to order #5?"
+To UPDATE price:
+[PRICE|order_id|price]
+Example: [PRICE|ORD-52|1400]
 
-If user asks question: Just answer directly in Spanish.
+To UPDATE cost:
+[COST|order_id|cost]
+Example: [COST|ORD-52|500]
+
+To ADD part:
+[ADD|order_id|part|cost|qty]
+Example: [ADD|ORD-52|Parachoique|500|1]
+
+To DELETE order:
+[DEL|order_id]
+Example: [DEL|ORD-52]
+
+To ADD note:
+[NOTE|order_id|text]
+Example: [NOTE|ORD-52|Cliente llamó]
+
+VALID STATUS: Solicitado, Cotizado, Comprado, Trânsito 1, Tránsito 2, En Aduana, Entregado, Cancelado
+
+RULES:
+- ALWAYS use [TAG] at the END when user wants action
+- WITHOUT [TAG] nothing will happen
+- If you need more info, ask but still give [TAG] with what you have
+- Use ORD- prefix for order numbers
+`.trim();
+
+If you understand and have all info, give the action at the end.
 `.trim();
 
     try {
@@ -210,9 +232,42 @@ If user asks question: Just answer directly in Spanish.
         let action = null;
         let displayText = responseText;
 
+        console.log('=== PARSING RESPONSE ===');
+        console.log('Response:', responseText.substring(0, 200));
+
+        // Parse new simple format: [CREATE|customer|vehicle|part]
+        const simpleActionMatch = responseText.match(/\[([A-Z]+)\|([^\]]+)\]/);
+        console.log('Simple format match:', simpleActionMatch);
+        
+        if (simpleActionMatch) {
+            const actionType = simpleActionMatch[1];
+            const actionData = simpleActionMatch[2].split('|');
+            
+            if (actionType === 'CREATE') {
+                action = { type: 'CREATE_ORDER', data: { customer_name: actionData[0], vehicle_model: actionData[1], part_name: actionData[2] }};
+            } else if (actionType === 'STATUS') {
+                action = { type: 'UPDATE_STATUS', data: { order_id: actionData[0], new_status: actionData[1] }};
+            } else if (actionType === 'PRICE') {
+                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { precio_venta: parseFloat(actionData[1]) }}};
+            } else if (actionType === 'COST') {
+                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { costo_fob: parseFloat(actionData[1]) }}};
+            } else if (actionType === 'ADD') {
+                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { items_json: [{ part_name: actionData[1], cost_fob: parseFloat(actionData[2]), quantity: parseInt(actionData[3]) || 1 }]}}};
+            } else if (actionType === 'DEL') {
+                action = { type: 'DELETE_ORDER', data: { order_id: actionData[0] }};
+            } else if (actionType === 'NOTE') {
+                action = { type: 'ADD_NOTE', data: { order_id: actionData[0], note: actionData[1] }};
+            }
+            
+            if (action) {
+                displayText = responseText.replace(simpleActionMatch[0], '').trim();
+            }
+        }
+
+        // Original [ACTION:{...}] format (keep for compatibility)
         const startToken = '[ACTION:';
         const startIdx = responseText.indexOf(startToken);
-        if (startIdx !== -1) {
+        if (startIdx !== -1 && !action) {
             const endIdx = responseText.lastIndexOf(']');
             if (endIdx > startIdx) {
                 const rawContent = responseText.substring(startIdx + startToken.length, endIdx).trim();
