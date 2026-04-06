@@ -97,47 +97,18 @@ export default async function handler(req, res) {
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const SYSTEM_PROMPT = `
-You are Aria, AGN Autopartes ERP assistant.
+You are Aria, assistant for AGN Autopartes ERP.
 
-CRITICAL: You MUST use action tags at the END of every response when user asks for action.
+You help manage orders. When user asks for action, respond simply.
 
-ACTION TAGS - USE THESE EXACTLY:
+If user wants to CREATE order: ask for customer name, vehicle model, part name.
+If user wants to UPDATE status: ask for order ID and new status.
+If user wants to UPDATE price/cost: ask for order ID and new price/cost.
+If user wants to ADD part: ask for order ID, part name, cost.
+If user wants to DELETE order: ask for order ID to confirm.
+If user wants to ADD note: ask for order ID and note text.
 
-To CREATE order:
-[CREATE|customer|vehicle|part]
-Example: [CREATE|Juan Perez|Toyota Hilux|Filtro Aire]
-
-To UPDATE status:
-[STATUS|order_id|status]
-Example: [STATUS|ORD-52|Comprado]
-
-To UPDATE price:
-[PRICE|order_id|price]
-Example: [PRICE|ORD-52|1400]
-
-To UPDATE cost:
-[COST|order_id|cost]
-Example: [COST|ORD-52|500]
-
-To ADD part:
-[ADD|order_id|part|cost|qty]
-Example: [ADD|ORD-52|Parachoique|500|1]
-
-To DELETE order:
-[DEL|order_id]
-Example: [DEL|ORD-52]
-
-To ADD note:
-[NOTE|order_id|text]
-Example: [NOTE|ORD-52|Cliente llamó]
-
-VALID STATUS: Solicitado, Cotizado, Comprado, Trânsito 1, Tránsito 2, En Aduana, Entregado, Cancelado
-
-RULES:
-- ALWAYS use [TAG] at the END when user wants action
-- WITHOUT [TAG] nothing will happen
-- If you need more info, ask but still give [TAG] with what you have
-- Use ORD- prefix for order numbers
+Just respond in Spanish, be helpful.
 `.trim();
 
 If you understand and have all info, give the action at the end.
@@ -228,65 +199,14 @@ If you understand and have all info, give the action at the end.
             responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
 
-        // === PARSE ACCIONES ===
-        let action = null;
+        // Just return the response as text - no action parsing
         let displayText = responseText;
 
-        console.log('=== PARSING RESPONSE ===');
-        console.log('Response:', responseText.substring(0, 200));
-
-        // Parse new simple format: [CREATE|customer|vehicle|part]
-        const simpleActionMatch = responseText.match(/\[([A-Z]+)\|([^\]]+)\]/);
-        console.log('Simple format match:', simpleActionMatch);
-        
-        if (simpleActionMatch) {
-            const actionType = simpleActionMatch[1];
-            const actionData = simpleActionMatch[2].split('|');
-            
-            if (actionType === 'CREATE') {
-                action = { type: 'CREATE_ORDER', data: { customer_name: actionData[0], vehicle_model: actionData[1], part_name: actionData[2] }};
-            } else if (actionType === 'STATUS') {
-                action = { type: 'UPDATE_STATUS', data: { order_id: actionData[0], new_status: actionData[1] }};
-            } else if (actionType === 'PRICE') {
-                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { precio_venta: parseFloat(actionData[1]) }}};
-            } else if (actionType === 'COST') {
-                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { costo_fob: parseFloat(actionData[1]) }}};
-            } else if (actionType === 'ADD') {
-                action = { type: 'UPDATE_FIELDS', data: { order_id: actionData[0], fields: { items_json: [{ part_name: actionData[1], cost_fob: parseFloat(actionData[2]), quantity: parseInt(actionData[3]) || 1 }]}}};
-            } else if (actionType === 'DEL') {
-                action = { type: 'DELETE_ORDER', data: { order_id: actionData[0] }};
-            } else if (actionType === 'NOTE') {
-                action = { type: 'ADD_NOTE', data: { order_id: actionData[0], note: actionData[1] }};
-            }
-            
-            if (action) {
-                displayText = responseText.replace(simpleActionMatch[0], '').trim();
-            }
-        }
-
-        // Original [ACTION:{...}] format (keep for compatibility)
-        const startToken = '[ACTION:';
-        const startIdx = responseText.indexOf(startToken);
-        if (startIdx !== -1 && !action) {
-            const endIdx = responseText.lastIndexOf(']');
-            if (endIdx > startIdx) {
-                const rawContent = responseText.substring(startIdx + startToken.length, endIdx).trim();
-                try {
-                    action = JSON.parse(rawContent);
-                    displayText = (responseText.substring(0, startIdx) + responseText.substring(endIdx + 1)).trim();
-                } catch (e) {
-                    console.error('Error parseando bloque de acción:', e);
-                }
-            }
-        }
-
-        if (action && !displayText) {
-            displayText = "De acuerdo, procedo con esa acción.";
-        } else if (!displayText && !action) {
+        if (!displayText) {
             displayText = "Lo siento, no pude procesar esa solicitud.";
         }
 
-        return res.status(200).json({ response: displayText, action: action, _debug: { model, useOpenRouter, useGeminiNative, ordersCount: existingOrders?.length || 0 } });
+        return res.status(200).json({ response: displayText, _debug: { model, useOpenRouter, useGeminiNative, ordersCount: existingOrders?.length || 0 } });
 
     } catch (error) {
         console.error('ADMIN-CHAT CRITICAL ERROR:', error);
