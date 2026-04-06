@@ -2314,10 +2314,10 @@
                 const data = await res.json();
                 thinking.remove();
 
-                // Auto-refresh orders if needed
+                // Auto-refresh orders if needed (using existing loadData function)
                 if (data.refreshOrders === true) {
                     console.log('Orden creada, actualizando lista...');
-                    await loadOrders();
+                    await loadData();
                 }
 
                 let responseText = data.response;
