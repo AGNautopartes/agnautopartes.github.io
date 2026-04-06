@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     // 2. Extraer parámetros
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
-    const model = req.body.model || 'google/gemini-2.0-flash-001';
+    const model = req.body.model || 'openrouter/free';
 
     const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
