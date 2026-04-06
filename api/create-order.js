@@ -115,13 +115,14 @@ export default async function handler(req, res) {
                 customer_id: customer.id,
                 part_name: safeString(basePartName, 'Orden de Repuestos'),
                 vin: safeString(vin, ''),
+                vehicle_brand: safeString(vehicle_brand, 'N/A'),
                 vehicle_model: safeString(vehicle_model, 'N/A'),
                 vehicle_year: safeString(vehicle_year, 'N/A'),
                 status: safeString(status, 'Solicitado'),
                 tracking_number: safeString(tracking_number, ''),
                 estimated_delivery_client: estimated_delivery_client || null,
                 notes: safeString(notes, ''),
-                items_json: partsList // Sincronización crucial para el Panel de Admin
+                items_json: partsList
             }])
             .select().single();
 
@@ -175,8 +176,8 @@ export default async function handler(req, res) {
         }]);
 
         return res.status(201).json({
-            message: `Orden creada para ${customer.full_name} con ${partsList.length} ítems`,
-            orderId: order.id,
+            message: `Orden creada para ${customer.full_name}`,
+            orderId: order.readable_id || order.id,
             customerId: customer.id
         });
 
