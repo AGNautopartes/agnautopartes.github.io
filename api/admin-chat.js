@@ -109,9 +109,11 @@ Si el usuario dice:
 
 Si el usuario Solo dice la marca o solo el modelo, PREGUNTA cual falta.
 
+Estados validos para ordenes: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado
+
 Formatos exactos:
 - CREAR orden: [CREATE_ORDER:cliente|marca|modelo|año|parte]
-- ACTUALIZAR estado: [UPDATE_STATUS:id|estado]
+- ACTUALIZAR estado: [UPDATE_STATUS:id|estado] (usa solo estados de la lista)
 - ACTUALIZAR costo: [UPDATE_COST:id|costo]
 - ACTUALIZAR vehiculo: [UPDATE_VEHICLE:id|marca|modelo|año]
 - EDITAR cliente: [UPDATE_CUSTOMER:id|tipo_dato|valor]
@@ -120,7 +122,7 @@ Formatos exactos:
 - ELIMINAR orden: [DELETE_ORDER:id]
 
 Si falta marca O modelo, pregunta en español.
-NUNCA inventes o asumas la marca si no te la dan.
+NUNCA uses estados que no esten en la lista de estados validos.
 `.trim();
 
     try {
