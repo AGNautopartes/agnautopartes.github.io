@@ -380,26 +380,38 @@ async function executeCreateOrder(actionData, req) {
 // Funcion para ejecutar UPDATE_VEHICLE
 async function executeUpdateVehicle(actionData, req) {
     const parts = actionData.split('|').map(s => s.trim());
-    const orderId = parts[0];
+    const orderIdInput = parts[0];
     const vehicleBrand = parts[1] || '';
     const vehicleModel = parts[2] || '';
     const vehicleYear = parts[3] || '';
     
     console.log('=== EJECUTANDO UPDATE_VEHICLE ===');
-    console.log('orderId:', orderId);
+    console.log('orderIdInput:', orderIdInput);
     console.log('vehicleBrand:', vehicleBrand);
     console.log('vehicleModel:', vehicleModel);
     console.log('vehicleYear:', vehicleYear);
     
-    if (!orderId) {
-        return { 
-            message: "Datos incompletos. Formato: id|marca|modelo|año",
-            error: true 
-        };
+    if (!orderIdInput) {
+        return { message: "Datos incompletos. Formato: id|marca|modelo|año", error: true };
     }
 
     try {
         const adminPassword = req.headers['x-admin-password'];
+        
+        // Get order UUID from readable_id
+        const getRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const orders = await getRes.json();
+        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
+        
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+        
         const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
             : 'http://localhost:3000/api/update-order-full';
@@ -413,7 +425,7 @@ async function executeUpdateVehicle(actionData, req) {
                 'x-admin-password': adminPassword
             },
             body: JSON.stringify({
-                orderId: orderId,
+                orderId: order.id,
                 vehicle_brand: vehicleBrand,
                 vehicle_model: vehicleModel || vehicleBrand,
                 vehicle_year: vehicleYear
@@ -443,8 +455,8 @@ async function executeUpdateVehicle(actionData, req) {
         console.log('update-order-full result:', result);
 
         return { 
-            message: `Vehiculo actualizado: ${vehicleBrand} ${vehicleModel} ${vehicleYear}. ID: ${orderId}`,
-            orderId: orderId,
+            message: `Vehiculo actualizado: ${vehicleBrand} ${vehicleModel} ${vehicleYear}. ID: ${orderIdInput}`,
+            orderId: orderIdInput,
             refreshRequired: true
         };
     } catch (error) {
@@ -459,19 +471,34 @@ async function executeUpdateVehicle(actionData, req) {
 // Funcion para ejecutar UPDATE_STATUS
 async function executeUpdateStatus(actionData, req) {
     const parts = actionData.split('|').map(s => s.trim());
-    const orderId = parts[0];
+    const orderIdInput = parts[0];
     const newStatus = parts[1] || '';
     
     console.log('=== EJECUTANDO UPDATE_STATUS ===');
-    console.log('orderId:', orderId);
+    console.log('orderIdInput:', orderIdInput);
     console.log('newStatus:', newStatus);
     
-    if (!orderId || !newStatus) {
+    if (!orderIdInput || !newStatus) {
         return { message: "Datos incompletos. Formato: id|estado", error: true };
     }
 
     try {
         const adminPassword = req.headers['x-admin-password'];
+        
+        // Get order UUID from readable_id
+        const getRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const orders = await getRes.json();
+        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
+        
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+        
         const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
             : 'http://localhost:3000/api/update-order-full';
@@ -479,7 +506,7 @@ async function executeUpdateStatus(actionData, req) {
         const updateRes = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-            body: JSON.stringify({ orderId: orderId, status: newStatus })
+            body: JSON.stringify({ orderId: order.id, status: newStatus })
         });
 
         if (!updateRes.ok) {
@@ -487,7 +514,7 @@ async function executeUpdateStatus(actionData, req) {
             return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
         }
 
-        return { message: `Estado actualizado a: ${newStatus}. ID: ${orderId}`, orderId: orderId, refreshRequired: true };
+        return { message: `Estado actualizado a ${newStatus} en ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
     } catch (error) {
         console.error('Error UPDATE_STATUS:', error);
         return { message: `Error: ${error.message}`, error: true };
@@ -497,19 +524,34 @@ async function executeUpdateStatus(actionData, req) {
 // Funcion para ejecutar UPDATE_COST
 async function executeUpdateCost(actionData, req) {
     const parts = actionData.split('|').map(s => s.trim());
-    const orderId = parts[0];
+    const orderIdInput = parts[0];
     const newCost = parts[1] || '';
     
     console.log('=== EJECUTANDO UPDATE_COST ===');
-    console.log('orderId:', orderId);
+    console.log('orderIdInput:', orderIdInput);
     console.log('newCost:', newCost);
     
-    if (!orderId || !newCost) {
+    if (!orderIdInput || !newCost) {
         return { message: "Datos incompletos. Formato: id|costo", error: true };
     }
 
     try {
         const adminPassword = req.headers['x-admin-password'];
+        
+        // Get order UUID from readable_id
+        const getRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const orders = await getRes.json();
+        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
+        
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+        
         const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
             : 'http://localhost:3000/api/update-order-full';
@@ -517,7 +559,7 @@ async function executeUpdateCost(actionData, req) {
         const updateRes = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-            body: JSON.stringify({ orderId: orderId, costo_fob: newCost })
+            body: JSON.stringify({ orderId: order.id, costo_fob: newCost })
         });
 
         if (!updateRes.ok) {
@@ -525,7 +567,7 @@ async function executeUpdateCost(actionData, req) {
             return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
         }
 
-        return { message: `Costo actualizado a: ${newCost}. ID: ${orderId}`, orderId: orderId, refreshRequired: true };
+        return { message: `Costo actualizado a ${newCost} en ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
     } catch (error) {
         console.error('Error UPDATE_COST:', error);
         return { message: `Error: ${error.message}`, error: true };
@@ -576,7 +618,7 @@ async function executeAddPart(actionData, req) {
         const updateRes = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-            body: JSON.stringify({ orderId: orderId, items_json: updatedItems })
+            body: JSON.stringify({ orderId: order.id, items_json: updatedItems })
         });
 
         if (!updateRes.ok) {
@@ -594,19 +636,36 @@ async function executeAddPart(actionData, req) {
 // Funcion para ejecutar ADD_NOTE
 async function executeAddNote(actionData, req) {
     const parts = actionData.split('|').map(s => s.trim());
-    const orderId = parts[0];
+    const orderIdInput = parts[0];
     const noteContent = parts.slice(1).join('|');
     
     console.log('=== EJECUTANDO ADD_NOTE ===');
-    console.log('orderId:', orderId);
+    console.log('orderIdInput:', orderIdInput);
     console.log('noteContent:', noteContent);
     
-    if (!orderId || !noteContent) {
+    if (!orderIdInput || !noteContent) {
         return { message: "Datos incompletos. Formato: id|nota", error: true };
     }
 
     try {
         const adminPassword = req.headers['x-admin-password'];
+        
+        // Get order UUID from readable_id (e.g., "ORD-73" -> UUID)
+        const getRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const orders = await getRes.json();
+        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
+        
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+        
+        const orderUUID = order.id;
+        
         const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/add-note` 
             : 'http://localhost:3000/api/add-note';
@@ -614,7 +673,7 @@ async function executeAddNote(actionData, req) {
         const noteRes = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-            body: JSON.stringify({ orderId: orderId, content: noteContent })
+            body: JSON.stringify({ orderId: orderUUID, content: noteContent })
         });
 
         if (!noteRes.ok) {
@@ -622,7 +681,7 @@ async function executeAddNote(actionData, req) {
             return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
         }
 
-        return { message: `Nota agregada a orden ${orderId}`, orderId: orderId, refreshRequired: true };
+        return { message: `Nota agregada a ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
     } catch (error) {
         console.error('Error ADD_NOTE:', error);
         return { message: `Error: ${error.message}`, error: true };
