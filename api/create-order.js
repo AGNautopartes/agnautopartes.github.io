@@ -26,6 +26,8 @@ export default async function handler(req, res) {
     const customer_name = body.customer_name || body.cliente || body.name || body.nombre || body.client_name || body.customerName || null;
     const customer_phone = body.customer_phone || body.telefono || body.phone || 'N/A';
     const customer_email = body.customer_email || body.email || body.correo || '';
+const customer_ruc = body.customer_ruc || body.ruc || body.RUC || '';
+const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || '';
     
     // Vehículo - cualquier nombre de campo posible
     const vehicle_model = body.vehicle_model || body.modelo || body.carro || body.model || null;
@@ -63,7 +65,7 @@ export default async function handler(req, res) {
 
     try {
         // 1. Buscar o crear cliente
-        let query = supabase.from('customers').select('id, full_name, phone');
+        let query = supabase.from('customers').select('id, full_name, phone, ruc, cedula');
         if (customer_phone && customer_phone !== 'N/A' && customer_phone !== '') {
             query = query.eq('phone', customer_phone);
         } else {
@@ -79,6 +81,8 @@ export default async function handler(req, res) {
                     full_name: safeName(customer_name),
                     phone: safeString(customer_phone, 'N/A'),
                     email: safeString(customer_email, ''),
+                    ruc: safeString(customer_ruc, ''),
+                    cedula: safeString(customer_cedula, ''),
                     source: 'manual'
                 }])
                 .select().single();

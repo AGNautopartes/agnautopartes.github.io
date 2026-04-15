@@ -1835,6 +1835,16 @@
                     </div>
 
                     <div class="detail-section">
+                        <h4>👤 Cliente</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="edit-cust-name" value="${o.customers?.full_name || ''}"></div></div>
+                            <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="edit-cust-phone" value="${o.customers?.phone || ''}"></div></div>
+                            <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="edit-cust-ruc" value="${o.customers?.ruc || ''}"></div></div>
+                            <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="edit-cust-cedula" value="${o.customers?.cedula || ''}"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h4>⚙️ Repuestos</h4>
                             <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
@@ -1963,13 +1973,15 @@
                         <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
                     </div>
 
-                    <div class="detail-section">
-                        <h4>👤 Cliente</h4>
-                        <div class="info-grid">
-                            <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
-                            <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
-                        </div>
-                    </div>
+<div class="detail-section">
+                         <h4>👤 Cliente</h4>
+                         <div class="info-grid">
+                             <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
+                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
+                             <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="new-cust-ruc" placeholder="RUC (opcional)"></div></div>
+                             <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="new-cust-cedula" placeholder="Cédula (opcional)"></div></div>
+                         </div>
+                     </div>
 
                     <div class="detail-section">
                         <h4>🚗 Vehículo</h4>
@@ -2013,6 +2025,8 @@
             const data = {
                 customer_name: name,
                 customer_phone: document.getElementById('new-cust-phone').value.trim(),
+                customer_ruc: document.getElementById('new-cust-ruc').value.trim(),
+                customer_cedula: document.getElementById('new-cust-cedula').value.trim(),
                 vehicle_brand: document.getElementById('new-brand').value.trim(),
                 vehicle_model: model,
                 vehicle_year: document.getElementById('new-year').value.trim(),
@@ -2168,10 +2182,10 @@
 
         async function updateDetailStatus(orderId) {
             const newStatus = document.getElementById('det-status').value;
-            const res = await fetch(`${API}/api/update-order-status`, {
+            const res = await fetch(`${API}/api/update-order-full`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                body: JSON.stringify({ orderId, newStatus })
+                body: JSON.stringify({ orderId, status: newStatus })
             });
             if (res.ok) {
                 const o = allOrders.find(o => o.id === orderId);
