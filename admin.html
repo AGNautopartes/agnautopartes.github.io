@@ -688,6 +688,13 @@
             font-size: 0.6rem;
             color: var(--text2);
             margin-top: 0.2rem;
+            font-family: monospace;
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .note-input {
@@ -2220,12 +2227,33 @@
             if (res.ok) {
                 const notes = await res.json();
                 document.getElementById('det-notes').innerHTML = notes.length
-                    ? notes.map(n => `<div class="note-item">
-                        <div class="note-author">${n.author}</div>
-                        <div class="note-text">${n.content}</div>
-                        <div class="note-date">${new Date(n.created_at).toLocaleString()}</div>
-                      </div>`).join('')
+                    ? notes.map(n => {
+                        const d = new Date(n.created_at);
+                        const fecha = d.toISOString().slice(0,10).replace(/-/g,'');
+                        const hora = d.toTimeString().slice(0,5).replace(':','');
+                        return `<div class="note-item">
+                            <div class="note-header" style="display:flex; justify-content:space-between; align-items:center">
+                                <div class="note-author">${n.author}</div>
+                                <button class="btn-action btn-sm btn-danger" style="padding:2px 6px; font-size:0.65rem" onclick="deleteNote('${n.id}','${orderId}')">×</button>
+                            </div>
+                            <div class="note-text">${n.content}</div>
+                            <div class="note-date">${fecha}-${hora}</div>
+                          </div>`;
+                    }).join('')
                     : '<div style="color:var(--text2);font-size:0.78rem">No hay notas aún.</div>';
+            }
+        }
+
+        async function deleteNote(noteId, orderId) {
+            if (!confirm('¿Eliminar esta nota?')) return;
+            const res = await fetch(`${API}/api/delete-note`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+                body: JSON.stringify({ noteId })
+            });
+            if (res.ok) {
+                showToast('📝 Nota eliminada', 'success');
+                loadNotes(orderId);
             }
         }
 
