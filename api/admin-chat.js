@@ -104,15 +104,14 @@ IMPORTANTE: Cuando el usuario mencione marca Y modelo del vehiculo, debes SEPARA
 Si el usuario dice:
 - "Ford Explorer" → marca=Ford, modelo=Explorer
 - "Toyota Rav4" → marca=Toyota, modelo=Rav4
-- "Kia Sportage" → marca=Kia, modelo=Sportage
-- "Mazda CX3" → marca=Mazda, modelo=CX3
-
-Si el usuario Solo dice la marca o solo el modelo, PREGUNTA cual falta.
+- "Toyota 4Runner" → marca=Toyota, modelo=4Runner
+- "Toyota" solo → marca=Toyota, modelo=N/A (preguntar)
+- "Runner" solo → marca=N/A, modelo=Runner (preguntar)
 
 Estados validos para ordenes: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado
 
 Formatos exactos:
-- CREAR orden: [CREATE_ORDER:cliente|marca|modelo|año|vin|ruc|cedula|parte] (vin, ruc, cedula son opcionales, usar cadena vacía si no se conoce)
+- CREAR orden: [CREATE_ORDER:cliente|marca|modelo|año|parte]
 - ACTUALIZAR estado: [UPDATE_STATUS:id|estado] (usa solo estados de la lista)
 - ACTUALIZAR costo: [UPDATE_COST:id|costo]
 - ACTUALIZAR vehiculo: [UPDATE_VEHICLE:id|marca|modelo|año]
@@ -121,7 +120,7 @@ Formatos exactos:
 - AÑADIR nota: [ADD_NOTE:id|nota]
 - ELIMINAR orden: [DELETE_ORDER:id]
 
-Si falta marca O modelo, pregunta en español.
+Si el usuario solo da la marca (ej: "Toyota") o solo el modelo (ej: "Rav4"), PREGUNTA por el dato que falta.
 NUNCA uses estados que no esten en la lista de estados validos.
 `.trim();
 
@@ -301,10 +300,7 @@ async function executeCreateOrder(actionData, req) {
     const vehicleBrand = parts[1] || '';
     const vehicleModel = parts[2] || '';
     const vehicleYear = parts[3] || '';
-    const vin = parts[4] || '';
-    const ruc = parts[5] || '';
-    const cedula = parts[6] || '';
-    const partName = parts[7] || '';
+    const partName = parts[4] || '';
     
     console.log('=== EJECUTANDO CREATE_ORDER ===');
     console.log('Input data:', actionData);
@@ -312,14 +308,11 @@ async function executeCreateOrder(actionData, req) {
     console.log('vehicleBrand:', vehicleBrand);
     console.log('vehicleModel:', vehicleModel);
     console.log('vehicleYear:', vehicleYear);
-    console.log('vin:', vin);
-    console.log('ruc:', ruc);
-    console.log('cedula:', cedula);
     console.log('partName:', partName);
     
     if (!customerName || !partName) {
         return { 
-            message: "Datos incompletos. Formato: cliente|marca|modelo|año|vin|ruc|cedula|parte (los ultimos 3 son opcionales)",
+            message: "Datos incompletos. Necesito: cliente|marca|modelo|año|parte",
             error: true 
         };
     }
@@ -343,9 +336,6 @@ async function executeCreateOrder(actionData, req) {
                 vehicle_brand: vehicleBrand,
                 vehicle_model: vehicleModel || vehicleBrand,
                 vehicle_year: vehicleYear,
-                vin: vin,
-                customer_ruc: ruc,
-                customer_cedula: cedula,
                 part_name: partName
             })
         });
