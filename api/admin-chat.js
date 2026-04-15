@@ -701,12 +701,12 @@ async function executeAddNote(actionData, req) {
 
 // Funcion para ejecutar DELETE_ORDER
 async function executeDeleteOrder(actionData, req) {
-    const orderId = actionData.trim();
+    const orderIdInput = actionData.trim().replace(/^#/, ''); // Quitar # si lo tiene
     
     console.log('=== EJECUTANDO DELETE_ORDER ===');
-    console.log('orderId:', orderId);
+    console.log('orderIdInput:', orderIdInput);
     
-    if (!orderId) {
+    if (!orderIdInput) {
         return { message: "Datos incompletos. Formato: id", error: true };
     }
 
@@ -720,12 +720,28 @@ async function executeDeleteOrder(actionData, req) {
             headers: { 'x-admin-password': adminPassword }
         });
         
+        if (!getRes.ok) {
+            const err = await getRes.json().catch(() => ({}));
+            console.error('GET_ORDERS_ERROR:', err);
+            return { message: "Error al obtener órdenes: " + (err.message || 'Error desconocido'), error: true };
+        }
+        
         const orders = await getRes.json();
-        const order = orders.find(o => o.id === orderId || o.readable_id === orderId);
+        
+        // Buscar por readable_id, id, o número parcial
+        const order = orders.find(o => 
+            o.readable_id === orderIdInput || 
+            o.readable_id?.toLowerCase() === orderIdInput.toLowerCase() ||
+            o.readable_id === 'ORD-' + orderIdInput ||
+            o.id === orderIdInput
+        );
         
         if (!order) {
-            return { message: "Orden no encontrada", error: true };
+            console.log('Orders disponibles:', orders.map(o => o.readable_id));
+            return { message: `Orden "${orderIdInput}" no encontrada`, error: true };
         }
+        
+        console.log('Orden encontrada:', order.readable_id, order.id);
         
         const apiUrl = process.env.VERCEL_URL 
             ? `https://${process.env.VERCEL_URL}/api/delete-order` 
@@ -742,7 +758,7 @@ async function executeDeleteOrder(actionData, req) {
             return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
         }
 
-        return { message: `Orden ${orderId} eliminada`, orderId: orderId, refreshRequired: true };
+        return { message: `Orden ${order.readable_id} eliminada`, orderId: order.readable_id, refreshRequired: true };
     } catch (error) {
         console.error('Error DELETE_ORDER:', error);
         return { message: `Error: ${error.message}`, error: true };
