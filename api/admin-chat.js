@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 
     const today = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    const SYSTEM_PROMPT = `
+const SYSTEM_PROMPT = `
 You are Aria, an AI assistant for AGN Autopartes ERP system. RESPOND IN SPANISH to all user messages.
 
 IMPORTANT: When the user mentions both brand AND model of a vehicle, you must SEPARATE them clearly.
@@ -112,8 +112,9 @@ If user gives only the brand (e.g., "Toyota") or only the model (e.g., "Rav4"), 
 
 Valid order statuses: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado
 
-Exact action formats:
+Exact action formats (USE PIPE | AS SEPARATOR, NOT COMMAS):
 - CREATE order: [CREATE_ORDER:client|brand|model|year|part]
+  Example: [CREATE_ORDER:Pedro Silva|Toyota|4Runner|2020|Faro izquierdo y rodillo delantero]
 - UPDATE status: [UPDATE_STATUS:id|status] (use only statuses from list)
 - UPDATE cost: [UPDATE_COST:id|cost]
 - UPDATE vehicle: [UPDATE_VEHICLE:id|brand|model|year]
@@ -122,7 +123,8 @@ Exact action formats:
 - ADD note: [ADD_NOTE:id|note]
 - DELETE order: [DELETE_ORDER:id]
 
-IMPORTANT: If user provides only the brand (like "Toyota") or only the model (like "Rav4"), you MUST ask for the missing piece of information in SPANISH.
+IMPORTANT: The separators MUST be pipe characters (|), not commas or other punctuation.
+If user provides only the brand (like "Toyota") or only the model (like "Rav4"), you MUST ask for the missing piece of information in SPANISH.
 NEVER use statuses that are not in the valid status list.
 `.trim();
 
@@ -297,8 +299,16 @@ NEVER use statuses that are not in the valid status list.
 
 // Funcion para ejecutar CREATE_ORDER
 async function executeCreateOrder(actionData, req) {
-    const parts = actionData.split('|').map(s => s.trim());
-    const customerName = parts[0];
+    // Try to parse as pipe-separated values first
+    let parts = actionData.split('|').map(s => s.trim());
+    
+    // If we don't have 5 parts, try comma-separated as fallback
+    if (parts.length < 5) {
+        parts = actionData.split(',').map(s => s.trim());
+    }
+    
+    // If still not enough parts, we'll work with what we have and use empty strings for missing
+    const customerName = parts[0] || '';
     const vehicleBrand = parts[1] || '';
     const vehicleModel = parts[2] || '';
     const vehicleYear = parts[3] || '';
@@ -306,15 +316,26 @@ async function executeCreateOrder(actionData, req) {
     
     console.log('=== EJECUTANDO CREATE_ORDER ===');
     console.log('Input data:', actionData);
+    console.log('Parsed parts:', parts);
     console.log('customerName:', customerName);
     console.log('vehicleBrand:', vehicleBrand);
     console.log('vehicleModel:', vehicleModel);
     console.log('vehicleYear:', vehicleYear);
     console.log('partName:', partName);
     
+    // Validate required fields
     if (!customerName || !partName) {
         return { 
             message: "Datos incompletos. Necesito: cliente|marca|modelo|año|parte",
+            error: true 
+        };
+    }
+    
+    // Prevent generic placeholder names
+    const lowerName = customerName.toLowerCase().trim();
+    if (lowerName === 'client' || lowerName === 'cliente' || lowerName === 'nombre' || lowerName === 'unnamed') {
+        return { 
+            message: "Por favor proporciona un nombre de cliente específico en lugar de un término genérico como 'client'.",
             error: true 
         };
     }
