@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
     }
-
+    //  MODIF PARA PROBAR
     // 1. Validar Autenticación
     const adminPassword = req.headers['x-admin-password'];
     let isAuthed = false;
