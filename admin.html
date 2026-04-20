@@ -2072,6 +2072,19 @@ sessionStorage.removeItem('agn-admin-logged');
             showToast('✅ Orden creada', 'success');
             loadData();
             if (typeof closeDetail === 'function') closeDetail();
+            // Reset form fields after successful creation
+            document.getElementById('new-cust-name').value = '';
+            document.getElementById('new-cust-phone').value = '';
+            document.getElementById('new-cust-ruc').value = '';
+            document.getElementById('new-cust-cedula').value = '';
+            document.getElementById('new-brand').value = '';
+            document.getElementById('new-model').value = '';
+            document.getElementById('new-year').value = '';
+            // Clear dynamic items container
+            const itemsContainer = document.getElementById('new-items-container');
+            if (itemsContainer) itemsContainer.innerHTML = '';
+            // Re-add initial item
+            setTimeout(addNewOrderPart, 10);
         } else {
             const err = await res.json().catch(() => ({}));
             console.error('API Error Create:', err);
@@ -2080,8 +2093,8 @@ sessionStorage.removeItem('agn-admin-logged');
     } catch (e) {
         console.error('Fetch Error Create:', e);
         showToast('❌ Error de conexión', 'error');
+        }
     }
-
 
         function syncNewTitle() {
             const first = document.querySelector('#new-items-container .dyn-part-name');
