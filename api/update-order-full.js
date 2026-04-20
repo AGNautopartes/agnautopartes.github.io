@@ -98,6 +98,9 @@ export default async function handler(req, res) {
                 sale_price: parseFloat(it.sale_price) || 0,
                 vendor_name: it.vendor_name || '',
                 supplier_url: it.supplier_url || '',
+                tracking_number: it.tracking_number || '',
+                margin_percent: it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null,
+                supplier_name: it.supplier_name || '',
                 updated_at: new Date().toISOString()
             }));
 

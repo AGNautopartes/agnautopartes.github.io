@@ -159,6 +159,9 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
                 sale_price: parseFloat(item.sale_price) || 0,
                 vendor_name: item.vendor_name || '',
                 supplier_url: item.supplier_url || '',
+                tracking_number: item.tracking_number || '',
+                margin_percent: item.margin_percent !== undefined ? parseFloat(item.margin_percent) : null,
+                supplier_name: item.supplier_name || '',
                 image_data: item.image_data || ''
             }));
 

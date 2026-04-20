@@ -2078,6 +2078,9 @@
                 <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()"></div></div>
                 <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
+                    <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking"></div></div>
+                    <div class="info-item"><div class="il">Margin %</div><div class="iv"><input type="number" class="dyn-margin" placeholder="0-100" min="0" max="100"></div></div>
+                    <div class="info-item"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor"></div></div>
             `;
             container.appendChild(div);
         }
@@ -2103,6 +2106,7 @@
         }
 
         async function updateManualOrder(orderId) {
+    if (!confirm('¿Estás seguro de guardar los cambios del cliente? Esta acción no se puede deshacer.')) { return; }
             try {
                 const items = [];
                 // Selector más específico para evitar cruces con el formulario de Nueva Orden
@@ -2182,6 +2186,9 @@
                 <div class="info-item"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
                 <div class="info-item"><div class="il">Price (Sbt)</div><div class="iv"><input type="number" class="dyn-sale" value="0"></div></div>
                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
+                    <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking"></div></div>
+                    <div class="info-item"><div class="il">Margin %</div><div class="iv"><input type="number" class="dyn-margin" placeholder="0-100" min="0" max="100"></div></div>
+                    <div class="info-item"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor"></div></div>
             `;
             container.appendChild(div);
         }
