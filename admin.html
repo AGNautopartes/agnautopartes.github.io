@@ -2177,25 +2177,7 @@ items.push({
     recalculateTotals();
 }
 
-            const container = document.getElementById('new-items-container');
-            const idx = container.querySelectorAll('.dynamic-item').length;
-            const div = document.createElement('div');
-            div.className = 'info-grid dynamic-item';
-            div.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
-            div.innerHTML = `
-                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx + 1}</strong>
-                    ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); syncNewTitle();" style="padding:2px 6px">×</button>` : ''}
-                </div>
-                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()"></div></div>
-                <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
-                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
-                    <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking"></div></div>
-                    <div class="info-item"><div class="il">Margin %</div><div class="iv"><input type="number" class="dyn-margin" placeholder="0-100" min="0" max="100"></div></div>
-                    <div class="info-item"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor"></div></div>
-            `;
-            container.appendChild(div);
-        }
+
 
         function syncNewTitle() {
             const first = document.querySelector('#new-items-container .dyn-part-name');
