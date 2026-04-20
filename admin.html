@@ -1792,10 +1792,15 @@ sessionStorage.removeItem('agn-admin-logged');
     document.getElementById('new-cust-ruc').value = '';
     document.getElementById('new-cust-cedula').value = '';
     document.getElementById('new-items-container').innerHTML = '';
-    const panel = document.getElementById('detail-panel');
-    if (panel) panel.classList.add('empty');
-    return;
+     const panel = document.getElementById('detail-panel');
+     if (panel) panel.classList.add('empty');
+     return;
+}
 
+
+ 
+ 
+ 
         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
@@ -2105,6 +2110,8 @@ sessionStorage.removeItem('agn-admin-logged');
     const panel = document.getElementById('detail-panel');
     if (panel) panel.classList.add('empty');
     return;
+    
+
 
 
         function addNewOrderPart() {
