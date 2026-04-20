@@ -1779,28 +1779,11 @@ sessionStorage.removeItem('agn-admin-logged');
                 <span class="order-date">${date}</span>
             </div>
         </div>`;
-            }).join('');
-        }
+             }).join('');
+         }
 
 
-    // Limpiar formulario y cerrar panel
-    document.getElementById('new-cust-name').value = '';
-    document.getElementById('new-brand').value = '';
-    document.getElementById('new-model').value = '';
-    document.getElementById('new-year').value = '';
-    document.getElementById('new-cust-phone').value = '';
-    document.getElementById('new-cust-ruc').value = '';
-    document.getElementById('new-cust-cedula').value = '';
-    document.getElementById('new-items-container').innerHTML = '';
-     const panel = document.getElementById('detail-panel');
-     if (panel) panel.classList.add('empty');
-     return;
-}
 
-
- 
- 
- 
         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
@@ -2098,58 +2081,7 @@ sessionStorage.removeItem('agn-admin-logged');
         console.error('Fetch Error Create:', e);
         showToast('❌ Error de conexión', 'error');
     }
-    // Limpiar formulario y cerrar panel
-    document.getElementById('new-cust-name').value = '';
-    document.getElementById('new-brand').value = '';
-    document.getElementById('new-model').value = '';
-    document.getElementById('new-year').value = '';
-    document.getElementById('new-cust-phone').value = '';
-    document.getElementById('new-cust-ruc').value = '';
-    document.getElementById('new-cust-cedula').value = '';
-    document.getElementById('new-items-container').innerHTML = '';
-    const panel = document.getElementById('detail-panel');
-    if (panel) panel.classList.add('empty');
-    return;
-    
 
-
-
-        function addNewOrderPart() {
-    const container = document.getElementById('new-items-container');
-    const idx = container.querySelectorAll('.dynamic-item').length;
-    const div = document.createElement('div');
-    div.className = 'info-grid dynamic-item accordion-item';
-    div.style.cssText = 'margin-top:10px;padding:10px;background:rgba(255,255,255,0.02);border-left:2px solid var(--blue);border-radius:4px;';
-    const removeBtn = idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); recalculateTotals();" style="padding:2px 6px">×</button>` : '';
-    div.innerHTML = `
-        <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
-            <div style="display:flex; gap:0.5rem; align-items:center;">
-                <span>🧩 Item ${idx + 1}</span>
-                <input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
-                <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" style="width:80px;"/>
-                <select class="dyn-status" style="margin-left:0.5rem;">
-                    <option value="Solicitado">Solicitado</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Enviado">Enviado</option>
-                    <option value="Entregado">Entregado</option>
-                    <option value="Cancelado">Cancelado</option>
-                </select>
-            </div>
-            ${removeBtn}
-            <span class="accordion-indicator" style="float:right;">+</span>
-        </div>
-        <div class="accordion-body" style="display:none; margin-top:8px;">
-            <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx + 1}</strong>
-            </div>
-            <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
-            <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="1"></div></div>
-            <div class="info-item" style="display:none;"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
-            <div class="info-item" style="display:none; grid-column:1/-1;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
-        </div>`;
-    container.appendChild(div);
-    recalculateTotals();
-}
 
         function syncNewTitle() {
             const first = document.querySelector('#new-items-container .dyn-part-name');
@@ -2635,25 +2567,7 @@ sessionStorage.removeItem('agn-admin-logged');
                     // Handle different possible action structures
                     let fields = {};
 
-                    // Try different possible structures
-                    if (action.data && action.data.fields) {
-                        fields = action.data.fields;
-                    } else if (action.data) {
-                        fields = action.data;
-                    } else {
-                        fields = action;
-                    }
 
-                    const name = fields.customer_name || fields.cliente || fields.name || fields.nombre || '';
-                    const model = fields.vehicle_model || fields.modelo || fields.carro || fields.model || '';
-                    const part = fields.part_name || fields.main_part || fields.pieza || fields.repuesto || '';
-
-                    if (!name || !model || !part) {
-                        addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
-    return;
-}
-// End of saveNewManualOrder
-                    }
 
                     const data = {
                         customer_name: name,
