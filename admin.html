@@ -1783,14 +1783,18 @@ sessionStorage.removeItem('agn-admin-logged');
         }
 
 
-        function updateStats(orders) {
-            document.getElementById('s-total').textContent = orders.length;
-            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Comprado').length;
-            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Tránsito')).length;
-            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
-            const active = orders.filter(o => !['Entregado', 'Recogido en Local', 'Cancelado'].includes(o.status)).length;
-            document.getElementById('nav-active').textContent = `${active} activos`;
-        }
+    // Limpiar formulario y cerrar panel
+    document.getElementById('new-cust-name').value = '';
+    document.getElementById('new-brand').value = '';
+    document.getElementById('new-model').value = '';
+    document.getElementById('new-year').value = '';
+    document.getElementById('new-cust-phone').value = '';
+    document.getElementById('new-cust-ruc').value = '';
+    document.getElementById('new-cust-cedula').value = '';
+    document.getElementById('new-items-container').innerHTML = '';
+    const panel = document.getElementById('detail-panel');
+    if (panel) panel.classList.add('empty');
+    return;
 
         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
@@ -2102,131 +2106,6 @@ sessionStorage.removeItem('agn-admin-logged');
     if (panel) panel.classList.add('empty');
     return;
 
-    const name = document.getElementById('new-cust-name').value.trim();
-    const model = document.getElementById('new-model').value.trim();
-    const brand = document.getElementById('new-brand').value.trim();
-    const year = document.getElementById('new-year').value.trim();
-    const phone = document.getElementById('new-cust-phone').value.trim();
-    const ruc = document.getElementById('new-cust-ruc').value.trim();
-    const cedula = document.getElementById('new-cust-cedula').value.trim();
-    // Recopilar items
-    const items = [];
-    document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
-        const pName = el.querySelector('.dyn-part-name').value.trim();
-        if (pName) {
-            items.push({
-                part_name: pName,
-                part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
-                supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
-                tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
-                margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
-                supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
-                item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
-            });
-        }
-    });
-    const data = {
-        customer_name: name,
-        customer_phone: phone,
-        customer_ruc: ruc,
-        customer_cedula: cedula,
-        vehicle_brand: brand,
-        vehicle_model: model,
-        vehicle_year: year,
-        status: 'Solicitado',
-        created_by: adminName,
-        items: items
-    };
-    try {
-        const res = await fetch(`${API}/api/create-order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            showToast('✅ Orden creada', 'success');
-            loadData();
-            if (typeof closeDetail === 'function') closeDetail();
-        } else {
-            const err = await res.json().catch(() => ({}));
-            console.error('API Error Create:', err);
-            showToast('❌ Error al crear: ' + (err.message || ''), 'error');
-        }
-    } catch (e) {
-        console.error('Fetch Error Create:', e);
-        showToast('❌ Error de conexión', 'error');
-    }
-    // limpiar formulario después del intento
-    document.getElementById('new-cust-name').value = '';
-    document.getElementById('new-brand').value = '';
-    document.getElementById('new-model').value = '';
-    document.getElementById('new-year').value = '';
-    document.getElementById('new-cust-phone').value = '';
-    document.getElementById('new-cust-ruc').value = '';
-    document.getElementById('new-cust-cedula').value = '';
-    document.getElementById('new-items-container').innerHTML = '';
-    const panel = document.getElementById('detail-panel');
-    if (panel) panel.classList.add('empty');
-    return;
-
-            const name = document.getElementById('new-cust-name').value.trim();
-            const model = document.getElementById('new-model').value.trim();
-
-            // Recopilar items
-            const items = [];
-            document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
-                const pName = el.querySelector('.dyn-part-name').value.trim();
-                if (pName) {
-items.push({
-                          part_name: pName,
-                          part_number: el.querySelector('.dyn-part-no').value.trim(),
-                          supplier_url: el.querySelector('.dyn-url').value.trim(),
-                          tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
-                          margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
-                          supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
-                          item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
-                      });
-                }
-            });
-
-            if (!name || !model) {
-                return showToast('Nombre y Modelo son obligatorios', 'warning');
-            }
-
-            const data = {
-                customer_name: name,
-                customer_phone: document.getElementById('new-cust-phone').value.trim(),
-                customer_ruc: document.getElementById('new-cust-ruc').value.trim(),
-                customer_cedula: document.getElementById('new-cust-cedula').value.trim(),
-                vehicle_brand: document.getElementById('new-brand').value.trim(),
-                vehicle_model: model,
-                vehicle_year: document.getElementById('new-year').value.trim(),
-                status: 'Solicitado',
-                created_by: adminName,
-                items: items
-            };
-
-            try {
-                const res = await fetch(`${API}/api/create-order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                    body: JSON.stringify(data)
-                });
-
-                if (res.ok) {
-                    showToast('✅ Orden creada', 'success');
-                    loadData();
-                    if (typeof closeDetail === 'function') closeDetail();
-                } else {
-                    const err = await res.json().catch(() => ({}));
-                    console.error('API Error Create:', err);
-                    showToast('❌ Error al crear: ' + (err.message || ''), 'error');
-                }
-            } catch (e) {
-                console.error('Fetch Error Create:', e);
-                showToast('❌ Error de conexión', 'error');
-            }
-        }
 
         function addNewOrderPart() {
     const container = document.getElementById('new-items-container');
