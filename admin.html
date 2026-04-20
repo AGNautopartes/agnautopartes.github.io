@@ -2111,28 +2111,30 @@ items.push({
     div.style.cssText = 'margin-top:10px;padding:10px;background:rgba(255,255,255,0.02);border-left:2px solid var(--blue);border-radius:4px;';
     const removeBtn = idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); recalculateTotals();" style="padding:2px 6px">×</button>` : '';
     div.innerHTML = `
-        <div class="accordion-header" style="cursor:pointer; font-weight:600;" onclick="toggleAccordion(this)">
-            <span>🧩 Item ${idx + 1}</span>
+        <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <span>🧩 Item ${idx + 1}</span>
+                <input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
+                <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" style="width:80px;"/>
+                <select class="dyn-status" style="margin-left:0.5rem;">
+                    <option value="Solicitado">Solicitado</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Enviado">Enviado</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            ${removeBtn}
             <span class="accordion-indicator" style="float:right;">+</span>
         </div>
         <div class="accordion-body" style="display:none; margin-top:8px;">
             <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx + 1}</strong>
-                ${removeBtn}
             </div>
-            <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza" oninput="syncNewTitle()"></div></div>
             <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
-            <div class="info-item" style="display:none;" ><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="1"></div></div>
-            <div class="info-item" style="display:none;" ><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
-            <div class="info-item" style="grid-column:1/-1; display:none;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
-            <div class="info-item"><div class="il">Price (Sbt)</div><div class="iv"><input type="number" class="dyn-sale" placeholder="0" min="0" step="0.01"></div></div>
-            <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
-                <option value="Solicitado">Solicitado</option>
-                <option value="En proceso">En proceso</option>
-                <option value="Enviado">Enviado</option>
-                <option value="Entregado">Entregado</option>
-                <option value="Cancelado">Cancelado</option>
-            </select></div></div>
+            <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="1"></div></div>
+            <div class="info-item" style="display:none;"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
+            <div class="info-item" style="display:none; grid-column:1/-1;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..."></div></div>
         </div>`;
     container.appendChild(div);
     recalculateTotals();
