@@ -2643,7 +2643,9 @@ sessionStorage.removeItem('agn-admin-logged');
 
                     if (!name || !model || !part) {
                         addAiMsg('system', `❌ Falta nombre del cliente o modelo del vehículo`);
-                        return;
+    return;
+}
+// End of saveNewManualOrder
                     }
 
                     const data = {
