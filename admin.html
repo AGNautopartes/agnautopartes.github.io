@@ -1877,6 +1877,13 @@
                                         <div class="info-item"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}"></div></div>
                                         <div class="info-item"><div class="il">Price (Sbt)</div><div class="iv"><input type="number" class="dyn-sale" value="${item.sale_price || 0}"></div></div>
                                         <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${item.supplier_url || ''}"></div></div>
+                    <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="En proceso">En proceso</option>
+                        <option value="Enviado">Enviado</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select></div></div>
                                     </div>
                                 `).join('');
                 })()}
@@ -2017,11 +2024,15 @@
             document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
                 const pName = el.querySelector('.dyn-part-name').value.trim();
                 if (pName) {
-                    items.push({
-                        part_name: pName,
-                        part_number: el.querySelector('.dyn-part-no').value.trim(),
-                        supplier_url: el.querySelector('.dyn-url').value.trim()
-                    });
+items.push({
+                          part_name: pName,
+                          part_number: el.querySelector('.dyn-part-no').value.trim(),
+                          supplier_url: el.querySelector('.dyn-url').value.trim(),
+                          tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
+                          margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
+                          supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
+                          item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
+                      });
                 }
             });
 
