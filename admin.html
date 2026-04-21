@@ -2142,6 +2142,8 @@ function openNewManualOrder() {
             const err = await res.json().catch(() => ({}));
             console.error('API Error Create:', err);
             showToast('❌ Error al crear: ' + (err.message || ''), 'error');
+            // Refresh list even on error (in case of partial success)
+            await loadData();
             // Re‑enable button & reset flag
             const btn = document.getElementById('btn-create-order');
             if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
