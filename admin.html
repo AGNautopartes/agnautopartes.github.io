@@ -2010,12 +2010,10 @@ function openNewManualOrder() {
     // Ensure the detail panel is expanded
     const panel = document.getElementById('detail-panel');
     if (panel) panel.classList.remove('collapsed');
-            const panel = document.getElementById('detail-panel');
-            const content = document.getElementById('detail-content');
-            panel.classList.remove('empty');
-            panel.classList.remove('collapsed');
-            const toggleBtn = document.getElementById('toggle-detail');
-            if (toggleBtn) toggleBtn.textContent = '↔';
+    const content = document.getElementById('detail-content');
+    panel.classList.remove('empty');
+    const toggleBtn = document.getElementById('toggle-detail');
+    if (toggleBtn) toggleBtn.textContent = '↔';
 
             content.innerHTML = `
                 <div class="detail-header">
