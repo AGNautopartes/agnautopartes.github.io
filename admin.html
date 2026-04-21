@@ -1567,6 +1567,7 @@
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
+let isCreatingOrder = false; // global flag to prevent duplicate order creation
 // Reset possible stale login flag from previous broken session
 sessionStorage.removeItem('agn-admin-logged');
         let allOrders = [], selectedOrder = null;
@@ -2041,15 +2042,19 @@ function openNewManualOrder() {
                     </div>
 
                     <div style="margin-top:20px">
-                        <button class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
+                        <button id="btn-create-order" class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
                     </div>
                 </div>
             `;
-            // Inicializar con la primera pieza (ahora fuera del innerHTML para que sí funcione)
-            setTimeout(addNewOrderPart, 10);
+            // No auto‑insertion; user adds the first piece via the "+ Añadir Pieza" button
         }
 
         async function saveNewManualOrder() {
+    // Prevent duplicate submissions
+    if (isCreatingOrder) return;
+    isCreatingOrder = true;
+    const btn = document.getElementById('btn-create-order');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
     // Recopilar datos del formulario
     const name   = document.getElementById('new-cust-name').value.trim();
     const model  = document.getElementById('new-model').value.trim();
@@ -2102,7 +2107,7 @@ function openNewManualOrder() {
         });
         if (res.ok) {
             showToast('✅ Orden creada', 'success');
-            loadData();
+            await loadData(); // refresh list
             if (typeof closeDetail === 'function') closeDetail();
             // Reset form fields after successful creation
             document.getElementById('new-cust-name').value = '';
@@ -2117,10 +2122,18 @@ function openNewManualOrder() {
             if (itemsContainer) itemsContainer.innerHTML = '';
             // Re-add initial item
             setTimeout(addNewOrderPart, 10);
+            // Re‑enable button & reset flag
+            const btn = document.getElementById('btn-create-order');
+            if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
+            isCreatingOrder = false;
         } else {
             const err = await res.json().catch(() => ({}));
             console.error('API Error Create:', err);
             showToast('❌ Error al crear: ' + (err.message || ''), 'error');
+            // Re‑enable button & reset flag
+            const btn = document.getElementById('btn-create-order');
+            if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
+            isCreatingOrder = false;
         }
     } catch (e) {
         console.error('Fetch Error Create:', e);
