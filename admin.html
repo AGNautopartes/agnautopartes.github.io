@@ -1094,6 +1094,13 @@
         /* TOAST */
         .toast {
             position: fixed;
+        }
+
+        .required::after {
+            content: "*";
+            color: var(--accent);
+            margin-left: 2px;
+        }
             bottom: 2rem;
             right: 2rem;
             padding: 1rem 2rem;
@@ -1849,7 +1856,7 @@ sessionStorage.removeItem('agn-admin-logged');
                     <div class="detail-section">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h4>⚙️ Repuestos</h4>
-                            <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
+                            <button class="btn-action btn-sm" onclick="addDetailItem()" style="border-color:var(--blue); color:var(--blue)">+ Añadir Parte</button>
                         </div>
                         <div id="dynamic-items-container">
                             ${(() => {
@@ -2015,11 +2022,11 @@ function openNewManualOrder() {
 
                 <div class="detail-body">
                     <div class="detail-section">
-                        <h4>⚙️ Piezas / Repuestos</h4>
+                        <h4>⚙️ Partes / Repuestos</h4>
                         <div id="new-items-container">
                             <!-- Items dinámicos se insertan aquí -->
                         </div>
-                        <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Pieza</button>
+                        <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Parte</button>
                     </div>
 
 <div class="detail-section">
@@ -2046,7 +2053,7 @@ function openNewManualOrder() {
                     </div>
                 </div>
             `;
-            // No auto‑insertion; user adds the first piece via the "+ Añadir Pieza" button
+            // No auto‑insertion; user adds the first piece via the "+ Añadir Parte" button
         }
 
         async function saveNewManualOrder() {
@@ -2066,7 +2073,7 @@ function openNewManualOrder() {
 
     // VALIDACIÓN BÁSICA
     if (!name) { const btn = document.getElementById('btn-create-order'); if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; } isCreatingOrder = false; return; }
-    if (!model) return showToast('El modelo del vehículo es obligatorio', 'warning');
+    if (!model) { const btn=document.getElementById('btn-create-order'); if(btn){btn.disabled=false;btn.textContent='CREAR ORDEN';} isCreatingOrder=false; return; }
 
     // Recopilar ítems
     const items = [];
