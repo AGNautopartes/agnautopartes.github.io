@@ -1966,7 +1966,39 @@ sessionStorage.removeItem('agn-admin-logged');
             setTimeout(recalculateTotals, 100);
         }
 
-        function openNewManualOrder() {
+        function addNewOrderPart(){
+    const container=document.getElementById('new-items-container');
+    if(!container) return;
+    const div=document.createElement('div');
+    div.className='dynamic-item';
+    div.style='margin-top:10px; padding:10px; background:rgba(255,255,255,0.02); border-left:2px solid var(--blue); border-radius:4px;';
+    div.innerHTML=`
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <strong>Pieza</strong>
+            <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+        </div>
+        <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza"/></div></div>
+        <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
+        <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
+        <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
+        <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" step="0.1"/></div></div>
+        <div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
+        <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
+            <option>Solicitado</option>
+            <option>Cotizado</option>
+            <option>Comprado</option>
+            <option>Tránsito 1 (Prov→Log)</option>
+            <option>Tránsito 2 (Log→EC)</option>
+            <option>En Aduana</option>
+            <option>Entregado</option>
+            <option>Recogido en Local</option>
+            <option>Cancelado</option>
+        </select></div></div>
+    `;
+    container.appendChild(div);
+}
+
+function openNewManualOrder() {
             const panel = document.getElementById('detail-panel');
             const content = document.getElementById('detail-content');
             panel.classList.remove('empty');
