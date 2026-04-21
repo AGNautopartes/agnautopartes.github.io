@@ -2065,7 +2065,7 @@ function openNewManualOrder() {
     const cedula = document.getElementById('new-cust-cedula').value.trim();
 
     // VALIDACIÓN BÁSICA
-    if (!name) return showToast('El nombre del cliente es obligatorio', 'warning');
+    if (!name) { const btn = document.getElementById('btn-create-order'); if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; } isCreatingOrder = false; return; }
     if (!model) return showToast('El modelo del vehículo es obligatorio', 'warning');
 
     // Recopilar ítems
