@@ -2007,55 +2007,59 @@ sessionStorage.removeItem('agn-admin-logged');
 }
 
 function openNewManualOrder() {
-    // Ensure the detail panel is expanded
+    // Ensure the detail panel is expanded and cleared
     const panel = document.getElementById('detail-panel');
-    if (panel) panel.classList.remove('collapsed');
+    if (panel) {
+        panel.classList.remove('collapsed');
+        panel.classList.remove('empty');
+    }
     const content = document.getElementById('detail-content');
-    panel.classList.remove('empty');
     const toggleBtn = document.getElementById('toggle-detail');
     if (toggleBtn) toggleBtn.textContent = '↔';
 
-            content.innerHTML = `
-                <div class="detail-header">
-                    <div style="font-size:0.75rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">✨ NUEVA ORDEN MANUAL</div>
-                    <input type="text" id="new-part-name" placeholder="Título de la Orden (Autosync)" readonly style="font-size:1.1rem; font-weight:700; background:none; border:none; color:var(--text2); width:100%; border-bottom:1px solid var(--border); padding: 5px 0;">
+    content.innerHTML = `
+        <div class="detail-header">
+            <div style="font-size:0.75rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">✨ NUEVA ORDEN MANUAL</div>
+            <input type="text" id="new-part-name" placeholder="Título de la Orden (Autosync)" readonly style="font-size:1.1rem; font-weight:700; background:none; border:none; color:var(--text2); width:100%; border-bottom:1px solid var(--border); padding: 5px 0;">
+        </div>
+
+        <div class="detail-body">
+            <div class="detail-section">
+                <h4>⚙️ Partes / Repuestos</h4>
+                <div id="new-items-container">
+                    <!-- Items dinámicos se insertan aquí -->
                 </div>
+                <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Parte</button>
+            </div>
 
-                <div class="detail-body">
-                    <div class="detail-section">
-                        <h4>⚙️ Partes / Repuestos</h4>
-                        <div id="new-items-container">
-                            <!-- Items dinámicos se insertan aquí -->
-                        </div>
-                        <button class="btn-action btn-sm" onclick="addNewOrderPart()" style="margin-top:10px; border-color:var(--blue); color:var(--blue)">+ Añadir Parte</button>
-                    </div>
-
-<div class="detail-section">
-                         <h4>👤 Cliente</h4>
-                         <div class="info-grid">
-                             <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
-                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
-                             <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="new-cust-ruc" placeholder="RUC (opcional)"></div></div>
-                             <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="new-cust-cedula" placeholder="Cédula (opcional)"></div></div>
-                         </div>
-                     </div>
-
-                    <div class="detail-section">
-                        <h4>🚗 Vehículo</h4>
-                        <div class="info-grid">
-                            <div class="info-item"><div class="il required">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
-                            <div class="info-item"><div class="il required">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
-                            <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year"></div></div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top:20px">
-                        <button id="btn-create-order" class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
-                    </div>
+            <div class="detail-section">
+                <h4>👤 Cliente</h4>
+                <div class="info-grid">
+                    <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
+                    <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
+                    <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="new-cust-ruc" placeholder="RUC (opcional)"></div></div>
+                    <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="new-cust-cedula" placeholder="Cédula (opcional)"></div></div>
                 </div>
-            `;
-            // No auto‑insertion; user adds the first piece via the "+ Añadir Parte" button
-        }
+            </div>
+
+            <div class="detail-section">
+                <h4>🚗 Vehículo</h4>
+                <div class="info-grid">
+                    <div class="info-item"><div class="il required">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
+                    <div class="info-item"><div class="il required">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
+                    <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year"></div></div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px">
+                <button id="btn-create-order" class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
+            </div>
+        </div>
+        `;
+    // Ensure a fresh first item is available
+    setTimeout(addNewOrderPart, 10);
+}
+
 
         async function saveNewManualOrder() {
     // Prevent duplicate submissions
