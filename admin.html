@@ -1846,7 +1846,7 @@ sessionStorage.removeItem('agn-admin-logged');
                     <div class="detail-section">
                         <h4>👤 Cliente</h4>
                         <div class="info-grid">
-                            <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="edit-cust-name" value="${o.customers?.full_name || ''}"></div></div>
+                            <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" id="edit-cust-name" value="${o.customers?.full_name || ''}"></div></div>
                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="edit-cust-phone" value="${o.customers?.phone || ''}"></div></div>
                             <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="edit-cust-ruc" value="${o.customers?.ruc || ''}"></div></div>
                             <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="edit-cust-cedula" value="${o.customers?.cedula || ''}"></div></div>
@@ -1872,7 +1872,7 @@ sessionStorage.removeItem('agn-admin-logged');
     <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
         <div style="display:flex; gap:0.5rem; align-items:center;">
             <span>🧩 Item ${idx + 1}</span>
-            <input type="text" class="dyn-part-name" placeholder="Nombre pieza" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
+            <input type="text" class="dyn-part-name" placeholder="Nombre parte" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
             <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="${item.sale_price || 0}" style="width:80px;"/>
             <select class="dyn-status" style="margin-left:0.5rem;">
                 <option value="Solicitado" ${item.item_status === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
@@ -1982,10 +1982,10 @@ sessionStorage.removeItem('agn-admin-logged');
     div.style='margin-top:10px; padding:10px; background:rgba(255,255,255,0.02); border-left:2px solid var(--blue); border-radius:4px;';
     div.innerHTML=`
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <strong>Pieza</strong>
+            <strong>Parte</strong>
             <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
         </div>
-        <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza"/></div></div>
+        <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
         <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
         <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
         <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
@@ -2032,7 +2032,7 @@ function openNewManualOrder() {
 <div class="detail-section">
                          <h4>👤 Cliente</h4>
                          <div class="info-grid">
-                             <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
+                             <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" id="new-cust-name" placeholder="Nombre completo"></div></div>
                              <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="new-cust-phone" placeholder="09xxxxxxx" value="N/A"></div></div>
                              <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="new-cust-ruc" placeholder="RUC (opcional)"></div></div>
                              <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="new-cust-cedula" placeholder="Cédula (opcional)"></div></div>
@@ -2281,7 +2281,7 @@ function openNewManualOrder() {
                     <strong style="font-size:0.7rem; color:var(--text2)">ITEM #${idx + 1}</strong>
                     <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()" style="padding:2px 6px">×</button>
                 </div>
-                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre pieza"></div></div>
+                <div class="info-item"><div class="il">Name</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"></div></div>
                 <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
                 <div class="info-item"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="1"></div></div>
                 <div class="info-item"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
@@ -2741,7 +2741,7 @@ function openNewManualOrder() {
                     <strong>Repuesto</strong>
                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                 </div>
-                <div class="info-item"><div class="il">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
+                <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
                 <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}"></div></div>
                 <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}"></div></div>
             `;
