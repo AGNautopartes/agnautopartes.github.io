@@ -2007,6 +2007,9 @@ sessionStorage.removeItem('agn-admin-logged');
 }
 
 function openNewManualOrder() {
+    // Ensure the detail panel is expanded
+    const panel = document.getElementById('detail-panel');
+    if (panel) panel.classList.remove('collapsed');
             const panel = document.getElementById('detail-panel');
             const content = document.getElementById('detail-content');
             panel.classList.remove('empty');
@@ -2042,8 +2045,8 @@ function openNewManualOrder() {
                     <div class="detail-section">
                         <h4>🚗 Vehículo</h4>
                         <div class="info-grid">
-                            <div class="info-item"><div class="il">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
-                            <div class="info-item"><div class="il">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
+                            <div class="info-item"><div class="il required">Marca</div><div class="iv"><input type="text" id="new-brand"></div></div>
+                            <div class="info-item"><div class="il required">Modelo</div><div class="iv"><input type="text" id="new-model"></div></div>
                             <div class="info-item"><div class="il">Año</div><div class="iv"><input type="text" id="new-year"></div></div>
                         </div>
                     </div>
@@ -2092,7 +2095,7 @@ function openNewManualOrder() {
         }
     });
 
-    if (items.length === 0) return showToast('Debe agregar al menos una pieza', 'warning');
+    if (items.length === 0) { const btn=document.getElementById('btn-create-order'); if (btn) { btn.disabled=false; btn.textContent='CREAR ORDEN'; } isCreatingOrder=false; showToast('Debe agregar al menos una parte', 'warning'); return; }
 
     const data = {
         customer_name: name,
