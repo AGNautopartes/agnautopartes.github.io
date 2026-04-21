@@ -2159,57 +2159,52 @@ function openNewManualOrder() {
             if (first && title) title.value = first.value || 'Nueva Orden';
         }
 
-        async function loadData() {
-    // NOTE: No local DB – using mock data for UI testing
-    // Simulated order list (Amemo Mimo, Llanta, Chevrolet 1999)
-    allOrders = [
-        {
-            id: 1,
-            part_name: 'Amemo Mimo',
-            vehicle_brand: 'Chevrolet',
-            vehicle_model: '1999',
-            vehicle_year: '',
-            status: 'Solicitado',
-            items_json: JSON.stringify([
-                {
-                    part_name: 'Llanta',
-                    part_number: '',
-                    quantity: 1,
-                    cost_fob: 0,
-                    sale_price: 0,
-                    supplier_url: '',
-                    tracking_number: '',
-                    margin_percent: null,
-                    supplier_name: '',
-                    item_status: 'Solicitado'
-                }
-            ])
+    async function loadData() {
+        // Fetch orders from backend (if password set). If the API fails, fall back to mock data.
+        if (!adminPass) return;
+        try {
+            const res = await fetch(`${API}/api/get-all-orders`, {
+                headers: { 'x-admin-password': adminPass }
+            });
+            if (res.ok) {
+                allOrders = await res.json();
+                renderOrders(allOrders);
+                updateStats(allOrders);
+                return;
+            } else {
+                console.error('Failed to load orders, using mock data');
+            }
+        } catch (e) {
+            console.error('Error loading orders, using mock data:', e);
         }
-    ];
-    renderOrders(allOrders);
-    updateStats(allOrders);
-    // Original API call commented out because no DB available
-    // const res = await fetch(`${API}/api/get-all-orders`, {
-    //     headers: { 'x-admin-password': adminPass }
-    // });
-    // if (res.ok) {
-    //     allOrders = await res.json();
-    //     renderOrders(allOrders);
-    //     updateStats(allOrders);
-    // }
-
-            if (!adminPass) return;
-            try {
-                const res = await fetch(`${API}/api/get-all-orders`, {
-                    headers: { 'x-admin-password': adminPass }
-                });
-                if (res.ok) {
-                    allOrders = await res.json();
-                    renderOrders(allOrders);
-                    updateStats(allOrders);
-                }
-            } catch (e) { console.error('Error loadData:', e); }
-        }
+        // Mock data fallback (same as original example)
+        allOrders = [
+            {
+                id: 1,
+                part_name: 'Amemo Mimo',
+                vehicle_brand: 'Chevrolet',
+                vehicle_model: '1999',
+                vehicle_year: '',
+                status: 'Solicitado',
+                items_json: JSON.stringify([
+                    {
+                        part_name: 'Llanta',
+                        part_number: '',
+                        quantity: 1,
+                        cost_fob: 0,
+                        sale_price: 0,
+                        supplier_url: '',
+                        tracking_number: '',
+                        margin_percent: null,
+                        supplier_name: '',
+                        item_status: 'Solicitado'
+                    }
+                ])
+            }
+        ];
+        renderOrders(allOrders);
+        updateStats(allOrders);
+    }
 
         async function updateManualOrder(orderId) {
     if (!confirm('¿Estás seguro de guardar los cambios del cliente? Esta acción no se puede deshacer.')) { return; }
