@@ -2119,7 +2119,10 @@ function openNewManualOrder() {
         });
         if (res.ok) {
             showToast('✅ Orden creada', 'success');
-            await loadData(); // refresh list
+            // Refresh list and clear selection
+            await loadData();
+            selectedOrder = null;
+            // Close detail panel if function exists
             if (typeof closeDetail === 'function') closeDetail();
             // Reset form fields after successful creation
             document.getElementById('new-cust-name').value = '';
@@ -2132,7 +2135,7 @@ function openNewManualOrder() {
             // Clear dynamic items container
             const itemsContainer = document.getElementById('new-items-container');
             if (itemsContainer) itemsContainer.innerHTML = '';
-            // Re-add initial item
+            // Re‑add initial part item
             setTimeout(addNewOrderPart, 10);
             // Re‑enable button & reset flag
             const btn = document.getElementById('btn-create-order');
