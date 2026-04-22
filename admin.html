@@ -1848,8 +1848,8 @@ sessionStorage.removeItem('agn-admin-logged');
                         <div class="info-grid">
                             <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" id="edit-cust-name" value="${o.customers?.full_name || ''}"></div></div>
                             <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><input type="text" id="edit-cust-phone" value="${o.customers?.phone || ''}"></div></div>
-                            <div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="edit-cust-ruc" value="${o.customers?.ruc || ''}"></div></div>
-                            <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="edit-cust-cedula" value="${o.customers?.cedula || ''}"></div></div>
+<div class="info-item"><div class="il">RUC</div><div class="iv"><input type="text" id="edit-cust-ruc" value="${o.customers?.ruc ?? o.ruc ?? ''}"></div></div>
+                             <div class="info-item"><div class="il">Cédula</div><div class="iv"><input type="text" id="edit-cust-cedula" value="${o.customers?.cedula ?? o.cedula ?? ''}"></div></div>
                         </div>
                     </div>
 
