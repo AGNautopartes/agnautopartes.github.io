@@ -1875,19 +1875,23 @@ sessionStorage.removeItem('agn-admin-logged');
                     if (!items || items.length === 0) {
                         items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
                     }
-                    // Build items array, merging item JSON with order_items when present
+// Build items array, merging item JSON with order_items when present
                     return items.map((item, idx) => `
 <div class="info-grid dynamic-item accordion-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
     <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
         <div style="display:flex; gap:0.5rem; align-items:center;">
             <span>🧩 Item ${idx + 1}</span>
-            <input type="text" class="dyn-part-name" placeholder="Nombre parte" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
-            <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="${item.sale_price || 0}" style="width:80px;"/>
-            <select class="dyn-status" style="margin-left:0.5rem;">
+            <input type="text" class="dyn-part-name" placeholder="Nombre parte" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;" onclick="event.stopPropagation()"/>
+            <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="${item.sale_price || 0}" style="width:80px;" onclick="event.stopPropagation()"/>
+            <select class="dyn-status" style="margin-left:0.5rem;" onclick="event.stopPropagation()">
                 <option value="Solicitado" ${item.item_status === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
-                <option value="En proceso" ${item.item_status === 'En proceso' ? 'selected' : ''}>En proceso</option>
-                <option value="Enviado" ${item.item_status === 'Enviado' ? 'selected' : ''}>Enviado</option>
+                <option value="Cotizado" ${item.item_status === 'Cotizado' ? 'selected' : ''}>Cotizado</option>
+                <option value="Comprado" ${item.item_status === 'Comprado' ? 'selected' : ''}>Comprado</option>
+                <option value="Trnsito 1" ${item.item_status === 'Trnsito 1' ? 'selected' : ''}>Trnsito 1</option>
+                <option value="Trnsito 2" ${item.item_status === 'Trnsito 2' ? 'selected' : ''}>Trnsito 2</option>
+                <option value="En Aduana" ${item.item_status === 'En Aduana' ? 'selected' : ''}>En Aduana</option>
                 <option value="Entregado" ${item.item_status === 'Entregado' ? 'selected' : ''}>Entregado</option>
+                <option value="Recogido" ${item.item_status === 'Recogido' ? 'selected' : ''}>Recogido</option>
                 <option value="Cancelado" ${item.item_status === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
             </select>
         </div>
@@ -1989,9 +1993,9 @@ function addNewOrderPart(isFirst = false){
     const idx = container.querySelectorAll('.dynamic-item').length;
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
-    // Primer item expandido, otros colapsados
-    const isExpanded = isFirst ? 'block' : 'none';
-    const indicator = isFirst ? '-' : '+';
+    // Siempre expandir el nuevo item (último agregado)
+    const isExpanded = 'block';
+    const indicator = '-';
     div.innerHTML=`
         <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
             <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -1999,15 +2003,15 @@ function addNewOrderPart(isFirst = false){
                 <input type="text" class="dyn-part-name" placeholder="Nombre parte" style="margin-left:0.5rem;" onclick="event.stopPropagation()"/>
                 <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="0" style="width:80px;" onclick="event.stopPropagation()"/>
                 <select class="dyn-status" style="margin-left:0.5rem;" onclick="event.stopPropagation()">
-                    <option>Solicitado</option>
-                    <option>Cotizado</option>
-                    <option>Comprado</option>
-                    <option>Trnsito 1 (ProvLog)</option>
-                    <option>Trnsito 2 (LogEC)</option>
-                    <option>En Aduana</option>
-                    <option>Entregado</option>
-                    <option>Recogido en Local</option>
-                    <option>Cancelado</option>
+                    <option value="Solicitado">Solicitado</option>
+                    <option value="Cotizado">Cotizado</option>
+                    <option value="Comprado">Comprado</option>
+                    <option value="Trnsito 1">Trnsito 1 (ProvLog)</option>
+                    <option value="Trnsito 2">Trnsito 2 (LogEC)</option>
+                    <option value="En Aduana">En Aduana</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Recogido">Recogido en Local</option>
+                    <option value="Cancelado">Cancelado</option>
                 </select>
             </div>
             <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()">×</button>
@@ -2229,7 +2233,11 @@ function openNewManualOrder() {
                             quantity: parseInt(el.querySelector('.dyn-qty')?.value) || 1,
                             cost_fob: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
                             sale_price: parseFloat(el.querySelector('.dyn-sale')?.value) || 0,
-                            supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
+                            supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
+                            tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
+                            margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
+                            supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
+                            item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
                         });
                     }
                 });
