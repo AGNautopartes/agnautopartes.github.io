@@ -63,7 +63,9 @@ export default async function handler(req, res) {
                 updated_at,
                 customers (
                     full_name,
-                    phone
+                    phone,
+                    ruc,
+                    cedula
                 )
             `)
             .order('created_at', { ascending: false });
