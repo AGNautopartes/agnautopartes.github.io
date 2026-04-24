@@ -2085,12 +2085,15 @@ function openNewManualOrder() {
 
             <div style="margin-top:20px">
                 <button id="btn-create-order" class="btn-primary" style="width:100%; padding: 12px; font-weight:bold" onclick="saveNewManualOrder()">CREAR ORDEN</button>
-            </div>
+</div>
         </div>
         `;
-    // Ensure a fresh first item is available (expanded)
-    setTimeout(() => addNewOrderPart(true), 10);
-}
+        // Crear primer item solo si no existe
+        const container = document.getElementById('new-items-container');
+        if (container && container.children.length === 0) {
+            addNewOrderPart();
+        }
+    }
 
 
         async function saveNewManualOrder() {
@@ -2164,11 +2167,13 @@ function openNewManualOrder() {
             document.getElementById('new-brand').value = '';
             document.getElementById('new-model').value = '';
             document.getElementById('new-year').value = '';
-            // Clear dynamic items container
+            // Clear and recreate first item
             const itemsContainer = document.getElementById('new-items-container');
             if (itemsContainer) itemsContainer.innerHTML = '';
-            // Re‑add initial part item (expanded)
-            setTimeout(() => addNewOrderPart(true), 10);
+            // Re‑add initial part item only if empty
+            if (!document.getElementById('new-items-container')?.children.length) {
+                addNewOrderPart();
+            }
             // Re‑enable button & reset flag
             const btn = document.getElementById('btn-create-order');
             if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
@@ -2796,7 +2801,6 @@ function openNewManualOrder() {
 
         function toggleAccordion(headerEl) {
     if (!headerEl) return;
-    // Usar closest para encontrar el elemento padre correcto
     const itemEl = headerEl.closest('.accordion-item');
     if (!itemEl) {
         console.log('toggleAccordion: accordion-item not found');
@@ -2808,8 +2812,13 @@ function openNewManualOrder() {
         return;
     }
     const indicator = headerEl.querySelector('.accordion-indicator');
-    // Verificar cualquier estado (no solo 'block')
-    const isOpen = body.style.display === 'block';
+    // Leer inline style primero, sino estilo computado
+    let isOpen = body.style.display === 'block';
+    if (!body.style.display) {
+        const compStyle = getComputedStyle(body);
+        isOpen = compStyle.display === 'block';
+    }
+    // Alternar estado
     body.style.display = isOpen ? 'none' : 'block';
     if (indicator) indicator.textContent = isOpen ? '+' : '-';
     headerEl.setAttribute('aria-expanded', !isOpen);
