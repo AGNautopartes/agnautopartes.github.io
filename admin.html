@@ -1863,19 +1863,24 @@ sessionStorage.removeItem('agn-admin-logged');
                         </div>
                         <div id="dynamic-items-container">
                             ${(() => {
-                    // Merge items_json with order_items for complete rendering
-                    let items = o.items_json;
+                    // Usar solo una fuente de items - no merge
+                    let items = o.order_items || o.items_json || [];
                     if (!Array.isArray(items)) {
-                        try { items = JSON.parse(o.items_json); } catch (e) { items = []; }
+                        try { items = JSON.parse(items); } catch (e) { items = []; }
                     }
-                    // Merge with order_items if present
-                    if (Array.isArray(o.order_items) && o.order_items.length > 0) {
-                        items = [...items, ...o.order_items];
-                    }
+                    // Si no hay items, crear default
                     if (!items || items.length === 0) {
                         items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
                     }
-                    // Build items array, merging item JSON with order_items when present
+                    // Deduplicar por part_name
+                    const seen = new Set();
+                    items = items.filter(item => {
+                        const key = item.part_name || '';
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                    // Build items array
                     return items.map((item, idx) => `
 <div class="info-grid dynamic-item accordion-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
     <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
