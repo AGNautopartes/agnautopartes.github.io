@@ -1991,6 +1991,15 @@ function addNewOrderPart(isFirst = false){
     const container=document.getElementById('new-items-container');
     if(!container) return;
     const idx = container.querySelectorAll('.dynamic-item').length;
+    // Si ya hay items y no es first, verificar que no hay duplicados
+    if (idx > 0 && !isFirst) {
+        const lastItem = container.lastElementChild;
+        const nameInput = lastItem.querySelector('.dyn-part-name');
+        if (nameInput && !nameInput.value.trim()) {
+            console.log('addNewOrderPart: item vacio existente, no crear nuevo');
+            return;
+        }
+    }
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
     // Siempre expandir el nuevo item (último agregado)
