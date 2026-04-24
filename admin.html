@@ -1863,14 +1863,14 @@ sessionStorage.removeItem('agn-admin-logged');
                         </div>
                         <div id="dynamic-items-container">
                             ${(() => {
+                    // Merge items_json with order_items for complete rendering
                     let items = o.items_json;
                     if (!Array.isArray(items)) {
                         try { items = JSON.parse(o.items_json); } catch (e) { items = []; }
                     }
-                    // Agregar order_items desde la tabla
-                    const extraItems = o.order_items;
-                    if (Array.isArray(extraItems) && extraItems.length > 0) {
-                        items = [...items, ...extraItems];
+                    // Merge with order_items if present
+                    if (Array.isArray(o.order_items) && o.order_items.length > 0) {
+                        items = [...items, ...o.order_items];
                     }
                     if (!items || items.length === 0) {
                         items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
