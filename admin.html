@@ -2234,9 +2234,9 @@ function openNewManualOrder() {
                             cost_fob: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
                             sale_price: parseFloat(el.querySelector('.dyn-sale')?.value) || 0,
                             supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
-                            tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
-                            margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
-                            supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
+                            tracking_number: el.querySelector('.dyn-tracking')?.value?.trim() || '',
+                            margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : undefined,
+                            supplier_name: el.querySelector('.dyn-supplier')?.value?.trim() || '',
                             item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
                         });
                     }
