@@ -37,16 +37,17 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: 'No autorizado' });
     }
 
-    const {
-        orderId,
-        part_name, supplier_url, // Added missing fields
-        vin, vehicle_brand, vehicle_model, vehicle_year,
-        tracking_number, status,
-        costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
-        margen_markdown, precio_venta, comision_vendedor,
-        items_json, // Array JSONB
-        is_paid_fob, is_paid_logistics, is_paid_ec
-    } = req.body;
+const {
+    orderId,
+    part_name, supplier_url, // Added missing fields
+    vin, vehicle_brand, vehicle_model, vehicle_year,
+    tracking_number, status,
+    costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
+    margen_markdown, precio_venta, comision_vendedor,
+    items_json, // Array JSONB
+    is_paid_fob, is_paid_logistics, is_paid_ec,
+    customer_ruc, customer_cedula
+} = req.body;
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
@@ -69,6 +70,9 @@ export default async function handler(req, res) {
         if (margen_markdown !== undefined) updateData.margen_markdown = parseFloat(margen_markdown) || 0;
         if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta) || 0;
         if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
+
+        if (customer_ruc !== undefined) updateData.customer_ruc = customer_ruc;
+        if (customer_cedula !== undefined) updateData.customer_cedula = customer_cedula;
 
         if (items_json !== undefined) updateData.items_json = items_json;
         // is_paid_* columns removed - not present in current Supabase schema
