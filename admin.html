@@ -2088,11 +2088,9 @@ function openNewManualOrder() {
             </div>
         </div>
         `;
-// Create first item only if container is empty
-        if (!container.querySelector('.dynamic-item')) {
-            addNewOrderPart();
-        }
-    }
+    // Ensure a fresh first item is available (expanded)
+    setTimeout(() => addNewOrderPart(true), 10);
+}
 
 
         async function saveNewManualOrder() {
@@ -2166,12 +2164,31 @@ function openNewManualOrder() {
             document.getElementById('new-brand').value = '';
             document.getElementById('new-model').value = '';
             document.getElementById('new-year').value = '';
-// Create first item only if container is empty
+            // Clear dynamic items container
             const itemsContainer = document.getElementById('new-items-container');
-            if (itemsContainer && !itemsContainer.querySelector('.dynamic-item')) {
-                addNewOrderPart();
-            }
+            if (itemsContainer) itemsContainer.innerHTML = '';
+            // Re‑add initial part item (expanded)
+            setTimeout(() => addNewOrderPart(true), 10);
+            // Re‑enable button & reset flag
+            const btn = document.getElementById('btn-create-order');
+            if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
+            isCreatingOrder = false;
+        } else {
+            const err = await res.json().catch(() => ({}));
+            console.error('API Error Create:', err);
+            showToast('❌ Error al crear: ' + (err.message || ''), 'error');
+            // Refresh list even on error (in case of partial success)
+            await loadData();
+            // Re‑enable button & reset flag
+            const btn = document.getElementById('btn-create-order');
+            if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
+            isCreatingOrder = false;
         }
+    } catch (e) {
+        console.error('Fetch Error Create:', e);
+        showToast('❌ Error de conexión', 'error');
+        }
+    }
 
         function syncNewTitle() {
             const first = document.querySelector('#new-items-container .dyn-part-name');
@@ -2779,6 +2796,7 @@ function openNewManualOrder() {
 
         function toggleAccordion(headerEl) {
     if (!headerEl) return;
+    // Usar closest para encontrar el elemento padre correcto
     const itemEl = headerEl.closest('.accordion-item');
     if (!itemEl) {
         console.log('toggleAccordion: accordion-item not found');
@@ -2790,12 +2808,10 @@ function openNewManualOrder() {
         return;
     }
     const indicator = headerEl.querySelector('.accordion-indicator');
-    // Detectar estado: si display es vacío o 'block' = abierto
-    const currentDisplay = body.style.display || getComputedStyle(body).display;
-    const isOpen = currentDisplay === 'block';
+    // Verificar cualquier estado (no solo 'block')
+    const isOpen = body.style.display === 'block';
     body.style.display = isOpen ? 'none' : 'block';
     if (indicator) indicator.textContent = isOpen ? '+' : '-';
-    console.log('toggleAccordion:', isOpen ? 'closing' : 'opening');
     headerEl.setAttribute('aria-expanded', !isOpen);
 }
 
