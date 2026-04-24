@@ -1990,7 +1990,7 @@ sessionStorage.removeItem('agn-admin-logged');
             setTimeout(recalculateTotals, 100);
         }
 
-function addNewOrderPart(){
+function addNewOrderPart(isFirst = false){
     const container=document.getElementById('new-items-container');
     if(!container) return;
     // SIEMPRE crear solo un item - no hay flag
@@ -2001,7 +2001,7 @@ function addNewOrderPart(){
     const idx = 0;
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
-    // Siempre expandir el nuevo item (último agregado)
+    // Siempre expandir el nuevo item
     const isExpanded = 'block';
     const indicator = '-';
     div.innerHTML=`
@@ -2091,7 +2091,7 @@ function openNewManualOrder() {
         // Crear primer item solo si no existe
         const container = document.getElementById('new-items-container');
         if (container && container.children.length === 0) {
-            addNewOrderPart();
+            setTimeout(() => addNewOrderPart(true), 10);
         }
     }
 
@@ -2167,8 +2167,8 @@ function openNewManualOrder() {
             const itemsContainer = document.getElementById('new-items-container');
             if (itemsContainer) itemsContainer.innerHTML = '';
             // Re‑add initial part item only if empty
-            if (!document.getElementById('new-items-container')?.children.length) {
-                addNewOrderPart();
+            if (itemsContainer && itemsContainer.children.length === 0) {
+                setTimeout(() => addNewOrderPart(true), 10);
             }
             // Re‑enable button & reset flag
             const btn = document.getElementById('btn-create-order');
