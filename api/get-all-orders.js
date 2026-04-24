@@ -66,28 +66,23 @@ export default async function handler(req, res) {
                     phone,
                     ruc,
                     cedula
+                ),
+                order_items (
+                    id,
+                    part_name,
+                    part_number,
+                    quantity,
+                    cost_fob,
+                    sale_price,
+                    vendor_name,
+                    supplier_url,
+                    tracking_number,
+                    margin_percent,
+                    supplier_name,
+                    item_status
                 )
             `)
             .order('created_at', { ascending: false });
-
-        if (orders && orders.length > 0) {
-            const orderIds = orders.map(o => o.id);
-            const { data: allOrderItems } = await supabase
-                .from('order_items')
-                .select('*')
-                .in('order_id', orderIds);
-
-            if (allOrderItems) {
-                const itemsByOrder = {};
-                allOrderItems.forEach(item => {
-                    if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
-                    itemsByOrder[item.order_id].push(item);
-                });
-                orders.forEach(o => {
-                    o.order_items = itemsByOrder[o.id] || [];
-                });
-            }
-        }
 
 
         if (error) throw error;
