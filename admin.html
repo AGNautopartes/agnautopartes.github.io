@@ -2115,7 +2115,7 @@ function openNewManualOrder() {
     if (!name) { const btn = document.getElementById('btn-create-order'); if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; } isCreatingOrder = false; return; }
     if (!model) { const btn=document.getElementById('btn-create-order'); if(btn){btn.disabled=false;btn.textContent='CREAR ORDEN';} isCreatingOrder=false; return; }
 
-    // Recopilar ítems
+    // Recopilar ítems - solo campos básicos
     const items = [];
     document.querySelectorAll('#new-items-container .dynamic-item').forEach(el => {
         const pName = el.querySelector('.dyn-part-name').value.trim();
@@ -2123,11 +2123,7 @@ function openNewManualOrder() {
             items.push({
                 part_name: pName,
                 part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
-                supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
-                tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
-                margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
-                supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
-                item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
+                supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
             });
         }
     });
