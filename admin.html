@@ -1897,9 +1897,9 @@ sessionStorage.removeItem('agn-admin-logged');
     <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
         <div style="display:flex; gap:0.5rem; align-items:center;">
             <span>🧩 Item ${idx + 1}</span>
-            <input type="text" class="dyn-part-name" placeholder="Nombre parte" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;"/>
-            <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="${item.sale_price || 0}" style="width:80px;"/>
-            <select class="dyn-status" style="margin-left:0.5rem;">
+            <input type="text" class="dyn-part-name" placeholder="Nombre parte" value="${item.part_name || ''}" oninput="syncNewTitle()" style="margin-left:0.5rem;" onclick="event.stopPropagation()"/>
+            <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="${item.sale_price || 0}" style="width:80px;" onclick="event.stopPropagation()"/>
+            <select class="dyn-status" style="margin-left:0.5rem;" onclick="event.stopPropagation()">
                 <option value="Solicitado" ${item.item_status === 'Solicitado' ? 'selected' : ''}>Solicitado</option>
                 <option value="En proceso" ${item.item_status === 'En proceso' ? 'selected' : ''}>En proceso</option>
                 <option value="Enviado" ${item.item_status === 'Enviado' ? 'selected' : ''}>Enviado</option>
