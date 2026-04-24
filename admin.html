@@ -2771,12 +2771,19 @@ function openNewManualOrder() {
 
         function toggleAccordion(headerEl) {
     if (!headerEl) return;
-    const body = headerEl.parentElement.querySelector('.accordion-body');
+    // Usar closest para encontrar el elemento padre correcto
+    const itemEl = headerEl.closest('.accordion-item');
+    if (!itemEl) {
+        console.log('toggleAccordion: accordion-item not found');
+        return;
+    }
+    const body = itemEl.querySelector('.accordion-body');
     if (!body) {
-        console.log('toggleAccordion: body not found', headerEl.parentElement);
+        console.log('toggleAccordion: body not found', itemEl);
         return;
     }
     const indicator = headerEl.querySelector('.accordion-indicator');
+    // Verificar cualquier estado (no solo 'block')
     const isOpen = body.style.display === 'block';
     body.style.display = isOpen ? 'none' : 'block';
     if (indicator) indicator.textContent = isOpen ? '+' : '-';
