@@ -162,7 +162,8 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
                 tracking_number: item.tracking_number || '',
                 margin_percent: item.margin_percent !== undefined ? parseFloat(item.margin_percent) : null,
                 supplier_name: item.supplier_name || '',
-                image_data: item.image_data || ''
+                image_data: item.image_data || '',
+                item_status: item.item_status || 'Solicitado'
             }));
 
             const { error: itemsErr } = await supabase
