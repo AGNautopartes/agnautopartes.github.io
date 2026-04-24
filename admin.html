@@ -1082,6 +1082,17 @@
             width: 4px;
         }
 
+        /* ACCORDION */
+        .accordion-body { display: none; }
+        .accordion-body.expanded { display: block; }
+        .accordion-body.collapsed { display: none; }
+
+        /* Primera item expandido por defecto - primer item */
+        .accordion-item:first-child .accordion-body,
+        div[class*="accordion-item"] .accordion-body { display: block; }
+        .accordion-item:first-child .accordion-indicator,
+        div[class*="accordion-item"] .accordion-indicator { content: "-"; }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
@@ -1897,9 +1908,9 @@ sessionStorage.removeItem('agn-admin-logged');
             </select>
         </div>
         ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); recalculateTotals();" style="padding:2px 6px">×</button>` : ''}
-        <span class="accordion-indicator" style="float:right;">+</span>
+        <span class="accordion-indicator" style="float:right;">${idx === 0 ? '-' : '+'}</span>
     </div>
-    <div class="accordion-body" style="display:none; margin-top:8px;">
+    <div class="accordion-body ${idx === 0 ? 'expanded' : 'collapsed'}" style="margin-top:8px;">
         <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
         <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="${item.quantity || 1}"></div></div>
         <div class="info-item" style="display:none;"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}"></div></div>
@@ -2016,9 +2027,9 @@ function addNewOrderPart(isFirst = false){
                 </select>
             </div>
             <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()">×</button>
-            <span class="accordion-indicator">${indicator}</span>
+            <span class="accordion-indicator">${idx === 0 ? '-' : '+'}</span>
         </div>
-        <div class="accordion-body" style="display:${isExpanded}; margin-top:8px;">
+        <div class="accordion-body expanded" style="margin-top:8px;">
             <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
             <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
             <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
@@ -2342,8 +2353,11 @@ function openNewManualOrder() {
             }
         }
 
-        async function loadNotes(orderId) {
-            const res = await fetch(`${API}/api/get-notes?orderId=${orderId}`, {
+async function loadNotes(orderId) {
+            const el = document.getElementById('det-notes');
+            if (!el) return;
+            el.innerHTML = '<div style="color:var(--text2);font-size:0.78rem">Cargando...</div>';
+            const res = await fetchWithTimeout(`${API}/api/get-notes?orderId=${orderId}`, {
                 headers: { 'x-admin-password': adminPass }
             });
             if (res.ok) {
@@ -2380,9 +2394,11 @@ function openNewManualOrder() {
         }
 
 
-        async function loadHistory(orderId) {
-            document.getElementById('det-history').innerHTML = '<div style="color:var(--text2);font-size:0.78rem">Próximamente...</div>';
-        }
+async function loadHistory(orderId) {
+    const el = document.getElementById('det-history');
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--text2);font-size:0.78rem">Próximamente...</div>';
+}
 
         async function deleteOrder(orderId) {
             if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
@@ -2768,16 +2784,28 @@ function openNewManualOrder() {
 
         function toggleAccordion(headerEl) {
     if (!headerEl) return;
-    const body = headerEl.parentElement.querySelector('.accordion-body');
+    // Usar closest para encontrar el elemento padre correcto
+    const itemEl = headerEl.closest('.accordion-item');
+    if (!itemEl) {
+        console.log('toggleAccordion: accordion-item not found');
+        return;
+    }
+    const body = itemEl.querySelector('.accordion-body');
     if (!body) {
-        console.log('toggleAccordion: body not found', headerEl.parentElement);
+        console.log('toggleAccordion: body not found', itemEl);
         return;
     }
     const indicator = headerEl.querySelector('.accordion-indicator');
-    const isOpen = body.style.display === 'block';
-    body.style.display = isOpen ? 'none' : 'block';
-    if (indicator) indicator.textContent = isOpen ? '+' : '-';
-    headerEl.setAttribute('aria-expanded', !isOpen);
+    // Toggle estado
+    if (body.classList.contains('expanded')) {
+        body.classList.remove('expanded');
+        body.classList.add('collapsed');
+        if (indicator) indicator.textContent = '+';
+    } else {
+        body.classList.remove('collapsed');
+        body.classList.add('expanded');
+        if (indicator) indicator.textContent = '-';
+    }
 }
 
 function recalculateTotals(reverse = false) {
