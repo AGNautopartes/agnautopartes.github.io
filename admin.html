@@ -464,8 +464,8 @@
 
         /* ══ DETAIL PANEL ══ */
         .detail-panel {
-            width: 380px;
-            /* Tamaño similar a Aria */
+            width: 460px;
+            /* Increased from 380px for better readability */
             border-left: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -1974,34 +1974,43 @@ sessionStorage.removeItem('agn-admin-logged');
             setTimeout(recalculateTotals, 100);
         }
 
-        function addNewOrderPart(){
+function addNewOrderPart(isFirst = false){
     const container=document.getElementById('new-items-container');
     if(!container) return;
+    const idx = container.querySelectorAll('.dynamic-item').length;
     const div=document.createElement('div');
-    div.className='dynamic-item';
-    div.style='margin-top:10px; padding:10px; background:rgba(255,255,255,0.02); border-left:2px solid var(--blue); border-radius:4px;';
+    div.className='dynamic-item accordion-item';
+    const isExpanded = isFirst ? 'block' : 'none';
+    const indicator = isFirst ? '-' : '+';
     div.innerHTML=`
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <strong>Parte</strong>
-            <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+        <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <span>🧩 Item ${idx + 1}</span>
+                <input type="text" class="dyn-part-name" placeholder="Nombre parte" style="margin-left:0.5rem;"/>
+                <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="0" style="width:80px;"/>
+            </div>
+            <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()">×</button>
+            <span class="accordion-indicator">${indicator}</span>
         </div>
-        <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
-        <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
-        <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
-        <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
-        <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" step="0.1"/></div></div>
-        <div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
-        <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
-            <option>Solicitado</option>
-            <option>Cotizado</option>
-            <option>Comprado</option>
-            <option>Tránsito 1 (Prov→Log)</option>
-            <option>Tránsito 2 (Log→EC)</option>
-            <option>En Aduana</option>
-            <option>Entregado</option>
-            <option>Recogido en Local</option>
-            <option>Cancelado</option>
-        </select></div></div>
+        <div class="accordion-body" style="display:${isExpanded}; margin-top:8px;">
+            <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
+            <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
+            <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
+            <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
+            <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" step="0.1"/></div></div>
+            <div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
+            <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
+                <option>Solicitado</option>
+                <option>Cotizado</option>
+                <option>Comprado</option>
+                <option>Trnsito 1 (ProvLog)</option>
+                <option>Trnsito 2 (LogEC)</option>
+                <option>En Aduana</option>
+                <option>Entregado</option>
+                <option>Recogido en Local</option>
+                <option>Cancelado</option>
+            </select></div></div>
+        </div>
     `;
     container.appendChild(div);
 }
@@ -2056,8 +2065,8 @@ function openNewManualOrder() {
             </div>
         </div>
         `;
-    // Ensure a fresh first item is available
-    setTimeout(addNewOrderPart, 10);
+    // Ensure a fresh first item is available (expanded)
+    setTimeout(() => addNewOrderPart(true), 10);
 }
 
 
@@ -2135,8 +2144,8 @@ function openNewManualOrder() {
             // Clear dynamic items container
             const itemsContainer = document.getElementById('new-items-container');
             if (itemsContainer) itemsContainer.innerHTML = '';
-            // Re‑add initial part item
-            setTimeout(addNewOrderPart, 10);
+            // Re‑add initial part item (expanded)
+            setTimeout(() => addNewOrderPart(true), 10);
             // Re‑enable button & reset flag
             const btn = document.getElementById('btn-create-order');
             if (btn) { btn.disabled = false; btn.textContent = 'CREAR ORDEN'; }
