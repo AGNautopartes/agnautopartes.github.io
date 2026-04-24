@@ -71,6 +71,29 @@ export default async function handler(req, res) {
             .order('created_at', { ascending: false });
 
 
+        if (orders && orders.length > 0) {
+            try {
+                const orderIds = orders.map(o => o.id);
+                const { data: allItems } = await supabase
+                    .from('order_items')
+                    .select('*')
+                    .in('order_id', orderIds);
+
+                if (allItems) {
+                    const itemsMap = {};
+                    allItems.forEach(item => {
+                        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+                        itemsMap[item.order_id].push(item);
+                    });
+                    orders.forEach(o => {
+                        o.order_items = itemsMap[o.id] || [];
+                    });
+                }
+            } catch (itemsErr) {
+                console.error('Error fetching order_items:', itemsErr);
+            }
+        }
+
         if (error) throw error;
 
         return res.status(200).json(orders);

@@ -50,6 +50,8 @@ export default async function handler(req, res) {
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
+    console.log('Update order request:', { orderId, hasItemsJson: !!items_json });
+
     try {
         const updateData = {};
         if (part_name !== undefined) updateData.part_name = part_name;
@@ -85,28 +87,32 @@ export default async function handler(req, res) {
         // 🟢 Misión: Sincronización Atómica (Fase 5)
         // Guardar cada ítem como una fila real en order_items para reportes y visión de Aria
         if (items_json && Array.isArray(items_json)) {
-            // 1. Limpiar ítems previos para esta orden (Limpieza Atómica)
-            await supabase.from('order_items').delete().eq('order_id', orderId);
+            try {
+                // 1. Limpiar ítems previos para esta orden (Limpieza Atómica)
+                await supabase.from('order_items').delete().eq('order_id', orderId);
 
-            // 2. Insertar la lista actualizada (Doble Escritura)
-            const rowsToInsert = items_json.map(it => ({
-                order_id: orderId,
-                part_name: it.part_name || 'Sin nombre',
-                part_number: it.part_number || '',
-                quantity: parseInt(it.quantity) || 1,
-                cost_fob: parseFloat(it.cost_fob) || 0,
-                sale_price: parseFloat(it.sale_price) || 0,
-                vendor_name: it.vendor_name || '',
-                supplier_url: it.supplier_url || '',
-                tracking_number: it.tracking_number || '',
-                margin_percent: it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null,
-                supplier_name: it.supplier_name || '',
-                updated_at: new Date().toISOString()
-            }));
+                // 2. Insertar la lista actualizada (Doble Escritura)
+                const rowsToInsert = items_json.map(it => ({
+                    order_id: orderId,
+                    part_name: it.part_name || 'Sin nombre',
+                    part_number: it.part_number || '',
+                    quantity: parseInt(it.quantity) || 1,
+                    cost_fob: parseFloat(it.cost_fob) || 0,
+                    sale_price: parseFloat(it.sale_price) || 0,
+                    vendor_name: it.vendor_name || '',
+                    supplier_url: it.supplier_url || '',
+                    tracking_number: it.tracking_number || '',
+                    margin_percent: it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null,
+                    supplier_name: it.supplier_name || '',
+                    updated_at: new Date().toISOString()
+                }));
 
-            if (rowsToInsert.length > 0) {
-                const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);
-                if (itemsErr) console.error('Error sincronizando order_items:', itemsErr);
+                if (rowsToInsert.length > 0) {
+                    const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);
+                    if (itemsErr) console.error('Error sincronizando order_items:', itemsErr);
+                }
+            } catch (itemsError) {
+                console.error(' order_items sync skipped:', itemsError.message);
             }
         }
 

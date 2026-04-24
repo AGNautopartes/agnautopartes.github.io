@@ -2164,6 +2164,15 @@ function openNewManualOrder() {
             if (first && title) title.value = first.value || 'Nueva Orden';
         }
 
+        function updateStats(orders) {
+            document.getElementById('s-total').textContent = orders.length;
+            document.getElementById('s-comprado').textContent = orders.filter(o => o.status === 'Comprado').length;
+            document.getElementById('s-transito').textContent = orders.filter(o => o.status?.includes('Trnsito')).length;
+            document.getElementById('s-entregado').textContent = orders.filter(o => o.status === 'Entregado').length;
+            const active = orders.filter(o => !['Entregado', 'Recogido en Local', 'Cancelado'].includes(o.status)).length;
+            document.getElementById('nav-active').textContent = `${active} activos`;
+        }
+
     async function loadData() {
         // Fetch orders from backend (if password set). In case of error, keep the current list.
         if (!adminPass) return;
