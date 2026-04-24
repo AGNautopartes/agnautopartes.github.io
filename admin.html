@@ -1811,7 +1811,10 @@ sessionStorage.removeItem('agn-admin-logged');
         function renderDetail(o) {
             const panel = document.getElementById('detail-panel');
             const content = document.getElementById('detail-content');
+            if (!content) return; // robust: container might be absent
             if (!o) return;
+            if (!content) return;
+            if (!content) return; // guard to avoid NullPointer if detail container missing
 
             panel.classList.remove('empty');
 
@@ -1872,6 +1875,7 @@ sessionStorage.removeItem('agn-admin-logged');
                     if (!items || items.length === 0) {
                         items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
                     }
+                    // Build items array, merging item JSON with order_items when present
                     return items.map((item, idx) => `
 <div class="info-grid dynamic-item accordion-item" style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;">
     <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
@@ -1900,7 +1904,7 @@ sessionStorage.removeItem('agn-admin-logged');
         <div class="info-item" style="display:none;"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.supplier_name || ''}"></div></div>
     </div>
 </div>
-                                `).join('');
+                `).join('');
                 })()}
                         </div>
                     </div>
@@ -1985,8 +1989,9 @@ function addNewOrderPart(isFirst = false){
     const idx = container.querySelectorAll('.dynamic-item').length;
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
-    const isExpanded = 'block'; // Siempre expandido al crear
-    const indicator = '-';
+    // Primer item expandido, otros colapsados
+    const isExpanded = isFirst ? 'block' : 'none';
+    const indicator = isFirst ? '-' : '+';
     div.innerHTML=`
         <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
             <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -2381,14 +2386,18 @@ function openNewManualOrder() {
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                 body: JSON.stringify({ orderId })
             });
-            if (res.ok) {
-                showToast('🗑️ Orden eliminada', 'success');
-                allOrders = allOrders.filter(o => o.id !== orderId);
-                renderOrders(allOrders);
-                updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
-                document.getElementById('detail-panel').classList.add('empty');
-            } else showToast('❌ Error al eliminar', 'error');
+                if (res.ok) {
+                    showToast('🗑️ Orden eliminada', 'success');
+                    allOrders = allOrders.filter(o => o.id !== orderId);
+                    renderOrders(allOrders);
+                    updateStats(allOrders);
+                    document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
+                    document.getElementById('detail-panel').classList.add('empty');
+                    // Refrescar lista para evitar estados stuck
+                    if (typeof loadData === 'function') {
+                        loadData();
+                    }
+                } else showToast('❌ Error al eliminar', 'error');
         }
 
         async function deleteAllOrders() {
