@@ -66,20 +66,6 @@ export default async function handler(req, res) {
                     phone,
                     ruc,
                     cedula
-                ),
-                order_items (
-                    id,
-                    part_name,
-                    part_number,
-                    quantity,
-                    cost_fob,
-                    sale_price,
-                    vendor_name,
-                    supplier_url,
-                    tracking_number,
-                    margin_percent,
-                    supplier_name,
-                    item_status
                 )
             `)
             .order('created_at', { ascending: false });

@@ -71,15 +71,8 @@ const {
         if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta) || 0;
         if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
 
-        if (customer_ruc !== undefined || customer_cedula !== undefined) {
-            const { data: order } = await supabase.from('orders').select('customer_id').eq('id', orderId).maybeSingle();
-            if (order?.customer_id) {
-                await supabase.from('customers').update({
-                    ruc: customer_ruc || null,
-                    cedula: customer_cedula || null
-                }).eq('id', order.customer_id);
-            }
-        }
+        if (customer_ruc !== undefined) updateData.customer_ruc = customer_ruc;
+        if (customer_cedula !== undefined) updateData.customer_cedula = customer_cedula;
 
         if (items_json !== undefined) updateData.items_json = items_json;
         // is_paid_* columns removed - not present in current Supabase schema
