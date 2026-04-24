@@ -1578,8 +1578,7 @@
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
-let isCreatingOrder = false; // global flag to prevent duplicate order creation
-let itemInitialized = false; // flag para prevenir items duplicados
+let isCreatingOrder = false;
 sessionStorage.removeItem('agn-admin-logged');
         let allOrders = [], selectedOrder = null;
         let ariaHistory = [];
@@ -1994,13 +1993,12 @@ sessionStorage.removeItem('agn-admin-logged');
 function addNewOrderPart(){
     const container=document.getElementById('new-items-container');
     if(!container) return;
-    // Prevenir duplicados con flag global
-    if (itemInitialized) {
-        console.log('addNewOrderPart: ya inicializado');
+    // SIEMPRE crear solo un item - no hay flag
+    if (container.querySelectorAll('.dynamic-item').length > 0) {
+        console.log('addNewOrderPart: ya existe item');
         return;
     }
-    itemInitialized = true;
-    const idx = container.querySelectorAll('.dynamic-item').length;
+    const idx = 0;
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
     // Siempre expandir el nuevo item (último agregado)
@@ -2040,8 +2038,6 @@ function addNewOrderPart(){
 }
 
 function openNewManualOrder() {
-    // Resetear flags
-    itemInitialized = false;
     isCreatingOrder = false;
     // Ensure the detail panel is expanded and cleared
     const panel = document.getElementById('detail-panel');
