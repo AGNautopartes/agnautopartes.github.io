@@ -2225,10 +2225,7 @@ function openNewManualOrder() {
                     items_json: items,
                     is_paid_fob: document.getElementById('paid-fob').checked,
                     is_paid_logistics: document.getElementById('paid-log').checked,
-                    is_paid_ec: document.getElementById('paid-ec').checked,
-                    // Agregamos datos de cliente que antes no se enviaban en la actualización
-                    customer_ruc: document.getElementById('edit-cust-ruc').value.trim(),
-                    customer_cedula: document.getElementById('edit-cust-cedula').value.trim()
+                    is_paid_ec: document.getElementById('paid-ec').checked
                 };
 
                 console.log('Sending Update Payload:', data);
