@@ -1077,6 +1077,10 @@
             color: var(--text2);
         }
 
+        /* ACCORDION BODY STATES */
+        .accordion-body.collapsed { display: none; }
+        .accordion-body.expanded { display: block; }
+
         /* SCROLLBARS */
         ::-webkit-scrollbar {
             width: 4px;
@@ -1575,7 +1579,7 @@
 
         let adminPass = '', adminName = 'Admin';
 let isCreatingOrder = false; // global flag to prevent duplicate order creation
-// Reset possible stale login flag from previous broken session
+let itemInitialized = false; // flag para prevenir items duplicados
 sessionStorage.removeItem('agn-admin-logged');
         let allOrders = [], selectedOrder = null;
         let ariaHistory = [];
@@ -1898,7 +1902,7 @@ sessionStorage.removeItem('agn-admin-logged');
         ${idx > 0 ? `<button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); recalculateTotals();" style="padding:2px 6px">×</button>` : ''}
         <span class="accordion-indicator" style="float:right;">${idx === 0 ? '-' : '+'}</span>
     </div>
-    <div class="accordion-body" style="display:${idx === 0 ? 'block' : 'none'}; margin-top:8px;">
+    <div class="accordion-body ${idx === 0 ? 'expanded' : 'collapsed'}" style="margin-top:8px;">
         <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
         <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="${item.quantity || 1}"></div></div>
         <div class="info-item" style="display:none;"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}"></div></div>
@@ -1987,19 +1991,16 @@ sessionStorage.removeItem('agn-admin-logged');
             setTimeout(recalculateTotals, 100);
         }
 
-function addNewOrderPart(isFirst = false){
+function addNewOrderPart(){
     const container=document.getElementById('new-items-container');
     if(!container) return;
-    const idx = container.querySelectorAll('.dynamic-item').length;
-    // Si ya hay items y no es first, verificar que no hay duplicados
-    if (idx > 0 && !isFirst) {
-        const lastItem = container.lastElementChild;
-        const nameInput = lastItem.querySelector('.dyn-part-name');
-        if (nameInput && !nameInput.value.trim()) {
-            console.log('addNewOrderPart: item vacio existente, no crear nuevo');
-            return;
-        }
+    // Prevenir duplicados con flag global
+    if (itemInitialized) {
+        console.log('addNewOrderPart: ya inicializado');
+        return;
     }
+    itemInitialized = true;
+    const idx = container.querySelectorAll('.dynamic-item').length;
     const div=document.createElement('div');
     div.className='dynamic-item accordion-item';
     // Siempre expandir el nuevo item (último agregado)
@@ -2026,7 +2027,7 @@ function addNewOrderPart(isFirst = false){
             <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()">×</button>
             <span class="accordion-indicator">${indicator}</span>
         </div>
-        <div class="accordion-body" style="display:${isExpanded}; margin-top:8px;">
+        <div class="accordion-body expanded" style="margin-top:8px;">
             <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
             <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
             <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
@@ -2039,6 +2040,9 @@ function addNewOrderPart(isFirst = false){
 }
 
 function openNewManualOrder() {
+    // Resetear flags
+    itemInitialized = false;
+    isCreatingOrder = false;
     // Ensure the detail panel is expanded and cleared
     const panel = document.getElementById('detail-panel');
     if (panel) {
@@ -2328,7 +2332,7 @@ function openNewManualOrder() {
                     <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove(); recalculateTotals();" style="padding:2px 6px">×</button>
                     <span class="accordion-indicator" style="float:right;">-</span>
                 </div>
-                <div class="accordion-body" style="display:block; margin-top:8px;">
+                <div class="accordion-body expanded" style="margin-top:8px;">
                     <div class="info-item"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional"></div></div>
                     <div class="info-item"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="1"></div></div>
                     <div class="info-item"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0"></div></div>
@@ -2812,14 +2816,10 @@ function openNewManualOrder() {
         return;
     }
     const indicator = headerEl.querySelector('.accordion-indicator');
-    // Leer inline style primero, sino estilo computado
-    let isOpen = body.style.display === 'block';
-    if (!body.style.display) {
-        const compStyle = getComputedStyle(body);
-        isOpen = compStyle.display === 'block';
-    }
-    // Alternar estado
-    body.style.display = isOpen ? 'none' : 'block';
+    // Usar class en vez de inline style
+    const isOpen = body.classList.contains('expanded');
+    body.classList.toggle('expanded', !isOpen);
+    body.classList.toggle('collapsed', isOpen);
     if (indicator) indicator.textContent = isOpen ? '+' : '-';
     headerEl.setAttribute('aria-expanded', !isOpen);
 }
