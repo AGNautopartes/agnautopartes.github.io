@@ -1860,9 +1860,15 @@ sessionStorage.removeItem('agn-admin-logged');
                         </div>
                         <div id="dynamic-items-container">
                             ${(() => {
+                    // Combine items_json + order_items (from the JOIN)
                     let items = o.items_json;
                     if (!Array.isArray(items)) {
                         try { items = JSON.parse(o.items_json); } catch (e) { items = []; }
+                    }
+                    // Add items from order_items table
+                    const extraItems = o.order_items;
+                    if (Array.isArray(extraItems) && extraItems.length > 0) {
+                        items = [...items, ...extraItems];
                     }
                     if (!items || items.length === 0) {
                         items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
@@ -1974,34 +1980,55 @@ sessionStorage.removeItem('agn-admin-logged');
             setTimeout(recalculateTotals, 100);
         }
 
-        function addNewOrderPart(){
+        function addNewOrderPart(isFirst = false){
     const container=document.getElementById('new-items-container');
     if(!container) return;
+    const idx = container.querySelectorAll('.dynamic-item').length;
     const div=document.createElement('div');
-    div.className='dynamic-item';
+    div.className='dynamic-item accordion-item';
     div.style='margin-top:10px; padding:10px; background:rgba(255,255,255,0.02); border-left:2px solid var(--blue); border-radius:4px;';
+    const isExpanded = isFirst ? 'block' : 'none';
+    const indicator = isFirst ? '−' : '+';
     div.innerHTML=`
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <strong>Parte</strong>
-            <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+        <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <span>🧩 Item ${idx + 1}</span>
+                <input type="text" class="dyn-part-name" placeholder="Nombre parte" style="margin-left:0.5rem;"/>
+                <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="0" style="width:80px;"/>
+                <select class="dyn-status" style="margin-left:0.5rem;">
+                    <option>Solicitado</option>
+                    <option>Cotizado</option>
+                    <option>Comprado</option>
+                    <option>Tránsito 1 (Prov→Log)</option>
+                    <option>Tránsito 2 (Log→EC)</option>
+                    <option>En Aduana</option>
+                    <option>Entregado</option>
+                    <option>Recogido en Local</option>
+                    <option>Cancelado</option>
+                </select>
+            </div>
+            <button class="btn-action btn-sm btn-danger" onclick="this.closest('.dynamic-item').remove()" style="padding:2px 6px">×</button>
+            <span class="accordion-indicator" style="float:right;">${indicator}</span>
         </div>
-        <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
-        <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
-        <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
-        <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
-        <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" step="0.1"/></div></div>
-        <div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
-        <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
-            <option>Solicitado</option>
-            <option>Cotizado</option>
-            <option>Comprado</option>
-            <option>Tránsito 1 (Prov→Log)</option>
-            <option>Tránsito 2 (Log→EC)</option>
-            <option>En Aduana</option>
-            <option>Entregado</option>
-            <option>Recogido en Local</option>
-            <option>Cancelado</option>
-        </select></div></div>
+        <div class="accordion-body" style="display:${isExpanded}; margin-top:8px;">
+            <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" placeholder="Nombre parte"/></div></div>
+            <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
+            <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
+            <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
+            <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" step="0.1"/></div></div>
+            <div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
+            <div class="info-item"><div class="il">Estado</div><div class="iv"><select class="dyn-status">
+                <option>Solicitado</option>
+                <option>Cotizado</option>
+                <option>Comprado</option>
+                <option>Tránsito 1 (Prov→Log)</option>
+                <option>Tránsito 2 (Log→EC)</option>
+                <option>En Aduana</option>
+                <option>Entregado</option>
+                <option>Recogido en Local</option>
+                <option>Cancelado</option>
+            </select></div></div>
+        </div>
     `;
     container.appendChild(div);
 }
@@ -2056,8 +2083,8 @@ function openNewManualOrder() {
             </div>
         </div>
         `;
-    // Ensure a fresh first item is available
-    setTimeout(addNewOrderPart, 10);
+    // Ensure a fresh first item is available (expanded)
+    setTimeout(() => addNewOrderPart(true), 10);
 }
 
 
