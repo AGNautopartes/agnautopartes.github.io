@@ -2773,6 +2773,27 @@ async function loadHistory(orderId) {
             div.innerHTML = `
                 <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
                     <strong>Repuesto</strong>
+                    <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove(); recalculateTotals();">X</button>
+                </div>
+                <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" value="${partNo}" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item" style="grid-column:1/-1"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" value="${url}" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Cantidad</div><div class="iv"><input type="number" class="dyn-qty" value="1" min="1" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Costo FOB</div><div class="iv"><input type="number" class="dyn-cost" value="0" step="0.01" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Precio Venta</div><div class="iv"><input type="number" class="dyn-sale" value="0" step="0.01" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Margen %</div><div class="iv"><input type="number" class="dyn-margin" value="" step="0.1" min="0" max="100" onclick="event.stopPropagation()"></div></div>
+                <div class="info-item"><div class="il">Flete</div><div class="iv"><input type="number" class="dyn-flete" value="0" step="0.01" onclick="event.stopPropagation()"></div></div>
+            `;
+            container.appendChild(div);
+            recalculateTotals();
+            const container = document.getElementById('dynamic-items-container');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'info-grid dynamic-item';
+            div.style = 'margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--blue); border-radius: 4px;';
+            div.innerHTML = `
+                <div class="info-item" style="grid-column:1/-1; display:flex; justify-content:space-between;">
+                    <strong>Repuesto</strong>
                     <button class="btn-action btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
                 </div>
                 <div class="info-item"><div class="il required">Nombre</div><div class="iv"><input type="text" class="dyn-part-name" value="${partName}"></div></div>
@@ -2810,12 +2831,15 @@ async function loadHistory(orderId) {
 
 function recalculateTotals(reverse = false) {
     // Sum per-item totals (quantity * cost FOB)
-    let itemsTotal = 0;
-    document.querySelectorAll('.dynamic-item').forEach(el => {
-        const qty = parseFloat(el.querySelector('.dyn-qty')?.value) || 0;
-        const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
-        itemsTotal += qty * cost;
-    });
+let itemsTotal = 0;
+      let totalFlete = 0;
+      document.querySelectorAll('.dynamic-item').forEach(el => {
+          const qty = parseFloat(el.querySelector('.dyn-qty')?.value) || 0;
+          const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
+          const flete = parseFloat(el.querySelector('.dyn-flete')?.value) || 0;
+          itemsTotal += qty * cost;
+          totalFlete += flete;
+      });
     // Use itemsTotal as base FOB if greater than manual base price
     const manualFob = parseFloat(document.getElementById('edit-base-price')?.value) || 0;
     const fob = itemsTotal > 0 ? itemsTotal : manualFob;
@@ -2824,7 +2848,7 @@ function recalculateTotals(reverse = false) {
             const ec = parseFloat(document.getElementById('edit-shipping-ec')?.value) || 0;
             const adv = parseFloat(document.getElementById('edit-advalorem')?.value) || 0;
 
-            const shippingAduana = log + ec + adv;
+            const shippingAduana = log + ec + adv + totalFlete;
             const elShippingAduana = document.getElementById('edit-shipping-aduana');
             if (elShippingAduana) elShippingAduana.value = shippingAduana.toFixed(2);
 
