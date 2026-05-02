@@ -53,15 +53,17 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: 'No autorizado' });
     }
 
-    const {
-        orderId,
-        part_name, supplier_url, // Added missing fields
-        vin, vehicle_brand, vehicle_model, vehicle_year,
-        tracking_number, status,
-        fob_cost, supplier_freight, customs_nationalization, other_expenses,
-        margin_percent, price, price_with_vat,
-        items_json // Array JSONB
-    } = req.body;
+const {
+  orderId,
+  part_name, supplier_url,
+  vin, vehicle_brand, vehicle_model, vehicle_year,
+  tracking_number, status,
+  fob_cost, supplier_freight, customs_nationalization, other_expenses,
+  margin_percent, price, price_with_vat,
+  comision_vendedor,
+  customer_name, customer_phone, customer_ruc, customer_cedula,
+  items_json
+} = req.body;
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
@@ -85,10 +87,10 @@ export default async function handler(req, res) {
         if (other_expenses !== undefined) updateData.other_expenses = parseFloat(other_expenses) || 0;
         if (margin_percent !== undefined) updateData.margin_percent = parseFloat(margin_percent) || 0;
         if (price !== undefined) updateData.price = parseFloat(price) || 0;
-        if (price_with_vat !== undefined) updateData.price_with_vat = parseFloat(price_with_vat) || 0;
+if (price_with_vat !== undefined) updateData.price_with_vat = parseFloat(price_with_vat) || 0;
+if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
 
-        if (items_json !== undefined) updateData.items_json = items_json;
-        // is_paid_* columns removed - not present in current Supabase schema
+if (items_json !== undefined) updateData.items_json = items_json;
 
         updateData.updated_at = new Date().toISOString();
 
@@ -99,6 +101,35 @@ export default async function handler(req, res) {
 
         if (orderErr) throw orderErr;
 
+// Update customer data if provided
+if (customer_name || customer_phone || customer_ruc || customer_cedula) {
+  try {
+    const { data: order } = await supabase
+      .from('orders')
+      .select('customer_id')
+      .eq('id', orderId)
+      .single();
+
+    if (order && order.customer_id) {
+      const customerUpdate = {};
+      if (customer_name) customerUpdate.full_name = customer_name;
+      if (customer_phone) customerUpdate.phone = customer_phone;
+      if (customer_ruc) customerUpdate.ruc = customer_ruc;
+      if (customer_cedula) customerUpdate.cedula = customer_cedula;
+
+      if (Object.keys(customerUpdate).length > 0) {
+        const { error: custErr } = await supabase
+          .from('customers')
+          .update(customerUpdate)
+          .eq('id', order.customer_id);
+        if (custErr) console.error('Error updating customer:', custErr);
+      }
+    }
+  } catch (custError) {
+    console.error('Customer update skipped:', custError.message);
+  }
+}
+
         // 🟢 Misión: Sincronización Atómica (Fase 5)
         // Guardar cada ítem como una fila real en order_items para reportes y visión de Aria
         if (items_json && Array.isArray(items_json)) {
@@ -107,61 +138,54 @@ export default async function handler(req, res) {
                 await supabase.from('order_items').delete().eq('order_id', orderId);
 
                  // 2. Insertar la lista actualizada (Doble Escritura)
-                 const rowsToInsert = items_json.map(it => {
-                     // Parse and validate financial values
-                     const parsedCostFob = parseFloat(it.cost_fob) || 0;
-                     const parsedSalePrice = parseFloat(it.sale_price) || 0;
-                     const parsedMargin = it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null;
-                     
-                     // Calculate missing values if needed (same logic as in create-order)
-                     let finalCostFob = parsedCostFob;
-                     let finalSalePrice = parsedSalePrice;
-                     let finalMargin = parsedMargin;
-                     
-                     // If we have cost but no price, calculate price from margin (default 20%)
-                     if (parsedCostFob > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
-                         finalMargin = 20; // Default margin
-                         finalSalePrice = calculatePriceFromCostAndMargin(parsedCostFob, finalMargin);
-                     } 
-                     // If we have price but no cost, we can't calculate cost without margin
-                     // If we have both cost and price, calculate margin
-                     else if (parsedCostFob > 0 && parsedSalePrice > 0 && parsedMargin === null) {
-                         finalMargin = calculateMarginFromCostAndPrice(parsedCostFob, parsedSalePrice);
-                     }
-                     // If we have margin and price but no cost, calculate cost
-                     else if (parsedCostFob === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
-                         finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
-                     }
-                     // Otherwise use provided values (with defaults)
-                     else {
-                         finalCostFob = parsedCostFob;
-                         finalSalePrice = parsedSalePrice;
-                         finalMargin = parsedMargin !== null ? parsedMargin : 20;
-                         
-                         // If we still don't have price but have cost and margin, calculate it
-                         if (finalSalePrice === 0 && finalCostFob > 0) {
-                             finalSalePrice = calculatePriceFromCostAndMargin(finalCostFob, finalMargin);
-                         }
-                     }
-                     
-                     // Calculate price with VAT
-                     const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
-                     
-                     return {
-                         order_id: orderId,
-                         part_name: it.part_name || 'Sin nombre',
-                         part_number: it.part_number || '',
-                         quantity: parseInt(it.quantity) || 1,
-                         cost_fob: finalCostFob,
-                         sale_price: finalSalePrice,
-                         vendor_name: it.vendor_name || '',
-                         supplier_url: it.supplier_url || '',
-                         tracking_number: it.tracking_number || '',
-                         margin_percent: finalMargin,
-                         supplier_name: it.supplier_name || '',
-                         updated_at: new Date().toISOString()
-                     };
-                 });
+	const rowsToInsert = items_json.map(it => {
+	const parsedFobCost = parseFloat(it.fob_cost) || parseFloat(it.cost_fob) || 0;
+	const parsedSupplierFreight = parseFloat(it.supplier_freight) || 0;
+	const parsedCustoms = parseFloat(it.customs_nationalization) || 0;
+	const parsedLandedCost = parsedFobCost + parsedSupplierFreight + parsedCustoms;
+	const parsedSalePrice = parseFloat(it.sale_price) || 0;
+	const parsedMargin = it.margin_percent !== undefined && it.margin_percent !== null ? parseFloat(it.margin_percent) : null;
+
+	let finalCostFob = parsedFobCost;
+	let finalSalePrice = parsedSalePrice;
+	let finalMargin = parsedMargin;
+
+	if (parsedLandedCost > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
+	finalMargin = 20;
+	finalSalePrice = calculatePriceFromCostAndMargin(parsedLandedCost, finalMargin);
+	} else if (parsedLandedCost > 0 && parsedSalePrice > 0 && parsedMargin === null) {
+	finalMargin = calculateMarginFromCostAndPrice(parsedLandedCost, parsedSalePrice);
+	} else if (parsedLandedCost === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
+	finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
+	} else {
+	if (finalSalePrice === 0 && parsedLandedCost > 0) {
+	finalSalePrice = calculatePriceFromCostAndMargin(parsedLandedCost, finalMargin || 20);
+	}
+	}
+
+	const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
+
+	return {
+	order_id: orderId,
+	part_name: it.part_name || 'Sin nombre',
+	part_number: it.part_number || '',
+	quantity: parseInt(it.quantity) || 1,
+	cost_fob: finalCostFob,
+	fob_cost: parsedFobCost,
+	supplier_freight: parsedSupplierFreight,
+	customs_nationalization: parsedCustoms,
+	sale_price: finalSalePrice,
+	price: finalSalePrice,
+	price_with_vat: priceWithVAT,
+	margin_percent: finalMargin,
+	item_status: it.item_status || 'Solicitado',
+	vendor_name: it.vendor_name || '',
+	supplier_url: it.supplier_url || '',
+	supplier_name: it.supplier_name || '',
+	tracking_number: it.tracking_number || '',
+	updated_at: new Date().toISOString()
+	};
+	});
 
                 if (rowsToInsert.length > 0) {
                     const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);

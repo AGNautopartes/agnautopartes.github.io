@@ -168,62 +168,54 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
 
         // 5. Insertar ítems en order_items
         if (partsList.length > 0) {
-            const itemsToInsert = partsList.map(item => {
-                // Parse and validate financial values
-                const parsedCostFob = parseFloat(item.cost_fob) || 0;
-                const parsedSalePrice = parseFloat(item.sale_price) || 0;
-                const parsedMargin = item.margin_percent !== undefined ? parseFloat(item.margin_percent) : null;
-                
-                // Calculate missing values if needed
-                let finalCostFob = parsedCostFob;
-                let finalSalePrice = parsedSalePrice;
-                let finalMargin = parsedMargin;
-                
-                // If we have cost but no price, calculate price from margin (default 20%)
-                if (parsedCostFob > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
-                    finalMargin = 20; // Default margin
-                    finalSalePrice = calculatePriceFromCostAndMargin(parsedCostFob, finalMargin);
-                } 
-                // If we have price but no cost, we can't calculate cost without margin
-                // If we have both cost and price, calculate margin
-                else if (parsedCostFob > 0 && parsedSalePrice > 0 && parsedMargin === null) {
-                    finalMargin = calculateMarginFromCostAndPrice(parsedCostFob, parsedSalePrice);
-                }
-                // If we have margin and price but no cost, calculate cost
-                else if (parsedCostFob === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
-                    finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
-                }
-                // Otherwise use provided values (with defaults)
-                else {
-                    finalCostFob = parsedCostFob;
-                    finalSalePrice = parsedSalePrice;
-                    finalMargin = parsedMargin !== null ? parsedMargin : 20;
-                    
-                    // If we still don't have price but have cost and margin, calculate it
-                    if (finalSalePrice === 0 && finalCostFob > 0) {
-                        finalSalePrice = calculatePriceFromCostAndMargin(finalCostFob, finalMargin);
-                    }
-                }
-                
-                // Calculate price with VAT
-                const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
-                
-                return {
-                    order_id: order.id,
-                    part_name: item.part_name,
-                    part_number: item.part_number || '',
-                    quantity: item.quantity || 1,
-                    cost_fob: finalCostFob,
-                    sale_price: finalSalePrice,
-                    vendor_name: item.vendor_name || '',
-                    supplier_url: item.supplier_url || '',
-                    tracking_number: item.tracking_number || '',
-                    margin_percent: finalMargin,
-                    supplier_name: item.supplier_name || '',
-                    image_data: item.image_data || '',
-                    item_status: item.item_status || 'Solicitado'
-                };
-            });
+	const itemsToInsert = partsList.map(item => {
+	const parsedFobCost = parseFloat(item.fob_cost) || parseFloat(item.cost_fob) || 0;
+	const parsedSupplierFreight = parseFloat(item.supplier_freight) || 0;
+	const parsedCustoms = parseFloat(item.customs_nationalization) || 0;
+	const parsedLandedCost = parsedFobCost + parsedSupplierFreight + parsedCustoms;
+	const parsedSalePrice = parseFloat(item.sale_price) || 0;
+	const parsedMargin = item.margin_percent !== undefined && item.margin_percent !== null ? parseFloat(item.margin_percent) : null;
+
+	let finalCostFob = parsedFobCost;
+	let finalSalePrice = parsedSalePrice;
+	let finalMargin = parsedMargin;
+
+	if (parsedLandedCost > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
+	finalMargin = 20;
+	finalSalePrice = calculatePriceFromCostAndMargin(parsedLandedCost, finalMargin);
+	} else if (parsedLandedCost > 0 && parsedSalePrice > 0 && parsedMargin === null) {
+	finalMargin = calculateMarginFromCostAndPrice(parsedLandedCost, parsedSalePrice);
+	} else if (parsedLandedCost === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
+	finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
+	} else {
+	if (finalSalePrice === 0 && parsedLandedCost > 0) {
+	finalSalePrice = calculatePriceFromCostAndMargin(parsedLandedCost, finalMargin || 20);
+	}
+	}
+
+	const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
+
+	return {
+	order_id: order.id,
+	part_name: item.part_name,
+	part_number: item.part_number || '',
+	quantity: item.quantity || 1,
+	cost_fob: finalCostFob,
+	fob_cost: parsedFobCost,
+	supplier_freight: parsedSupplierFreight,
+	customs_nationalization: parsedCustoms,
+	sale_price: finalSalePrice,
+	price: finalSalePrice,
+	price_with_vat: priceWithVAT,
+	margin_percent: finalMargin,
+	item_status: item.item_status || 'Solicitado',
+	vendor_name: item.vendor_name || '',
+	supplier_url: item.supplier_url || '',
+	supplier_name: item.supplier_name || '',
+	tracking_number: item.tracking_number || '',
+	image_data: item.image_data || ''
+	};
+	});
 
             const { error: itemsErr } = await supabase
                 .from('order_items')

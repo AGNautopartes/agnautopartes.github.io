@@ -1965,9 +1965,10 @@ sessionStorage.removeItem('agn-admin-logged');
                     </div>
                 </div>`;
 
-            // Llamar al cálculo de totales inicial al renderizar la vista
-            setTimeout(recalculateTotals, 100);
-        }
+	// Llamar al cálculo de totales inicial al renderizar la vista
+	setTimeout(recalculateTotals, 100);
+	setTimeout(() => { loadNotes('${o.id}'); loadHistory('${o.id}'); }, 200);
+	}
 
 function addNewOrderPart(isFirst = false){
     const container=document.getElementById('new-items-container');
@@ -2094,17 +2095,17 @@ function openNewManualOrder() {
         const pName = el.querySelector('.dyn-part-name').value.trim();
         if (pName) {
 	items.push({
-		part_name: pName,
-		part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
-		supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
-		tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
-		cost_fob: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
-		supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
-		customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
-		margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
-		sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
-		supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
-		item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
+	part_name: pName,
+	part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
+	supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
+	tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
+	fob_cost: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
+	supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
+	customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
+	margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
+	sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
+	supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
+	item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
 	});
         }
     });
@@ -2269,24 +2270,25 @@ function syncNewTitle() {
                     const nameInput = el.querySelector('.dyn-part-name');
                     if (nameInput) {
 	items.push({
-		part_name: nameInput.value.trim(),
-		part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
-		cost_fob: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
-		supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
-		customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
-		margin_percent: parseFloat(el.querySelector('.dyn-margin')?.value) || 0,
-		sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
-		supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
+	part_name: nameInput.value.trim(),
+	part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
+	fob_cost: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
+	supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
+	customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
+	margin_percent: parseFloat(el.querySelector('.dyn-margin')?.value) || 0,
+	sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
+	item_status: el.querySelector('.dyn-status')?.value || 'Solicitado',
+	supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
 	});
                     }
                 });
 
-                const data = {
-                    orderId,
-                    part_name: document.getElementById('edit-part-name').value.trim(),
-                    vehicle_brand: document.getElementById('edit-brand').value.trim(),
-                    vehicle_model: document.getElementById('edit-model').value.trim(),
-                    vehicle_year: document.getElementById('edit-year').value.trim(),
+	const data = {
+	orderId,
+	part_name: document.getElementById('edit-part-name').value.trim(),
+	vehicle_brand: document.getElementById('edit-brand').value.trim(),
+	vehicle_model: document.getElementById('edit-model').value.trim(),
+	vehicle_year: document.getElementById('edit-year').value.trim(),
 	vin: document.getElementById('edit-vin').value.trim(),
 	tracking_number: document.getElementById('edit-tracking').value.trim(),
 	status: document.getElementById('det-status').value,
@@ -2294,6 +2296,10 @@ function syncNewTitle() {
 	margen_markdown: (parseFloat(document.getElementById('edit-margen').value) || 0) / 100,
 	precio_venta: parseFloat(document.getElementById('edit-sale').value) || 0,
 	comision_vendedor: parseFloat(document.getElementById('edit-comision').value) || 0,
+	customer_name: document.getElementById('edit-cust-name')?.value.trim() || '',
+	customer_phone: document.getElementById('edit-cust-phone')?.value.trim() || '',
+	customer_ruc: document.getElementById('edit-cust-ruc')?.value.trim() || '',
+	customer_cedula: document.getElementById('edit-cust-cedula')?.value.trim() || '',
 	items_json: items
 	};
 
@@ -2406,18 +2412,18 @@ async function loadHistory(orderId) {
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
                 body: JSON.stringify({ orderId })
             });
-                if (res.ok) {
-                    showToast('🗑️ Orden eliminada', 'success');
-                    allOrders = allOrders.filter(o => o.id !== orderId);
-                    renderOrders(allOrders);
-                    updateStats(allOrders);
-                    document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
-                    document.getElementById('detail-panel').classList.add('empty');
-                    // Refrescar lista para evitar estados stuck
-                    if (typeof loadData === 'function') {
-                        loadData();
-                    }
-                } else showToast('❌ Error al eliminar', 'error');
+	if (res.ok) {
+	showToast('🗑️ Orden eliminada', 'success');
+	allOrders = allOrders.filter(o => o.id !== orderId);
+	renderOrders(allOrders);
+	updateStats(allOrders);
+	selectedOrder = null;
+	const dc = document.getElementById('detail-content');
+	if (dc) dc.innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+	const dp = document.getElementById('detail-panel');
+	if (dp) dp.classList.add('empty');
+	if (typeof loadData === 'function') loadData();
+	} else showToast('❌ Error al eliminar', 'error');
         }
 
         async function deleteAllOrders() {
@@ -2426,13 +2432,16 @@ async function loadHistory(orderId) {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
             });
-            if (res.ok) {
-                showToast('🗑️ Todas las órdenes han sido eliminadas', 'success');
-                allOrders = [];
-                renderOrders(allOrders);
-                updateStats(allOrders);
-                document.getElementById('detail-panel').innerHTML = '<span>← Selecciona una orden</span>';
-                document.getElementById('detail-panel').classList.add('empty');
+	if (res.ok) {
+	showToast('🗑️ Todas las órdenes han sido eliminadas', 'success');
+	allOrders = [];
+	renderOrders(allOrders);
+	updateStats(allOrders);
+	selectedOrder = null;
+	const dc = document.getElementById('detail-content');
+	if (dc) dc.innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
+	const dp = document.getElementById('detail-panel');
+	if (dp) dp.classList.add('empty');
             } else showToast('❌ Error al eliminar todas las órdenes', 'error');
         }
 
