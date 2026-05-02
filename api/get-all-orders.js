@@ -36,6 +36,8 @@ export default async function handler(req, res) {
 
     try {
         // Fetch orders with customer data
+        // Note: Financial fields (fob_cost, etc.) are in the 'financials' table, not 'orders'
+        // We fetch order_items separately below for detailed financial data
         const { data: orders, error: ordersError } = await supabase
             .from('orders')
             .select(`
@@ -52,13 +54,6 @@ export default async function handler(req, res) {
                 tracking_number,
                 estimated_delivery_client,
                 notes,
-                fob_cost,
-                supplier_freight,
-                customs_nationalization,
-                other_expenses,
-                margin_percent,
-                price,
-                price_with_vat,
                 items_json,
                 created_at,
                 updated_at,
