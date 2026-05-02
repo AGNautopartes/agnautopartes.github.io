@@ -973,9 +973,19 @@
             color: var(--text);
         }
 
-        .reports-table tr:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
+.reports-table tr:hover {
+background: rgba(255, 255, 255, 0.02);
+}
+
+.rep-sub-btn {
+padding:0.5rem 1.2rem;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:0.85rem;font-weight:600;transition:all .2s;
+}
+.rep-sub-btn.active {
+background:var(--blue);color:#fff;border-color:var(--blue);
+}
+.rep-sub-btn:hover:not(.active) {
+border-color:var(--blue);color:var(--blue);
+}
 
         /* VOICE UI */
         .ai-input-wrapper {
@@ -1353,69 +1363,63 @@
             </div>
 
             <!-- ── REPORTS PAGE ── -->
-            <div class="page" id="page-reports">
-                <div class="reports-container">
-                    <div class="reports-filters">
-                        <div class="filter-group">
-                            <label>From</label>
-                            <input type="date" id="rep-date-from">
-                        </div>
-                        <div class="filter-group">
-                            <label>To</label>
-                            <input type="date" id="rep-date-to">
-                        </div>
-                        <div class="filter-group">
-                            <label>Brand</label>
-                            <input type="text" id="rep-brand" placeholder="Ex: Toyota">
-                        </div>
-                        <div class="filter-group">
-                            <label>Model</label>
-                            <input type="text" id="rep-model" placeholder="Ex: Hilux">
-                        </div>
-                        <div class="filter-group">
-                            <label>Status</label>
-                            <select id="rep-status">
-                                <option value="">All</option>
-                                <option>Requested</option>
-                                <option>Quoted</option>
-                                <option>Purchased</option>
-                                <option>In Customs</option>
-                                <option>Delivered</option>
-                                <option>Recogido en Local</option>
-                                <option>Cancelled</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Customer</label>
-                            <input type="text" id="rep-customer" placeholder="Name...">
-                        </div>
-                        <div class="filter-group" style="justify-content: flex-end;">
-                            <button class="btn-primary" id="btn-export-full" style="padding:0.6rem">Download
-                                Excel</button>
-                        </div>
-                    </div>
-
-                    <div class="reports-table-wrapper">
-                        <table class="reports-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Vehicle</th>
-                                    <th>Part</th>
-                                    <th>Status</th>
-                                    <th>Sale</th>
-                                    <th>Profit</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reports-tbody">
-                                <!-- Filas de reportes -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<div class="page" id="page-reports">
+<div class="reports-container">
+<div class="rep-sub-tabs" style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+<button class="rep-sub-btn active" data-rep="full">📋 Completo</button>
+<button class="rep-sub-btn" data-rep="financial">💰 Financiero</button>
+<button class="rep-sub-btn" data-rep="pipeline">🔄 Pipeline</button>
+</div>
+<div class="reports-filters">
+<div class="filter-group">
+<label>Desde</label>
+<input type="date" id="rep-date-from">
+</div>
+<div class="filter-group">
+<label>Hasta</label>
+<input type="date" id="rep-date-to">
+</div>
+<div class="filter-group" id="rep-brand-group">
+<label>Marca</label>
+<input type="text" id="rep-brand" placeholder="Ej: Toyota">
+</div>
+<div class="filter-group" id="rep-model-group">
+<label>Modelo</label>
+<input type="text" id="rep-model" placeholder="Ej: Hilux">
+</div>
+<div class="filter-group" id="rep-status-group">
+<label>Status</label>
+<select id="rep-status">
+<option value="">Todos</option>
+<option>Solicitado</option>
+<option>Cotizado</option>
+<option>Comprado</option>
+<option>Tránsito 1 (Prov→Log)</option>
+<option>Tránsito 2 (Log→EC)</option>
+<option>En Aduana</option>
+<option>Entregado</option>
+<option>Recogido en Local</option>
+<option>Cancelado</option>
+</select>
+</div>
+<div class="filter-group" id="rep-customer-group">
+<label>Cliente</label>
+<input type="text" id="rep-customer" placeholder="Nombre...">
+</div>
+<div class="filter-group" style="justify-content: flex-end; gap:0.5rem;">
+<button class="btn-primary" id="btn-run-report" style="padding:0.6rem">Generar</button>
+<button class="btn-action" id="btn-export-csv" style="padding:0.6rem">📥 CSV</button>
+</div>
+</div>
+<div class="rep-summary" id="rep-summary" style="display:none;margin-bottom:1rem;padding:1rem;background:var(--bg2);border-radius:8px;"></div>
+<div class="reports-table-wrapper">
+<table class="reports-table" id="rep-table">
+<thead id="rep-thead"><tr><th></th></tr></thead>
+<tbody id="reports-tbody"></tbody>
+</table>
+</div>
+</div>
+</div>
 
             <!-- Persistent Aria AI Chat -->
             <div class="ai-sidebar">
@@ -1510,71 +1514,7 @@
         </div>
     </div>
 
-    <!-- ── REPORTS PAGE ── -->
-    <div class="page" id="page-reports">
-        <div class="reports-container">
-            <div class="reports-filters">
-                <div class="filter-group">
-                    <label for="rep-date-from">From</label>
-                    <input type="date" id="rep-date-from">
-                </div>
-                <div class="filter-group">
-                    <label for="rep-date-to">To</label>
-                    <input type="date" id="rep-date-to">
-                </div>
-                <div class="filter-group">
-                    <label for="rep-brand">Vehicle Brand</label>
-                    <input type="text" id="rep-brand" placeholder="Ex: Ford">
-                </div>
-                <div class="filter-group">
-                    <label for="rep-model">Vehicle Model</label>
-                    <input type="text" id="rep-model" placeholder="Ex: Focus">
-                </div>
-                <div class="filter-group">
-                    <label for="rep-status">Status</label>
-                    <select id="rep-status">
-                        <option value="">Todos</option>
-                        <option>Solicitado</option>
-                        <option>Cotizado</option>
-                        <option>Comprado</option>
-                        <option>Tránsito 1 (Prov→Log)</option>
-                        <option>Tránsito 2 (Log→EC)</option>
-                        <option>En Aduana</option>
-                        <option>Entregado</option>
-                        <option>Recogido en Local</option>
-                        <option>Cancelado</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="rep-customer">Customer</label>
-                    <input type="text" id="rep-customer" placeholder="Ex: Juan Pérez">
-                </div>
-                <button class="btn-primary" id="btn-export-full" style="grid-column: span 2; margin-top: 1rem;">
-                    📥 Export Full Report
-                </button>
-            </div>
 
-            <div class="reports-table-wrapper">
-                <table class="reports-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Date</th>
-                            <th>Customer</th>
-                            <th>Vehicle</th>
-                            <th>Part</th>
-                            <th>Status</th>
-                            <th>Sale</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reports-tbody">
-                        <!-- Report rows will be injected here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
     </div>
     </div>
 
@@ -2876,8 +2816,294 @@ function recalculateTotals() {
   const elIva = document.getElementById('calc-iva');
   if (elIva) elIva.value = totalVAT.toFixed(2);
 
-  const elTotal = document.getElementById('calc-total-iva');
-  if (elTotal) elTotal.value = totalWithVAT.toFixed(2);
+const elTotal = document.getElementById('calc-total-iva');
+if (elTotal) elTotal.value = totalWithVAT.toFixed(2);
+}
+
+// ═══ REPORTS SYSTEM ═══
+let currentRepType = 'full';
+let currentRepData = [];
+
+document.querySelectorAll('.rep-sub-btn').forEach(btn => {
+	btn.addEventListener('click', () => {
+		document.querySelectorAll('.rep-sub-btn').forEach(b => b.classList.remove('active'));
+		btn.classList.add('active');
+		currentRepType = btn.dataset.rep;
+		const showFull = currentRepType === 'full';
+		document.getElementById('rep-brand-group').style.display = showFull ? '' : 'none';
+		document.getElementById('rep-model-group').style.display = showFull ? '' : 'none';
+		document.getElementById('rep-customer-group').style.display = showFull ? '' : 'none';
+		document.getElementById('rep-summary').style.display = 'none';
+		runReport();
+	});
+});
+
+document.getElementById('btn-run-report').addEventListener('click', runReport);
+document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+
+function getDefaultDates() {
+	const now = new Date();
+	const from = new Date(now.getFullYear(), now.getMonth(), 1);
+	return {
+		from: from.toISOString().slice(0,10),
+		to: now.toISOString().slice(0,10)
+	};
+}
+
+function initReportDefaults() {
+	const d = getDefaultDates();
+	const f = document.getElementById('rep-date-from');
+	const t = document.getElementById('rep-date-to');
+	if (f && !f.value) f.value = d.from;
+	if (t && !t.value) t.value = d.to;
+}
+
+function filterReportOrders() {
+	const from = document.getElementById('rep-date-from').value;
+	const to = document.getElementById('rep-date-to').value;
+	const brand = (document.getElementById('rep-brand').value || '').toLowerCase();
+	const model = (document.getElementById('rep-model').value || '').toLowerCase();
+	const status = document.getElementById('rep-status').value;
+	const customer = (document.getElementById('rep-customer').value || '').toLowerCase();
+
+	return allOrders.filter(o => {
+		const d = o.created_at ? o.created_at.slice(0,10) : '';
+		if (from && d < from) return false;
+		if (to && d > to) return false;
+		if (brand && !(o.vehicle_brand||'').toLowerCase().includes(brand)) return false;
+		if (model && !(o.vehicle_model||'').toLowerCase().includes(model)) return false;
+		if (status && o.status !== status) return false;
+		if (customer && !((o.customers?.full_name||'').toLowerCase().includes(customer))) return false;
+		return true;
+	});
+}
+
+function renderReports() {
+	initReportDefaults();
+	runReport();
+}
+
+function runReport() {
+	if (currentRepType === 'full') renderFullReport();
+	else if (currentRepType === 'financial') renderFinancialReport();
+	else if (currentRepType === 'pipeline') renderPipelineReport();
+}
+
+function fmt(n) { return '$' + (n||0).toFixed(2); }
+function fmtPct(n) { return (n||0).toFixed(1) + '%'; }
+function fmtDate(d) { return d ? d.slice(0,10) : ''; }
+
+function getItemRows(order) {
+	const items = order.order_items || [];
+	if (items.length === 0) {
+		const ij = order.items_json || [];
+		if (Array.isArray(ij) && ij.length > 0) {
+			return ij.map(it => ({
+				part_name: it.part_name || order.part_name,
+				part_number: it.part_number || '',
+				fob_cost: parseFloat(it.fob_cost) || parseFloat(it.cost_fob) || 0,
+				supplier_freight: parseFloat(it.supplier_freight) || 0,
+				customs_nationalization: parseFloat(it.customs_nationalization) || 0,
+				sale_price: parseFloat(it.sale_price) || 0,
+				price_with_vat: parseFloat(it.price_with_vat) || 0,
+				margin_percent: parseFloat(it.margin_percent) || 0,
+				item_status: it.item_status || order.status
+			}));
+		}
+		return [{
+			part_name: order.part_name || 'N/A',
+			part_number: '',
+			fob_cost: parseFloat(order.costo_fob) || 0,
+			supplier_freight: 0,
+			customs_nationalization: 0,
+			sale_price: parseFloat(order.precio_venta) || 0,
+			price_with_vat: 0,
+			margin_percent: parseFloat(order.margen_markdown) * 100 || 0,
+			item_status: order.status
+		}];
+	}
+	return items.map(it => ({
+		part_name: it.part_name || order.part_name,
+		part_number: it.part_number || '',
+		fob_cost: parseFloat(it.fob_cost) || parseFloat(it.cost_fob) || 0,
+		supplier_freight: parseFloat(it.supplier_freight) || 0,
+		customs_nationalization: parseFloat(it.customs_nationalization) || 0,
+		sale_price: parseFloat(it.sale_price) || parseFloat(it.price) || 0,
+		price_with_vat: parseFloat(it.price_with_vat) || 0,
+		margin_percent: parseFloat(it.margin_percent) || 0,
+		item_status: it.item_status || order.status
+	}));
+}
+
+function renderFullReport() {
+	const filtered = filterReportOrders();
+	const thead = document.getElementById('rep-thead');
+	const tbody = document.getElementById('reports-tbody');
+	thead.innerHTML = '<tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Vehículo</th><th>Repuesto</th><th># Parte</th><th>Status Ítem</th><th>FOB</th><th>Flete</th><th>Aduana</th><th>Costo Total</th><th>Margen %</th><th>Precio Venta</th><th>+ IVA</th><th>Ganancia</th><th>Comisión</th><th>Status Orden</th><th>Tracking</th></tr>';
+	currentRepData = [];
+	let html = '';
+	filtered.forEach(o => {
+		const rows = getItemRows(o);
+		rows.forEach((it, idx) => {
+			const landed = it.fob_cost + it.supplier_freight + it.customs_nationalization;
+			const profit = it.sale_price - landed;
+			const row = {
+				id: idx === 0 ? (o.readable_id || o.id?.slice(0,8)) : '',
+				date: idx === 0 ? fmtDate(o.created_at) : '',
+				customer: idx === 0 ? (o.customers?.full_name || '') : '',
+				phone: idx === 0 ? (o.customers?.phone || '') : '',
+				vehicle: idx === 0 ? `${o.vehicle_brand||''} ${o.vehicle_model||''} ${o.vehicle_year||''}`.trim() : '',
+				part_name: it.part_name,
+				part_number: it.part_number,
+				item_status: it.item_status,
+				fob: it.fob_cost,
+				freight: it.supplier_freight,
+				customs: it.customs_nationalization,
+				landed: landed,
+				margin: it.margin_percent,
+				sale: it.sale_price,
+				vat: it.price_with_vat,
+				profit: profit,
+				comision: idx === 0 ? (parseFloat(o.comision_vendedor)||0) : 0,
+				order_status: idx === 0 ? o.status : '',
+				tracking: idx === 0 ? (o.tracking_number||'') : ''
+			};
+			currentRepData.push(row);
+			const profitColor = profit >= 0 ? 'color:#4ade80' : 'color:#f87171';
+			html += `<tr>
+<td>${row.id}</td><td>${row.date}</td><td>${row.customer}</td><td>${row.phone}</td>
+<td>${row.vehicle}</td><td>${row.part_name}</td><td>${row.part_number}</td><td>${row.item_status}</td>
+<td>${fmt(row.fob)}</td><td>${fmt(row.freight)}</td><td>${fmt(row.customs)}</td><td>${fmt(row.landed)}</td>
+<td>${fmtPct(row.margin)}</td><td>${fmt(row.sale)}</td><td>${fmt(row.vat)}</td>
+<td style="${profitColor}">${fmt(row.profit)}</td>
+<td>${idx===0?fmt(row.comision):''}</td><td>${row.order_status}</td><td>${row.tracking}</td></tr>`;
+		});
+	});
+	if (filtered.length === 0) html = '<tr><td colspan="19" style="text-align:center;color:var(--text2)">Sin resultados para el rango seleccionado</td></tr>';
+	tbody.innerHTML = html;
+	document.getElementById('rep-summary').style.display = 'none';
+}
+
+function renderFinancialReport() {
+	const filtered = filterReportOrders();
+	const thead = document.getElementById('rep-thead');
+	const tbody = document.getElementById('reports-tbody');
+	thead.innerHTML = '<tr><th>Métrica</th><th>Valor</th></tr>';
+	let totalVenta = 0, totalCosto = 0, totalIVAcobrado = 0, totalComisiones = 0, totalItems = 0, marginSum = 0, marginWeight = 0;
+	filtered.forEach(o => {
+		const items = getItemRows(o);
+		items.forEach(it => {
+			const landed = it.fob_cost + it.supplier_freight + it.customs_nationalization;
+			totalVenta += it.sale_price;
+			totalCosto += landed;
+			totalIVAcobrado += (it.price_with_vat - it.sale_price);
+			if (landed > 0) { marginSum += it.margin_percent * landed; marginWeight += landed; }
+			totalItems++;
+		});
+		totalComisiones += parseFloat(o.comision_vendedor) || 0;
+	});
+	const gananciaBruta = totalVenta - totalCosto;
+	const avgMargin = marginWeight > 0 ? marginSum / marginWeight : 0;
+	const gananciaNeta = gananciaBruta - totalComisiones;
+	currentRepData = [
+		{metrica:'Total Órdenes',valor:filtered.length},
+		{metrica:'Total Ítems',valor:totalItems},
+		{metrica:'Total Venta',valor:totalVenta},
+		{metrica:'Total Costo Landed',valor:totalCosto},
+		{metrica:'Ganancia Bruta',valor:gananciaBruta},
+		{metrica:'Margen Promedio %',valor:avgMargin},
+		{metrica:'Total IVA Cobrado',valor:totalIVAcobrado},
+		{metrica:'Total Comisiones',valor:totalComisiones},
+		{metrica:'Ganancia Neta',valor:gananciaNeta}
+	];
+	const rows = [
+		['Total Órdenes', filtered.length],
+		['Total Ítems', totalItems],
+		['Total Venta', fmt(totalVenta)],
+		['Total Costo Landed', fmt(totalCosto)],
+		['Ganancia Bruta', fmt(gananciaBruta)],
+		['Margen Promedio', fmtPct(avgMargin)],
+		['Total IVA Cobrado', fmt(totalIVAcobrado)],
+		['Total Comisiones', fmt(totalComisiones)],
+		['Ganancia Neta', fmt(gananciaNeta)]
+	];
+	tbody.innerHTML = rows.map(([m,v]) => `<tr><td style="font-weight:600">${m}</td><td>${v}</td></tr>`).join('');
+	const summary = document.getElementById('rep-summary');
+	summary.style.display = 'block';
+	const brutaColor = gananciaBruta >= 0 ? '#4ade80' : '#f87171';
+	const netaColor = gananciaNeta >= 0 ? '#4ade80' : '#f87171';
+	summary.innerHTML = `<div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.9rem">
+<div><span style="color:var(--text2)">Ventas:</span> <strong>${fmt(totalVenta)}</strong></div>
+<div><span style="color:var(--text2)">Costo:</span> <strong>${fmt(totalCosto)}</strong></div>
+<div><span style="color:var(--text2)">Bruta:</span> <strong style="color:${brutaColor}">${fmt(gananciaBruta)}</strong></div>
+<div><span style="color:var(--text2)">Neta:</span> <strong style="color:${netaColor}">${fmt(gananciaNeta)}</strong></div>
+</div>`;
+}
+
+function renderPipelineReport() {
+	const filtered = filterReportOrders();
+	const thead = document.getElementById('rep-thead');
+	const tbody = document.getElementById('reports-tbody');
+	thead.innerHTML = '<tr><th>Status</th><th>Cant. Órdenes</th><th>Valor Total</th><th>Días Promedio</th><th>Atascadas (&gt;7d)</th></tr>';
+	const groups = {};
+	const now = Date.now();
+	filtered.forEach(o => {
+		const s = o.status || 'Sin status';
+		if (!groups[s]) groups[s] = {count:0, value:0, daysSum:0, stuck:0};
+		groups[s].count++;
+		groups[s].value += parseFloat(o.precio_venta) || 0;
+		const created = o.created_at ? new Date(o.created_at).getTime() : now;
+		const days = (now - created) / (1000*60*60*24);
+		groups[s].daysSum += days;
+		if (days > 7 && !['Entregado','Recogido en Local','Cancelado'].includes(s)) groups[s].stuck++;
+	});
+	currentRepData = [];
+	const statusOrder = ['Solicitado','Cotizado','Comprado','Tránsito 1 (Prov→Log)','Tránsito 2 (Log→EC)','En Aduana','Entregado','Recogido en Local','Cancelado'];
+	const sorted = Object.entries(groups).sort((a,b) => {
+		const ia = statusOrder.indexOf(a[0]);
+		const ib = statusOrder.indexOf(b[0]);
+		return (ia===-1?99:ia) - (ib===-1?99:ib);
+	});
+	let html = '';
+	sorted.forEach(([status, g]) => {
+		const avgDays = g.count > 0 ? g.daysSum / g.count : 0;
+		const row = {status, count:g.count, value:g.value, avgDays:avgDays.toFixed(1), stuck:g.stuck};
+		currentRepData.push(row);
+		const stuckBadge = g.stuck > 0 ? `<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem">${g.stuck}</span>` : '0';
+		html += `<tr><td style="font-weight:600">${status}</td><td>${g.count}</td><td>${fmt(g.value)}</td><td>${avgDays.toFixed(1)}</td><td>${stuckBadge}</td></tr>`;
+	});
+	if (filtered.length === 0) html = '<tr><td colspan="5" style="text-align:center;color:var(--text2)">Sin resultados</td></tr>';
+	tbody.innerHTML = html;
+	const totalStuck = Object.values(groups).reduce((s,g) => s + g.stuck, 0);
+	const summary = document.getElementById('rep-summary');
+	summary.style.display = 'block';
+	summary.innerHTML = `<div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.9rem">
+<div><span style="color:var(--text2)">Órdenes:</span> <strong>${filtered.length}</strong></div>
+<div><span style="color:var(--text2)">Valor Total:</span> <strong>${fmt(Object.values(groups).reduce((s,g)=>s+g.value,0))}</strong></div>
+<div><span style="color:var(--text2)">Atascadas:</span> <strong style="color:${totalStuck>0?'#f87171':'#4ade80'}">${totalStuck}</strong></div>
+</div>`;
+}
+
+function exportCSV() {
+	if (!currentRepData.length) { showToast('Primero generá un reporte','warning'); return; }
+	const keys = Object.keys(currentRepData[0]);
+	const header = keys.join(',');
+	const rows = currentRepData.map(r => keys.map(k => {
+		let v = r[k];
+		if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = '"' + v.replace(/"/g,'""') + '"';
+		return v;
+	}).join(','));
+	const csv = [header, ...rows].join('\n');
+	const BOM = '\uFEFF';
+	const blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8;'});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	const date = new Date().toISOString().slice(0,10);
+	a.href = url;
+	a.download = `reporte_${currentRepType}_${date}.csv`;
+	a.click();
+	URL.revokeObjectURL(url);
+	showToast('CSV descargado','success');
 }
     </script>
 </body>
