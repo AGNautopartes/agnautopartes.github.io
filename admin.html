@@ -1911,13 +1911,35 @@ sessionStorage.removeItem('agn-admin-logged');
         <span class="accordion-indicator" style="float:right;">${idx === 0 ? '-' : '+'}</span>
     </div>
     <div class="accordion-body ${idx === 0 ? 'expanded' : 'collapsed'}" style="margin-top:8px;">
-        <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
-        <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="${item.quantity || 1}"></div></div>
-        <div class="info-item" style="display:none;"><div class="il">Cost FOB</div><div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}"></div></div>
-        <div class="info-item" style="display:none; grid-column:1/-1;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..." value="${item.supplier_url || ''}"></div></div>
-        <div class="info-item" style="display:none;"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking" value="${item.tracking_number || ''}"></div></div>
-        <div class="info-item" style="display:none;"><div class="il">Margin %</div><div class="iv"><input type="number" class="dyn-margin" placeholder="0-100" min="0" max="100" value="${item.margin_percent !== undefined ? item.margin_percent : ''}"></div></div>
-        <div class="info-item" style="display:none;"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.supplier_name || ''}"></div></div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Cost FOB ($)</div>
+        <div class="iv"><input type="number" class="dyn-cost" value="${item.cost_fob || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)" style="width:100%;"></div>
+    </div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Flete/Supplier ($)</div>
+        <div class="iv"><input type="number" class="dyn-flete" value="${item.supplier_freight || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)" style="width:100%;"></div>
+    </div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Aduana/Customs ($)</div>
+        <div class="iv"><input type="number" class="dyn-customs" value="${item.customs_nationalization || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)" style="width:100%;"></div>
+    </div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Margen (%)</div>
+        <div class="iv"><input type="number" class="dyn-margin" value="${item.margin_percent !== undefined && item.margin_percent !== null ? item.margin_percent : 30}" min="0" max="100" step="0.1" oninput="handleItemFinancialChange(this)" style="width:100%;"></div>
+    </div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Precio Venta ($)</div>
+        <div class="iv"><input type="number" class="dyn-sale-price" value="${item.sale_price || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)" style="width:100%;"></div>
+    </div>
+    <div class="info-item" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+        <div class="il">Precio con IVA (15%)</div>
+        <div class="iv"><input type="number" class="dyn-price-vat" value="${item.price_with_vat || 0}" readonly style="width:100%; background:var(--surface2); color:var(--text2);"></div>
+    </div>
+    <div class="info-item" style="display:none;"><div class="il">Part Num</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
+    <div class="info-item" style="display:none;"><div class="il">Qty</div><div class="iv"><input type="number" class="dyn-qty" value="${item.quantity || 1}"></div></div>
+    <div class="info-item" style="display:none; grid-column:1/-1;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..." value="${item.supplier_url || ''}"></div></div>
+    <div class="info-item" style="display:none;"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking" value="${item.tracking_number || ''}"></div></div>
+    <div class="info-item" style="display:none;"><div class="il">Supplier Name</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.supplier_name || ''}"></div></div>
     </div>
 </div>
                 `).join('');
@@ -2010,11 +2032,10 @@ function addNewOrderPart(isFirst = false){
     const indicator = isFirst ? '-' : '+';
     div.innerHTML=`
         <div class="accordion-header" style="cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:space-between;" onclick="toggleAccordion(this)">
-            <div style="display:flex; gap:0.5rem; align-items:center;">
-                <span>🧩 Item ${idx + 1}</span>
-                <input type="text" class="dyn-part-name" placeholder="Nombre parte" style="margin-left:0.5rem;" onclick="event.stopPropagation()"/>
-                <input type="number" class="dyn-sale" placeholder="Precio" min="0" step="0.01" value="0" style="width:80px;" onclick="event.stopPropagation()"/>
-                <select class="dyn-status" style="margin-left:0.5rem;" onclick="event.stopPropagation()">
+<div style="display:flex; gap:0.5rem; align-items:center;">
+    <span>🧩 Item ${idx + 1}</span>
+    <input type="text" class="dyn-part-name" placeholder="Nombre parte" style="margin-left:0.5rem;" onclick="event.stopPropagation()"/>
+    <select class="dyn-status" style="margin-left:0.5rem;" onclick="event.stopPropagation()">
                     <option>Solicitado</option>
                     <option>Cotizado</option>
                     <option>Comprado</option>
@@ -2193,8 +2214,74 @@ function openNewManualOrder() {
         }
     }
 
-        function syncNewTitle() {
-            const first = document.querySelector('#new-items-container .dyn-part-name');
+// Financial calculation utilities (bidirectional)
+function calculatePriceFromCost(cost, marginPercent) {
+  if (marginPercent >= 100) return 0;
+  if (cost <= 0) return 0;
+  return cost / (1 - marginPercent / 100);
+}
+
+function calculateMarginFromCostAndPrice(cost, price) {
+  if (cost <= 0 || price <= 0) return 0;
+  return ((price - cost) / price) * 100;
+}
+
+function calculatePriceWithVAT(price) {
+  return price * 1.15; // 15% VAT hardcoded
+}
+
+// Handle financial changes in items (bidirectional calculation)
+function handleItemFinancialChange(inputEl) {
+  const itemEl = inputEl.closest('.dynamic-item');
+  const costInput = itemEl.querySelector('.dyn-cost');
+  const marginInput = itemEl.querySelector('.dyn-margin');
+  const salePriceInput = itemEl.querySelector('.dyn-sale-price');
+  const priceVatInput = itemEl.querySelector('.dyn-price-vat');
+  
+  const cost = parseFloat(costInput.value) || 0;
+  const margin = parseFloat(marginInput.value) || 0;
+  const salePrice = parseFloat(salePriceInput.value) || 0;
+  
+  // Determine which field was changed
+  const isMarginChange = inputEl === marginInput;
+  const isSalePriceChange = inputEl === salePriceInput;
+  const isCostChange = inputEl === costInput;
+  
+  let newSalePrice = salePrice;
+  let newMargin = margin;
+  
+  // If margin changed, calculate sale price
+  if (isMarginChange && cost > 0) {
+    newSalePrice = calculatePriceFromCost(cost, margin);
+    salePriceInput.value = newSalePrice.toFixed(2);
+  }
+  // If sale price changed, calculate margin
+  else if (isSalePriceChange && cost > 0) {
+    newMargin = calculateMarginFromCostAndPrice(cost, salePrice);
+    marginInput.value = newMargin.toFixed(2);
+  }
+  // If cost changed and we have margin, recalculate sale price
+  else if (isCostChange && margin > 0) {
+    newSalePrice = calculatePriceFromCost(cost, margin);
+    salePriceInput.value = newSalePrice.toFixed(2);
+  }
+  
+  // Always calculate VAT from sale price
+  const finalSalePrice = parseFloat(salePriceInput.value) || 0;
+  const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
+  priceVatInput.value = priceWithVAT.toFixed(2);
+  
+  // Store the calculated values in the item object
+  itemEl.dataset.salePrice = finalSalePrice.toFixed(2);
+  itemEl.dataset.margin = (parseFloat(marginInput.value) || 0).toFixed(2);
+  itemEl.dataset.priceWithVat = priceWithVAT.toFixed(2);
+  
+  // Recalculate order totals
+  recalculateTotals();
+}
+
+function syncNewTitle() {
+  const first = document.querySelector('#new-items-container .dyn-part-name');
             const title = document.getElementById('new-part-name');
             if (first && title) title.value = first.value || 'Nueva Orden';
         }
@@ -2815,63 +2902,71 @@ async function loadHistory(orderId) {
 }
 
 function recalculateTotals(reverse = false) {
-    // Sum per-item totals (quantity * cost FOB)
-    let itemsTotal = 0;
-    let totalFlete = 0;
-    document.querySelectorAll('.dynamic-item').forEach(el => {
-        const qty = parseFloat(el.querySelector('.dyn-qty')?.value) || 0;
-        const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
-        const flete = parseFloat(el.querySelector('.dyn-flete')?.value) || 0;
-        itemsTotal += qty * cost;
-        totalFlete += flete;
-    });
-    // Use itemsTotal as base FOB if greater than manual base price
-    const manualFob = parseFloat(document.getElementById('edit-base-price')?.value) || 0;
-    const fob = itemsTotal > 0 ? itemsTotal : manualFob;
-            
-            const log = parseFloat(document.getElementById('edit-logistica')?.value) || 0;
-            const ec = parseFloat(document.getElementById('edit-shipping-ec')?.value) || 0;
-            const adv = parseFloat(document.getElementById('edit-advalorem')?.value) || 0;
-
-            const shippingAduana = log + ec + adv + totalFlete;
-            const elShippingAduana = document.getElementById('edit-shipping-aduana');
-            if (elShippingAduana) elShippingAduana.value = shippingAduana.toFixed(2);
-
-            const costoTotal = fob + shippingAduana;
-            const elCosto = document.getElementById('calc-costo-total');
-            if (elCosto) elCosto.value = costoTotal.toFixed(2);
-
-            const inputMargen = document.getElementById('edit-margen');
-            const inputSale = document.getElementById('edit-sale');
-
-            if (!reverse) {
-                // Calcular Venta a partir del Margen (Markdown)
-                let margenDecimal = (parseFloat(inputMargen?.value) || 0) / 100;
-                if (margenDecimal >= 1) margenDecimal = 0.99; // Evitar división por cero o negativo
-                const venta = costoTotal / (1 - margenDecimal);
-                if (inputSale) inputSale.value = venta.toFixed(2);
-            } else {
-                // Calcular Margen a partir del Precio Venta manual
-                const venta = parseFloat(inputSale?.value) || 0;
-                if (venta > 0) {
-                    const margenDecimal = 1 - (costoTotal / venta);
-                    if (inputMargen) inputMargen.value = (margenDecimal * 100).toFixed(2);
-                }
-            }
-
-            // IVA 15%
-            const ventaActual = parseFloat(inputSale?.value) || 0;
-            const iva = ventaActual * 0.15;
-
-            const elIvaVta = document.getElementById('edit-iva-vta');
-            if (elIvaVta) elIvaVta.value = iva.toFixed(2);
-
-            const elIva = document.getElementById('calc-iva');
-            if (elIva) elIva.value = iva.toFixed(2);
-
-            const elTotal = document.getElementById('calc-total-iva');
-            if (elTotal) elTotal.value = (ventaActual + iva).toFixed(2);
-        }
+  // Sum per-item totals (Multi-Stage Landed Cost)
+  let totalFOB = 0;
+  let totalFreight = 0;
+  let totalCustoms = 0;
+  let totalLandedCost = 0;
+  let totalPrice = 0;
+  let totalVAT = 0;
+  let totalWithVAT = 0;
+  let totalMarginWeighted = 0;
+  let totalCostForWeight = 0;
+  
+  document.querySelectorAll('.dynamic-item').forEach(el => {
+    const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
+    const freight = parseFloat(el.querySelector('.dyn-flete')?.value) || 0;
+    const customs = parseFloat(el.querySelector('.dyn-customs')?.value) || 0;
+    const margin = parseFloat(el.querySelector('.dyn-margin')?.value) || 0;
+    const salePrice = parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0;
+    const priceVAT = parseFloat(el.querySelector('.dyn-price-vat')?.value) || 0;
+    
+    totalFOB += cost;
+    totalFreight += freight;
+    totalCustoms += customs;
+    totalLandedCost += (cost + freight + customs);
+    totalPrice += salePrice;
+    totalWithVAT += priceVAT;
+    
+    // Weighted average margin
+    if (cost > 0) {
+      totalMarginWeighted += margin * cost;
+      totalCostForWeight += cost;
+    }
+  });
+  
+  totalVAT = totalWithVAT - totalPrice;
+  
+  // Update header totals (read-only)
+  const elBasePrice = document.getElementById('edit-base-price');
+  if (elBasePrice) elBasePrice.value = totalFOB.toFixed(2);
+  
+  const elShippingAduana = document.getElementById('edit-shipping-aduana');
+  if (elShippingAduana) elShippingAduana.value = totalFreight.toFixed(2);
+  
+  const elCosto = document.getElementById('calc-costo-total');
+  if (elCosto) elCosto.value = totalLandedCost.toFixed(2);
+  
+  // Calculate weighted average margin
+  const avgMargin = totalCostForWeight > 0 ? (totalMarginWeighted / totalCostForWeight) : 0;
+  const inputMargen = document.getElementById('edit-margen');
+  if (inputMargen) inputMargen.value = avgMargin.toFixed(2);
+  
+  // Update sale price total
+  const inputSale = document.getElementById('edit-sale');
+  if (inputSale) inputSale.value = totalPrice.toFixed(2);
+  
+  // Update VAT
+  const elIvaVta = document.getElementById('edit-iva-vta');
+  if (elIvaVta) elIvaVta.value = totalVAT.toFixed(2);
+  
+  const elIva = document.getElementById('calc-iva');
+  if (elIva) elIva.value = totalVAT.toFixed(2);
+  
+  // Update total with VAT
+  const elTotal = document.getElementById('calc-total-iva');
+  if (elTotal) elTotal.value = totalWithVAT.toFixed(2);
+}
     </script>
 </body>
 
