@@ -58,8 +58,7 @@ const {
   part_name, supplier_url,
   vin, vehicle_brand, vehicle_model, vehicle_year,
   tracking_number, status,
-  fob_cost, supplier_freight, customs_nationalization, other_expenses,
-  margin_percent, price, price_with_vat,
+  costo_fob, margen_markdown, precio_venta,
   comision_vendedor,
   customer_name, customer_phone, customer_ruc, customer_cedula,
   items_json
@@ -78,16 +77,11 @@ const {
         if (vehicle_model !== undefined) updateData.vehicle_model = vehicle_model;
         if (vehicle_year !== undefined) updateData.vehicle_year = vehicle_year;
         if (tracking_number !== undefined) updateData.tracking_number = tracking_number;
-        if (status !== undefined) updateData.status = status;
+if (status !== undefined) updateData.status = status;
 
-        // Campos financieros
-        if (fob_cost !== undefined) updateData.fob_cost = parseFloat(fob_cost) || 0;
-        if (supplier_freight !== undefined) updateData.supplier_freight = parseFloat(supplier_freight) || 0;
-        if (customs_nationalization !== undefined) updateData.customs_nationalization = parseFloat(customs_nationalization) || 0;
-        if (other_expenses !== undefined) updateData.other_expenses = parseFloat(other_expenses) || 0;
-        if (margin_percent !== undefined) updateData.margin_percent = parseFloat(margin_percent) || 0;
-        if (price !== undefined) updateData.price = parseFloat(price) || 0;
-if (price_with_vat !== undefined) updateData.price_with_vat = parseFloat(price_with_vat) || 0;
+if (costo_fob !== undefined) updateData.costo_fob = parseFloat(costo_fob) || 0;
+if (margen_markdown !== undefined) updateData.margen_markdown = parseFloat(margen_markdown) || 0;
+if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta) || 0;
 if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
 
 if (items_json !== undefined) updateData.items_json = items_json;

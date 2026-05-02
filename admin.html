@@ -1967,7 +1967,7 @@ sessionStorage.removeItem('agn-admin-logged');
 
 	// Llamar al cálculo de totales inicial al renderizar la vista
 	setTimeout(recalculateTotals, 100);
-	setTimeout(() => { loadNotes('${o.id}'); loadHistory('${o.id}'); }, 200);
+	setTimeout(() => { loadNotes(o.id); loadHistory(o.id); }, 200);
 	}
 
 function addNewOrderPart(isFirst = false){

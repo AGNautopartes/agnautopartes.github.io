@@ -587,10 +587,10 @@ async function executeUpdateCost(actionData, req) {
         const currentOrder = allOrders.find(o => o.id === order.id);
         
         // Prepare update data with cost (fob_cost) and preserve existing margin if possible
-        const updateData = {
-            orderId: order.id,
-            fob_cost: parseFloat(newCost) || 0
-        };
+const updateData = {
+orderId: order.id,
+costo_fob: parseFloat(newCost) || 0
+};
         
         // If we have financial summary with margin, preserve it
         // We'll let the backend handle the bidirectional calculation

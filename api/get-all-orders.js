@@ -40,30 +40,34 @@ export default async function handler(req, res) {
         // We fetch order_items separately below for detailed financial data
         const { data: orders, error: ordersError } = await supabase
             .from('orders')
-            .select(`
-                id,
-                readable_id,
-                part_name,
-                part_number,
-                status,
-                vin,
-                vehicle_brand,
-                vehicle_model,
-                vehicle_year,
-                supplier_url,
-                tracking_number,
-                estimated_delivery_client,
-                notes,
-                items_json,
-                created_at,
-                updated_at,
-                customers (
-                    full_name,
-                    phone,
-                    ruc,
-                    cedula
-                )
-            `)
+.select(`
+id,
+readable_id,
+part_name,
+part_number,
+status,
+vin,
+vehicle_brand,
+vehicle_model,
+vehicle_year,
+supplier_url,
+tracking_number,
+estimated_delivery_client,
+notes,
+items_json,
+costo_fob,
+margen_markdown,
+precio_venta,
+comision_vendedor,
+created_at,
+updated_at,
+customers (
+full_name,
+phone,
+ruc,
+cedula
+)
+`)
             .order('created_at', { ascending: false });
 
         if (ordersError) throw ordersError;
