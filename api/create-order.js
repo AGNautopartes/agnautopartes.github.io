@@ -2,6 +2,22 @@
 // Crea una orden completa con cliente, vehículo y múltiples partes.
 import supabase from '../supabase-client.js';
 
+// Financial calculation utilities
+const calculatePriceFromCostAndMargin = (cost, marginPercent) => {
+  if (marginPercent >= 100) return 0; // Prevent division by zero or negative
+  return cost / (1 - marginPercent / 100);
+};
+
+const calculateMarginFromCostAndPrice = (cost, price) => {
+  if (cost <= 0) return 0; // Prevent division by zero
+  return ((price - cost) / price) * 100;
+};
+
+const calculatePriceWithVAT = (price) => {
+  // Hardcoded 15% VAT as per requirements
+  return price * 1.15;
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -132,39 +148,82 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
 
         if (orderErr) throw orderErr;
 
-        // 4. Inicializar registro financiero vacío
+        // 4. Inicializar registro financiero vacío con valores predeterminados
         const { error: finErr } = await supabase
             .from('financials')
             .insert([{
                 order_id: order.id,
-                cost_fob: 0,
-                shipping_cost: 0,
-                customs_cost: 0,
-                taxes: 0,
+                fob_cost: 0,
+                supplier_freight: 0,
+                customs_nationalization: 0,
                 other_expenses: 0,
-                sale_price: 0,
-                margin_percent: 20
+                margin_percent: 20,
+                price: 0,
+                price_with_vat: 0
             }]);
+
+        if (finErr) throw finErr;
 
         if (finErr) throw finErr;
 
         // 5. Insertar ítems en order_items
         if (partsList.length > 0) {
-            const itemsToInsert = partsList.map(item => ({
-                order_id: order.id,
-                part_name: item.part_name,
-                part_number: item.part_number || '',
-                quantity: item.quantity || 1,
-                cost_fob: parseFloat(item.cost_fob) || 0,
-                sale_price: parseFloat(item.sale_price) || 0,
-                vendor_name: item.vendor_name || '',
-                supplier_url: item.supplier_url || '',
-                tracking_number: item.tracking_number || '',
-                margin_percent: item.margin_percent !== undefined ? parseFloat(item.margin_percent) : null,
-                supplier_name: item.supplier_name || '',
-                image_data: item.image_data || '',
-                item_status: item.item_status || 'Solicitado'
-            }));
+            const itemsToInsert = partsList.map(item => {
+                // Parse and validate financial values
+                const parsedCostFob = parseFloat(item.cost_fob) || 0;
+                const parsedSalePrice = parseFloat(item.sale_price) || 0;
+                const parsedMargin = item.margin_percent !== undefined ? parseFloat(item.margin_percent) : null;
+                
+                // Calculate missing values if needed
+                let finalCostFob = parsedCostFob;
+                let finalSalePrice = parsedSalePrice;
+                let finalMargin = parsedMargin;
+                
+                // If we have cost but no price, calculate price from margin (default 20%)
+                if (parsedCostFob > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
+                    finalMargin = 20; // Default margin
+                    finalSalePrice = calculatePriceFromCostAndMargin(parsedCostFob, finalMargin);
+                } 
+                // If we have price but no cost, we can't calculate cost without margin
+                // If we have both cost and price, calculate margin
+                else if (parsedCostFob > 0 && parsedSalePrice > 0 && parsedMargin === null) {
+                    finalMargin = calculateMarginFromCostAndPrice(parsedCostFob, parsedSalePrice);
+                }
+                // If we have margin and price but no cost, calculate cost
+                else if (parsedCostFob === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
+                    finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
+                }
+                // Otherwise use provided values (with defaults)
+                else {
+                    finalCostFob = parsedCostFob;
+                    finalSalePrice = parsedSalePrice;
+                    finalMargin = parsedMargin !== null ? parsedMargin : 20;
+                    
+                    // If we still don't have price but have cost and margin, calculate it
+                    if (finalSalePrice === 0 && finalCostFob > 0) {
+                        finalSalePrice = calculatePriceFromCostAndMargin(finalCostFob, finalMargin);
+                    }
+                }
+                
+                // Calculate price with VAT
+                const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
+                
+                return {
+                    order_id: order.id,
+                    part_name: item.part_name,
+                    part_number: item.part_number || '',
+                    quantity: item.quantity || 1,
+                    cost_fob: finalCostFob,
+                    sale_price: finalSalePrice,
+                    vendor_name: item.vendor_name || '',
+                    supplier_url: item.supplier_url || '',
+                    tracking_number: item.tracking_number || '',
+                    margin_percent: finalMargin,
+                    supplier_name: item.supplier_name || '',
+                    image_data: item.image_data || '',
+                    item_status: item.item_status || 'Solicitado'
+                };
+            });
 
             const { error: itemsErr } = await supabase
                 .from('order_items')

@@ -558,6 +558,69 @@ async function executeUpdateCost(actionData, req) {
     if (!orderIdInput || !newCost) {
         return { message: "Datos incompletos. Formato: id|costo", error: true };
     }
+    
+    try {
+        const adminPassword = req.headers['x-admin-password'];
+        
+        // Get order UUID from readable_id
+        const getRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const orders = await getRes.json();
+        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
+        
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+        
+        // First, get current order details to preserve margin
+        const orderDetailsRes = await fetch(process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
+            : 'http://localhost:3000/api/get-all-orders', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        
+        const allOrders = await orderDetailsRes.json();
+        const currentOrder = allOrders.find(o => o.id === order.id);
+        
+        // Prepare update data with cost (fob_cost) and preserve existing margin if possible
+        const updateData = {
+            orderId: order.id,
+            fob_cost: parseFloat(newCost) || 0
+        };
+        
+        // If we have financial summary with margin, preserve it
+        // We'll let the backend handle the bidirectional calculation
+        // by not specifying price or margin_percent
+        // The backend will calculate the appropriate price to maintain margin
+        
+        const apiUrl = process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
+            : 'http://localhost:3000/api/update-order-full';
+        
+        const updateRes = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': adminPassword
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (!updateRes.ok) {
+            const err = await updateRes.json().catch(() => ({ message: 'Error sin respuesta' }));
+            return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
+        }
+        
+        return { message: `Costo FOB actualizado a ${newCost} en ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
+    } catch (error) {
+        console.error('Error UPDATE_COST:', error);
+        return { message: `Error: ${error.message}`, error: true };
+    }
+}
 
     try {
         const adminPassword = req.headers['x-admin-password'];

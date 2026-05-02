@@ -1,5 +1,21 @@
 import supabase from '../supabase-client.js';
 
+// Financial calculation utilities
+const calculatePriceFromCostAndMargin = (cost, marginPercent) => {
+  if (marginPercent >= 100) return 0; // Prevent division by zero or negative
+  return cost / (1 - marginPercent / 100);
+};
+
+const calculateMarginFromCostAndPrice = (cost, price) => {
+  if (cost <= 0) return 0; // Prevent division by zero
+  return ((price - cost) / price) * 100;
+};
+
+const calculatePriceWithVAT = (price) => {
+  // Hardcoded 15% VAT as per requirements
+  return price * 1.15;
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Método no permitido' });
 
@@ -42,10 +58,9 @@ export default async function handler(req, res) {
         part_name, supplier_url, // Added missing fields
         vin, vehicle_brand, vehicle_model, vehicle_year,
         tracking_number, status,
-        costo_fob, shipping_logistica, shipping_ecuador, ad_valorem,
-        margen_markdown, precio_venta, comision_vendedor,
-        items_json, // Array JSONB
-        is_paid_fob, is_paid_logistics, is_paid_ec
+        fob_cost, supplier_freight, customs_nationalization, other_expenses,
+        margin_percent, price, price_with_vat,
+        items_json // Array JSONB
     } = req.body;
 
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
@@ -64,13 +79,13 @@ export default async function handler(req, res) {
         if (status !== undefined) updateData.status = status;
 
         // Campos financieros
-        if (costo_fob !== undefined) updateData.costo_fob = parseFloat(costo_fob) || 0;
-        if (shipping_logistica !== undefined) updateData.shipping_logistica = parseFloat(shipping_logistica) || 0;
-        if (shipping_ecuador !== undefined) updateData.shipping_ecuador = parseFloat(shipping_ecuador) || 0;
-        if (ad_valorem !== undefined) updateData.ad_valorem = parseFloat(ad_valorem) || 0;
-        if (margen_markdown !== undefined) updateData.margen_markdown = parseFloat(margen_markdown) || 0;
-        if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta) || 0;
-        if (comision_vendedor !== undefined) updateData.comision_vendedor = parseFloat(comision_vendedor) || 0;
+        if (fob_cost !== undefined) updateData.fob_cost = parseFloat(fob_cost) || 0;
+        if (supplier_freight !== undefined) updateData.supplier_freight = parseFloat(supplier_freight) || 0;
+        if (customs_nationalization !== undefined) updateData.customs_nationalization = parseFloat(customs_nationalization) || 0;
+        if (other_expenses !== undefined) updateData.other_expenses = parseFloat(other_expenses) || 0;
+        if (margin_percent !== undefined) updateData.margin_percent = parseFloat(margin_percent) || 0;
+        if (price !== undefined) updateData.price = parseFloat(price) || 0;
+        if (price_with_vat !== undefined) updateData.price_with_vat = parseFloat(price_with_vat) || 0;
 
         if (items_json !== undefined) updateData.items_json = items_json;
         // is_paid_* columns removed - not present in current Supabase schema
@@ -91,21 +106,62 @@ export default async function handler(req, res) {
                 // 1. Limpiar ítems previos para esta orden (Limpieza Atómica)
                 await supabase.from('order_items').delete().eq('order_id', orderId);
 
-                // 2. Insertar la lista actualizada (Doble Escritura)
-                const rowsToInsert = items_json.map(it => ({
-                    order_id: orderId,
-                    part_name: it.part_name || 'Sin nombre',
-                    part_number: it.part_number || '',
-                    quantity: parseInt(it.quantity) || 1,
-                    cost_fob: parseFloat(it.cost_fob) || 0,
-                    sale_price: parseFloat(it.sale_price) || 0,
-                    vendor_name: it.vendor_name || '',
-                    supplier_url: it.supplier_url || '',
-                    tracking_number: it.tracking_number || '',
-                    margin_percent: it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null,
-                    supplier_name: it.supplier_name || '',
-                    updated_at: new Date().toISOString()
-                }));
+                 // 2. Insertar la lista actualizada (Doble Escritura)
+                 const rowsToInsert = items_json.map(it => {
+                     // Parse and validate financial values
+                     const parsedCostFob = parseFloat(it.cost_fob) || 0;
+                     const parsedSalePrice = parseFloat(it.sale_price) || 0;
+                     const parsedMargin = it.margin_percent !== undefined ? parseFloat(it.margin_percent) : null;
+                     
+                     // Calculate missing values if needed (same logic as in create-order)
+                     let finalCostFob = parsedCostFob;
+                     let finalSalePrice = parsedSalePrice;
+                     let finalMargin = parsedMargin;
+                     
+                     // If we have cost but no price, calculate price from margin (default 20%)
+                     if (parsedCostFob > 0 && (parsedSalePrice === 0 || parsedSalePrice === undefined) && parsedMargin === null) {
+                         finalMargin = 20; // Default margin
+                         finalSalePrice = calculatePriceFromCostAndMargin(parsedCostFob, finalMargin);
+                     } 
+                     // If we have price but no cost, we can't calculate cost without margin
+                     // If we have both cost and price, calculate margin
+                     else if (parsedCostFob > 0 && parsedSalePrice > 0 && parsedMargin === null) {
+                         finalMargin = calculateMarginFromCostAndPrice(parsedCostFob, parsedSalePrice);
+                     }
+                     // If we have margin and price but no cost, calculate cost
+                     else if (parsedCostFob === 0 && parsedSalePrice > 0 && parsedMargin !== null && parsedMargin < 100) {
+                         finalCostFob = parsedSalePrice * (1 - parsedMargin / 100);
+                     }
+                     // Otherwise use provided values (with defaults)
+                     else {
+                         finalCostFob = parsedCostFob;
+                         finalSalePrice = parsedSalePrice;
+                         finalMargin = parsedMargin !== null ? parsedMargin : 20;
+                         
+                         // If we still don't have price but have cost and margin, calculate it
+                         if (finalSalePrice === 0 && finalCostFob > 0) {
+                             finalSalePrice = calculatePriceFromCostAndMargin(finalCostFob, finalMargin);
+                         }
+                     }
+                     
+                     // Calculate price with VAT
+                     const priceWithVAT = calculatePriceWithVAT(finalSalePrice);
+                     
+                     return {
+                         order_id: orderId,
+                         part_name: it.part_name || 'Sin nombre',
+                         part_number: it.part_number || '',
+                         quantity: parseInt(it.quantity) || 1,
+                         cost_fob: finalCostFob,
+                         sale_price: finalSalePrice,
+                         vendor_name: it.vendor_name || '',
+                         supplier_url: it.supplier_url || '',
+                         tracking_number: it.tracking_number || '',
+                         margin_percent: finalMargin,
+                         supplier_name: it.supplier_name || '',
+                         updated_at: new Date().toISOString()
+                     };
+                 });
 
                 if (rowsToInsert.length > 0) {
                     const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);

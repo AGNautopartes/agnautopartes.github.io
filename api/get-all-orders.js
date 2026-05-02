@@ -35,7 +35,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { data: orders, error } = await supabase
+        // Fetch orders with customer data
+        const { data: orders, error: ordersError } = await supabase
             .from('orders')
             .select(`
                 id,
@@ -51,13 +52,13 @@ export default async function handler(req, res) {
                 tracking_number,
                 estimated_delivery_client,
                 notes,
-                costo_fob,
-                shipping_logistica,
-                shipping_ecuador,
-                ad_valorem,
-                margen_markdown,
-                precio_venta,
-                comision_vendedor,
+                fob_cost,
+                supplier_freight,
+                customs_nationalization,
+                other_expenses,
+                margin_percent,
+                price,
+                price_with_vat,
                 items_json,
                 created_at,
                 updated_at,
@@ -70,9 +71,11 @@ export default async function handler(req, res) {
             `)
             .order('created_at', { ascending: false });
 
+        if (ordersError) throw ordersError;
 
         if (orders && orders.length > 0) {
             try {
+                // Fetch order items for these orders
                 const orderIds = orders.map(o => o.id);
                 const { data: allItems } = await supabase
                     .from('order_items')
@@ -92,9 +95,27 @@ export default async function handler(req, res) {
             } catch (itemsErr) {
                 console.error('Error fetching order_items:', itemsErr);
             }
-        }
 
-        if (error) throw error;
+            // Fetch financial summary from our enhanced view
+            try {
+                const { data: financialSummaries } = await supabase
+                    .from('order_financial_summary')
+                    .select('*');
+
+                if (financialSummaries) {
+                    const financialMap = {};
+                    financialSummaries.forEach(summary => {
+                        financialMap[summary.order_id] = summary;
+                    });
+                    orders.forEach(o => {
+                        o.financial_summary = financialMap[o.id] || null;
+                    });
+                }
+            } catch (financialErr) {
+                console.error('Error fetching financial summary:', financialErr);
+                // Continue without financial summary rather than failing
+            }
+        }
 
         return res.status(200).json(orders);
 
