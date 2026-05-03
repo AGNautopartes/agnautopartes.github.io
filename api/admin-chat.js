@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     // 2. Extraer parámetros
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
-    const model = req.body.model || 'nvidia/nemotron-3-super-120b-a12b:free';
+    const model = req.body.model || 'minimax/minimax-m2.5:free';
 
     console.log('=== ARIA DEBUG ===');
     console.log('Model recibido:', model);
@@ -105,42 +105,41 @@ Fecha hoy: ${today}
 ${ordersContext}
 
 REGLAS CRÍTICAS:
-1. NUNCA uses palabras genéricas como "client", "cliente", "nombre", "N/A" como nombre de persona. Siempre usa el NOMBRE REAL que el usuario proporcionó. Si el usuario NO dio un nombre, PREGUNTA antes de crear.
-2. Si el usuario menciona marca Y modelo de vehículo, sepáralos claramente. Si solo da uno, PREGUNTA por el que falta en español.
+1. NUNCA uses palabras genéricas como "client", "cliente", "NOMBRE_COMPLETO", "marca", "modelo", "parte", "N/A" como valores. Siempre reemplaza con los datos REALES que el usuario proporcionó. Si el usuario NO dio un dato, PREGUNTA antes de actuar.
+2. Si el usuario menciona marca Y modelo de vehículo, sepáralos claramente. Si solo da uno, PREGUNTA por el que falta.
 3. Los separadores de acciones son PIPE | — NUNCA comas.
 4. Solo usa statuses de la lista válida.
+5. NUNCA escribas los nombres de variables en las acciones. Usa siempre datos reales.
 
 STATUSES VÁLIDOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado
 
-FORMATOS DE ACCIÓN:
+ACCIONES — Copia el formato de estos ejemplos usando datos reales:
 
-CREAR orden → [CREATE_ORDER:NOMBRE_COMPLETO|marca|modelo|año|parte]
-Ejemplos:
-- [CREATE_ORDER:María López|Toyota|Hilux|2020|Faro derecho]
-- [CREATE_ORDER:Carlos Mendoza|Ford|Explorer|2019|Bujía de encendido]
-- [CREATE_ORDER:Ana Rodríguez|Chevrolet|D-Max|2021|Filtro de aceite y pastillas delanteras]
+CREAR orden:
+[CREATE_ORDER:María López|Toyota|Hilux|2020|Faro derecho]
+[CREATE_ORDER:Carlos Mendoza|Ford|Explorer|2019|Bujía de encendido]
+[CREATE_ORDER:Ana Rodríguez|Chevrolet|D-Max|2021|Filtro de aceite]
 
-Cambiar status → [UPDATE_STATUS:ID|status]
-Ejemplo: [UPDATE_STATUS:ORD-74|Cotizado]
+Cambiar status:
+[UPDATE_STATUS:ORD-74|Cotizado]
 
-Cambiar costo → [UPDATE_COST:ID|monto]
-Ejemplo: [UPDATE_COST:ORD-1|45.50]
+Cambiar costo:
+[UPDATE_COST:ORD-1|45.50]
 
-Cambiar vehículo → [UPDATE_VEHICLE:ID|marca|modelo|año]
-Ejemplo: [UPDATE_VEHICLE:ORD-75|Nissan|Frontier|2022]
+Cambiar vehículo:
+[UPDATE_VEHICLE:ORD-75|Nissan|Frontier|2022]
 
-Editar cliente → [UPDATE_CUSTOMER:ID|campo|valor]
-Campos válidos: nombre, teléfono, ruc, cédula
-Ejemplo: [UPDATE_CUSTOMER:ORD-1|teléfono|0991234567]
+Editar cliente (campos: nombre, teléfono, ruc, cédula):
+[UPDATE_CUSTOMER:ORD-1|teléfono|0991234567]
 
-Agregar parte → [ADD_PART:ID|parte|costo]
-Ejemplo: [ADD_PART:ORD-79|Rodillo trasero|25.00]
+Agregar parte:
+[ADD_PART:ORD-79|Rodillo trasero|25.00]
 
-Agregar nota → [ADD_NOTE:ID|texto de la nota]
-Ejemplo: [ADD_NOTE:ORD-74|Cliente confirma recepción mañana]
+Agregar nota:
+[ADD_NOTE:ORD-74|Cliente confirma recepción mañana]
 
-Eliminar orden → [DELETE_ORDER:ID]
-Ejemplo: [DELETE_ORDER:ORD-10]
+Eliminar orden:
+[DELETE_ORDER:ORD-10]
 `.trim();
 
     try {
