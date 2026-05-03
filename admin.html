@@ -1854,7 +1854,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 		<div class="info-item"><div class="il">Cost FOB ($)</div><div class="iv"><input type="number" class="dyn-cost" value="${item.fob_cost || item.cost_fob || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
 		<div class="info-item"><div class="il">Flete/Supplier ($)</div><div class="iv"><input type="number" class="dyn-flete" value="${item.supplier_freight || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
 		<div class="info-item"><div class="il">Aduana/Customs ($)</div><div class="iv"><input type="number" class="dyn-customs" value="${item.customs_nationalization || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
-		<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="${item.margin_percent !== undefined && item.margin_percent !== null ? item.margin_percent : 30}" min="0" max="100" step="0.1" oninput="handleItemFinancialChange(this)"></div></div>
+		<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="${item.margin_percent !== undefined && item.margin_percent !== null ? item.margin_percent : 0}" min="0" max="100" step="0.1" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 		<div class="info-item"><div class="il">Precio Venta ($)</div><div class="iv"><input type="number" class="dyn-sale-price" value="${item.price || item.sale_price || 0}" min="0" step="0.01" oninput="handleItemFinancialChange(this, true)"></div></div>
 		<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="${item.price_with_vat || 0}" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 		<div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
@@ -1943,14 +1943,14 @@ function addNewOrderPart(isFirst = false){
         <div class="accordion-body expanded" style="margin-top:8px;">
 	<div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no"/></div></div>
             <div class="info-item"><div class="il">URL</div><div class="iv"><input type="text" class="dyn-url"/></div></div>
-            <div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
-	<div class="info-item"><div class="il">Cost FOB ($)</div><div class="iv"><input type="number" class="dyn-cost" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Flete/Supplier ($)</div><div class="iv"><input type="number" class="dyn-flete" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Aduana/Customs ($)</div><div class="iv"><input type="number" class="dyn-customs" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="30" min="0" max="100" step="0.1" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Precio Venta ($)</div><div class="iv"><input type="number" class="dyn-sale-price" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this, true)"></div></div>
-	<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-	<div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
+<div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking"/></div></div>
+<div class="info-item"><div class="il">Cost FOB ($)</div><div class="iv"><input type="number" class="dyn-cost" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
+<div class="info-item"><div class="il">Flete/Supplier ($)</div><div class="iv"><input type="number" class="dyn-flete" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
+<div class="info-item"><div class="il">Aduana/Customs ($)</div><div class="iv"><input type="number" class="dyn-customs" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
+<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="0" min="0" max="100" step="0.1" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
+<div class="info-item"><div class="il">Precio Venta ($)</div><div class="iv"><input type="number" class="dyn-sale-price" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this, true)"></div></div>
+<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
+<div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier"/></div></div>
 	</div>
 `;
     container.appendChild(div);
@@ -2112,56 +2112,35 @@ function openNewManualOrder() {
         }
 }
 
-function calculatePriceFromCost(cost, marginPercent) {
-  if (marginPercent >= 100 || cost <= 0) return 0;
-  return cost / (1 - marginPercent / 100);
-}
-
 function calculateMarginFromCostAndPrice(cost, price) {
   if (cost <= 0 || price <= 0) return 0;
   return ((price - cost) / price) * 100;
 }
 
-function handleItemFinancialChange(inputEl, isPriceEdit) {
-  const itemEl = inputEl.closest('.dynamic-item') || inputEl.closest('.accordion-item');
-  if (!itemEl) return;
-  const costInput = itemEl.querySelector('.dyn-cost');
-  const fleteInput = itemEl.querySelector('.dyn-flete');
-  const customsInput = itemEl.querySelector('.dyn-customs');
-  const marginInput = itemEl.querySelector('.dyn-margin');
-  const salePriceInput = itemEl.querySelector('.dyn-sale-price');
-  const priceVatInput = itemEl.querySelector('.dyn-price-vat');
-  if (!costInput || !marginInput || !salePriceInput || !priceVatInput) return;
+function handleItemFinancialChange(inputEl) {
+	const itemEl = inputEl.closest('.dynamic-item') || inputEl.closest('.accordion-item');
+	if (!itemEl) return;
+	const costInput = itemEl.querySelector('.dyn-cost');
+	const fleteInput = itemEl.querySelector('.dyn-flete');
+	const customsInput = itemEl.querySelector('.dyn-customs');
+	const marginInput = itemEl.querySelector('.dyn-margin');
+	const salePriceInput = itemEl.querySelector('.dyn-sale-price');
+	const priceVatInput = itemEl.querySelector('.dyn-price-vat');
+	if (!costInput || !marginInput || !salePriceInput || !priceVatInput) return;
 
-  const cost = parseFloat(costInput.value) || 0;
-  const flete = parseFloat(fleteInput?.value) || 0;
-  const customs = parseFloat(customsInput?.value) || 0;
-  const landedCost = cost + flete + customs;
+	const cost = parseFloat(costInput.value) || 0;
+	const flete = parseFloat(fleteInput?.value) || 0;
+	const customs = parseFloat(customsInput?.value) || 0;
+	const landedCost = cost + flete + customs;
 
-  const isMarginChange = inputEl === marginInput;
-  const isSalePriceChange = inputEl === salePriceInput || isPriceEdit;
-  const isCostChange = (inputEl === costInput || inputEl === fleteInput || inputEl === customsInput);
+	const salePrice = parseFloat(salePriceInput.value) || 0;
+	const newMargin = calculateMarginFromCostAndPrice(landedCost, salePrice);
+	marginInput.value = newMargin.toFixed(2);
 
-  if (isMarginChange && landedCost > 0) {
-    const margin = parseFloat(marginInput.value) || 0;
-    const newPrice = calculatePriceFromCost(landedCost, margin);
-    salePriceInput.value = newPrice.toFixed(2);
-  } else if (isSalePriceChange && landedCost > 0) {
-    const salePrice = parseFloat(salePriceInput.value) || 0;
-    const newMargin = calculateMarginFromCostAndPrice(landedCost, salePrice);
-    marginInput.value = newMargin.toFixed(2);
-  } else if (isCostChange) {
-    const margin = parseFloat(marginInput.value) || 0;
-    if (margin > 0 && margin < 100) {
-      const newPrice = calculatePriceFromCost(landedCost, margin);
-      salePriceInput.value = newPrice.toFixed(2);
-    }
-  }
+	const finalSalePrice = parseFloat(salePriceInput.value) || 0;
+	priceVatInput.value = (finalSalePrice * 1.15).toFixed(2);
 
-  const finalSalePrice = parseFloat(salePriceInput.value) || 0;
-  priceVatInput.value = (finalSalePrice * 1.15).toFixed(2);
-
-  recalculateTotals();
+	recalculateTotals();
 }
 
 function syncNewTitle() {
@@ -2731,12 +2710,12 @@ if (!res.ok) {
 	<div class="info-item"><div class="il">Cost FOB ($)</div><div class="iv"><input type="number" class="dyn-cost" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
 	<div class="info-item"><div class="il">Flete/Supplier ($)</div><div class="iv"><input type="number" class="dyn-flete" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
 	<div class="info-item"><div class="il">Aduana/Customs ($)</div><div class="iv"><input type="number" class="dyn-customs" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="30" min="0" max="100" step="0.1" oninput="handleItemFinancialChange(this)"></div></div>
-	<div class="info-item"><div class="il">Precio Venta ($)</div><div class="iv"><input type="number" class="dyn-sale-price" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this, true)"></div></div>
-	<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-	`;
-            container.appendChild(div);
-            recalculateTotals();
+<div class="info-item"><div class="il">Margen (%)</div><div class="iv"><input type="number" class="dyn-margin" value="0" min="0" max="100" step="0.1" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
+<div class="info-item"><div class="il">Precio Venta ($)</div><div class="iv"><input type="number" class="dyn-sale-price" value="0" min="0" step="0.01" oninput="handleItemFinancialChange(this, true)"></div></div>
+<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
+`;
+	container.appendChild(div);
+	recalculateTotals();
         }
 
         function toggleAccordion(headerEl) {
