@@ -1572,11 +1572,12 @@ sessionStorage.removeItem('agn-admin-logged');
             select.innerHTML = filtered.length
                 ? filtered.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
                 : '<option value="">No models for this provider</option>';
-            if (savedModel && filtered.some(m => m.id === savedModel)) {
-                select.value = savedModel;
-            } else if (filtered.length > 0) {
-                select.value = filtered[0].id;
-            }
+if (savedModel && filtered.some(m => m.id === savedModel)) {
+		select.value = savedModel;
+	} else {
+		const defaultModel = filtered.find(m => m.id === 'nvidia/nemotron-3-super-120b-a12b:free') || filtered[0];
+		if (defaultModel) select.value = defaultModel.id;
+	}
         }
 
         async function loadAriaModels() {
@@ -2431,17 +2432,18 @@ async function loadHistory(orderId) {
                         message: msg,
                         conversationHistory: ariaHistory,
                         adminName,
-                        model: document.getElementById('aria-model-select')?.value || ''
+                        model: document.getElementById('aria-model-select')?.value || 'nvidia/nemotron-3-super-120b-a12b:free'
                     }),
                     timeout: 45000 // 45s para IA
                 });
 
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    thinking.remove();
-                    addAiMsg('assistant', `⚠️ Error del servidor: ${errorData.error || 'Problema desconocido'}`);
-                    return;
-                }
+if (!res.ok) {
+		let errMsg = 'Problema desconocido';
+		try { const ej = await res.json(); errMsg = ej.error || ej.message || errMsg; } catch(_) { try { const et = await res.text(); errMsg = et.substring(0,200); } catch(__){} }
+		thinking.remove();
+		addAiMsg('assistant', `⚠️ Error del servidor: ${errMsg}`);
+		return;
+	}
 
                 const data = await res.json();
                 thinking.remove();

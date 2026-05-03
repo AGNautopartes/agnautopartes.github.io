@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     // 2. Extraer parámetros
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
-    const model = req.body.model || 'openrouter/free';
+    const model = req.body.model || 'nvidia/nemotron-3-super-120b-a12b:free';
 
     console.log('=== ARIA DEBUG ===');
     console.log('Model recibido:', model);
@@ -616,45 +616,6 @@ costo_fob: parseFloat(newCost) || 0
         }
         
         return { message: `Costo FOB actualizado a ${newCost} en ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
-    } catch (error) {
-        console.error('Error UPDATE_COST:', error);
-        return { message: `Error: ${error.message}`, error: true };
-    }
-}
-
-    try {
-        const adminPassword = req.headers['x-admin-password'];
-        
-        // Get order UUID from readable_id
-        const getRes = await fetch(process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}/api/get-all-orders` 
-            : 'http://localhost:3000/api/get-all-orders', {
-            headers: { 'x-admin-password': adminPassword }
-        });
-        
-        const orders = await getRes.json();
-        const order = orders.find(o => o.readable_id === orderIdInput || o.id === orderIdInput);
-        
-        if (!order) {
-            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
-        }
-        
-        const apiUrl = process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}/api/update-order-full` 
-            : 'http://localhost:3000/api/update-order-full';
-        
-        const updateRes = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-            body: JSON.stringify({ orderId: order.id, costo_fob: newCost })
-        });
-
-        if (!updateRes.ok) {
-            const err = await updateRes.json().catch(() => ({ message: 'Error sin respuesta' }));
-            return { message: `Error: ${err.message || 'Error desconocido'}`, error: true };
-        }
-
-        return { message: `Costo actualizado a ${newCost} en ${orderIdInput}`, orderId: orderIdInput, refreshRequired: true };
     } catch (error) {
         console.error('Error UPDATE_COST:', error);
         return { message: `Error: ${error.message}`, error: true };
