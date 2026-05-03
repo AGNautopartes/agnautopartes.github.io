@@ -1881,7 +1881,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 	<div class="fin-item"><div class="fl">Total FOB</div><div class="fv"><input type="number" id="edit-base-price" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 	<div class="fin-item"><div class="fl">Total Flete/Supplier</div><div class="fv"><input type="number" id="edit-shipping-aduana" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 	<div class="fin-item"><div class="fl">Costo Total Landed</div><div class="fv"><input type="number" id="calc-costo-total" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
-	<div class="fin-item"><div class="fl">Margen Prom. (%)</div><div class="fv"><input type="number" id="edit-margen" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
+	<div class="fin-item"><div class="fl">Margen Total (%)</div><div class="fv"><input type="number" id="edit-margen" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 	<div class="fin-item"><div class="fl">Precio Venta Total</div><div class="fv"><input type="number" id="edit-sale" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 	<div class="fin-item"><div class="fl">IVA (15%)</div><div class="fv"><input type="number" id="edit-iva-vta" value="0" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 	<div class="fin-item" style="grid-column:1/-1;"><div class="fl" style="font-weight:bold; color:var(--blue)">Total Cliente</div><div class="fv"><input type="number" id="calc-total-iva" value="0" readonly style="background:var(--surface2); font-weight:bold; color:var(--blue); font-size:1.1rem"></div></div></div>
@@ -2766,36 +2766,28 @@ if (!res.ok) {
 }
 
 function recalculateTotals() {
-  let totalFOB = 0;
-  let totalFreight = 0;
-  let totalCustoms = 0;
-  let totalLandedCost = 0;
-  let totalPrice = 0;
-  let totalMarginWeighted = 0;
-  let totalCostForWeight = 0;
+	let totalFOB = 0;
+	let totalFreight = 0;
+	let totalCustoms = 0;
+	let totalLandedCost = 0;
+	let totalPrice = 0;
 
-  document.querySelectorAll('.dynamic-item').forEach(el => {
-    const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
-    const freight = parseFloat(el.querySelector('.dyn-flete')?.value) || 0;
-    const customs = parseFloat(el.querySelector('.dyn-customs')?.value) || 0;
-    const margin = parseFloat(el.querySelector('.dyn-margin')?.value) || 0;
-    const salePrice = parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0;
+	document.querySelectorAll('.dynamic-item').forEach(el => {
+		const cost = parseFloat(el.querySelector('.dyn-cost')?.value) || 0;
+		const freight = parseFloat(el.querySelector('.dyn-flete')?.value) || 0;
+		const customs = parseFloat(el.querySelector('.dyn-customs')?.value) || 0;
+		const salePrice = parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0;
 
-    totalFOB += cost;
-    totalFreight += freight;
-    totalCustoms += customs;
-    totalLandedCost += (cost + freight + customs);
-    totalPrice += salePrice;
+		totalFOB += cost;
+		totalFreight += freight;
+		totalCustoms += customs;
+		totalLandedCost += (cost + freight + customs);
+		totalPrice += salePrice;
+	});
 
-    if ((cost + freight + customs) > 0) {
-      totalMarginWeighted += margin * (cost + freight + customs);
-      totalCostForWeight += (cost + freight + customs);
-    }
-  });
-
-  const totalVAT = totalPrice * 0.15;
-  const totalWithVAT = totalPrice + totalVAT;
-  const avgMargin = totalCostForWeight > 0 ? (totalMarginWeighted / totalCostForWeight) : 0;
+	const totalVAT = totalPrice * 0.15;
+	const totalWithVAT = totalPrice + totalVAT;
+	const totalMargin = totalPrice > 0 ? (1 - totalLandedCost / totalPrice) * 100 : 0;
 
   const elBasePrice = document.getElementById('edit-base-price');
   if (elBasePrice) elBasePrice.value = totalFOB.toFixed(2);
@@ -2807,7 +2799,7 @@ function recalculateTotals() {
   if (elCosto) elCosto.value = totalLandedCost.toFixed(2);
 
   const inputMargen = document.getElementById('edit-margen');
-  if (inputMargen) inputMargen.value = avgMargin.toFixed(2);
+	if (inputMargen) inputMargen.value = totalMargin.toFixed(2);
 
   const inputSale = document.getElementById('edit-sale');
   if (inputSale) inputSale.value = totalPrice.toFixed(2);
@@ -2991,44 +2983,43 @@ function renderFinancialReport() {
 	const thead = document.getElementById('rep-thead');
 	const tbody = document.getElementById('reports-tbody');
 	thead.innerHTML = '<tr><th>Métrica</th><th>Valor</th></tr>';
-	let totalVenta = 0, totalCosto = 0, totalIVAcobrado = 0, totalComisiones = 0, totalItems = 0, marginSum = 0, marginWeight = 0;
+	let totalVenta = 0, totalCosto = 0, totalIVAcobrado = 0, totalComisiones = 0, totalItems = 0;
 	filtered.forEach(o => {
 		const items = getItemRows(o);
 		items.forEach(it => {
 			const landed = it.fob_cost + it.supplier_freight + it.customs_nationalization;
 			totalVenta += it.sale_price;
 			totalCosto += landed;
-			totalIVAcobrado += (it.price_with_vat - it.sale_price);
-			if (landed > 0) { marginSum += it.margin_percent * landed; marginWeight += landed; }
-			totalItems++;
-		});
-		totalComisiones += parseFloat(o.comision_vendedor) || 0;
+		totalIVAcobrado += (it.price_with_vat - it.sale_price);
+		totalItems++;
 	});
-	const gananciaBruta = totalVenta - totalCosto;
-	const avgMargin = marginWeight > 0 ? marginSum / marginWeight : 0;
-	const gananciaNeta = gananciaBruta - totalComisiones;
-	currentRepData = [
-		{metrica:'Total Órdenes',valor:filtered.length},
-		{metrica:'Total Ítems',valor:totalItems},
-		{metrica:'Total Venta',valor:totalVenta},
-		{metrica:'Total Costo Landed',valor:totalCosto},
-		{metrica:'Ganancia Bruta',valor:gananciaBruta},
-		{metrica:'Margen Promedio %',valor:avgMargin},
-		{metrica:'Total IVA Cobrado',valor:totalIVAcobrado},
-		{metrica:'Total Comisiones',valor:totalComisiones},
-		{metrica:'Ganancia Neta',valor:gananciaNeta}
-	];
-	const rows = [
-		['Total Órdenes', filtered.length],
-		['Total Ítems', totalItems],
-		['Total Venta', fmt(totalVenta)],
-		['Total Costo Landed', fmt(totalCosto)],
-		['Ganancia Bruta', fmt(gananciaBruta)],
-		['Margen Promedio', fmtPct(avgMargin)],
-		['Total IVA Cobrado', fmt(totalIVAcobrado)],
-		['Total Comisiones', fmt(totalComisiones)],
-		['Ganancia Neta', fmt(gananciaNeta)]
-	];
+	totalComisiones += parseFloat(o.comision_vendedor) || 0;
+});
+const gananciaBruta = totalVenta - totalCosto;
+const totalMargin = totalVenta > 0 ? (1 - totalCosto / totalVenta) * 100 : 0;
+const gananciaNeta = gananciaBruta - totalComisiones;
+currentRepData = [
+	{metrica:'Total Órdenes',valor:filtered.length},
+	{metrica:'Total Ítems',valor:totalItems},
+	{metrica:'Total Venta',valor:totalVenta},
+	{metrica:'Total Costo Landed',valor:totalCosto},
+	{metrica:'Ganancia Bruta',valor:gananciaBruta},
+	{metrica:'Margen Total %',valor:totalMargin},
+	{metrica:'Total IVA Cobrado',valor:totalIVAcobrado},
+	{metrica:'Total Comisiones',valor:totalComisiones},
+	{metrica:'Ganancia Neta',valor:gananciaNeta}
+];
+const rows = [
+	['Total Órdenes', filtered.length],
+	['Total Ítems', totalItems],
+	['Total Venta', fmt(totalVenta)],
+	['Total Costo Landed', fmt(totalCosto)],
+	['Ganancia Bruta', fmt(gananciaBruta)],
+	['Margen Total', fmtPct(totalMargin)],
+	['Total IVA Cobrado', fmt(totalIVAcobrado)],
+	['Total Comisiones', fmt(totalComisiones)],
+	['Ganancia Neta', fmt(gananciaNeta)]
+];
 	tbody.innerHTML = rows.map(([m,v]) => `<tr><td style="font-weight:600">${m}</td><td>${v}</td></tr>`).join('');
 	const summary = document.getElementById('rep-summary');
 	summary.style.display = 'block';
