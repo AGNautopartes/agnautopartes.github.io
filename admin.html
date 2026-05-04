@@ -8,24 +8,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0B0D14;
-            --surface: #141720;
-            --surface2: #1D2133;
-            --surface3: #252942;
-            --border: #2A2F4A;
-            --text: #E8EAFF;
-            --text2: #8890B8;
-            --accent: #E64937;
-            --accent2: #FF6B57;
-            --blue: #4F8EF7;
-            --green: #22C55E;
-            --yellow: #F59E0B;
-            --purple: #A855F7;
-            --cyan: #06B6D4;
-            --gray: #6B7280;
-            --sidebar-w: 340px;
-        }
+:root {
+--bg: #2D3748;
+--surface: #3D4A5C;
+--surface2: #4A5568;
+--border: #5A6A7C;
+--text: #FFFFFF;
+--text2: #A0AEC0;
+--accent: #C53030;
+--accent2: #D1432E;
+--blue: #4F8EF7;
+--green: #22C55E;
+--yellow: #F59E0B;
+--purple: #A855F7;
+--cyan: #06B6D4;
+--gray: #6B7280;
+--sidebar-w: 20%;
+}
 
         * {
             margin: 0;
@@ -217,13 +216,44 @@
             color: var(--accent);
         }
 
-        .app-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
+.app-body {
+display: grid;
+grid-template-columns: 50% 30% 20%;
+gap: 0;
+overflow: hidden;
+}
 
-        /* ══ PAGES ══ */
+/* Resizers para redimensionar paneles */
+.panel-resizer {
+width: 4px;
+cursor: col-resize;
+background: var(--border);
+transition: background 0.2s;
+z-index: 100;
+}
+
+.panel-resizer:hover,
+.panel-resizer.dragging {
+background: var(--accent);
+}
+
+/* Ajustar orders-main y detail-panel para grid layout */
+.orders-main {
+width: 100%;
+overflow: hidden;
+}
+
+.detail-panel {
+width: 100%;
+overflow: hidden;
+}
+
+.ai-sidebar {
+width: 100%;
+overflow: hidden;
+}
+
+/* ══ PAGES ══ */
         .page {
             display: none;
             flex: 1;
@@ -1332,11 +1362,14 @@ border-color:var(--blue);color:var(--blue);
                     </div>
                     <div class="orders-list" id="orders-list">
                         <div class="empty-state">Loading orders...</div>
-                    </div>
-                </div>
+</div>
+</div>
 
-                <!-- Order Detail -->
-                <div class="detail-panel empty" id="detail-panel">
+<!-- Resizer entre orders-main y detail-panel -->
+<div class="panel-resizer" id="resizer-1"></div>
+
+<!-- Order Detail -->
+<div class="detail-panel empty" id="detail-panel">
                     <button class="btn-toggle-detail" id="toggle-detail" title="Expand/Collapse">↔</button>
                     <div id="detail-content"
                         style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
@@ -1421,8 +1454,11 @@ border-color:var(--blue);color:var(--blue);
 </div>
 </div>
 
-            <!-- Persistent Aria AI Chat -->
-            <div class="ai-sidebar">
+<!-- Resizer entre detail-panel y ai-sidebar -->
+<div class="panel-resizer" id="resizer-2"></div>
+
+<!-- Persistent Aria AI Chat -->
+<div class="ai-sidebar">
                 <div class="ai-header">
 
                     <div class="aria-avatar">🤖</div>
@@ -3075,9 +3111,65 @@ function exportCSV() {
 	a.download = `reporte_${currentRepType}_${date}.csv`;
 	a.click();
 	URL.revokeObjectURL(url);
-	showToast('CSV descargado','success');
+showToast('CSV descargado','success');
 }
-    </script>
+
+// Panel Resizers - Redimensionable layout 50% | 30% | 20%
+(function initResizers() {
+const resizer1 = document.getElementById('resizer-1');
+const resizer2 = document.getElementById('resizer-2');
+const appBody = document.querySelector('.app-body');
+const ordersMain = document.querySelector('.orders-main');
+const detailPanel = document.querySelector('.detail-panel');
+const aiSidebar = document.querySelector('.ai-sidebar');
+
+let isDragging1 = false;
+let isDragging2 = false;
+
+if (!resizer1 || !resizer2 || !appBody) return;
+
+resizer1.addEventListener('mousedown', (e) => {
+isDragging1 = true;
+resizer1.classList.add('dragging');
+document.body.style.cursor = 'col-resize';
+e.preventDefault();
+});
+
+resizer2.addEventListener('mousedown', (e) => {
+isDragging2 = true;
+resizer2.classList.add('dragging');
+document.body.style.cursor = 'col-resize';
+e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+if (!isDragging1 && !isDragging2) return;
+
+const containerWidth = appBody.offsetWidth;
+const leftPercent = (e.clientX / containerWidth) * 100;
+
+if (isDragging1) {
+// Panel 1 (orders-main): 20% - 60%
+const newLeft = Math.min(Math.max(leftPercent, 20), 60);
+appBody.style.gridTemplateColumns = `${newLeft}% ${100-newLeft-20}% 20%`;
+}
+
+if (isDragging2) {
+// Panel 2 (detail-panel): 20% - 60%
+const middlePercent = (e.clientX / containerWidth) * 100;
+appBody.style.gridTemplateColumns = `${50}% ${middlePercent-50}% ${100-middlePercent}%`;
+}
+});
+
+document.addEventListener('mouseup', () => {
+isDragging1 = false;
+isDragging2 = false;
+resizer1.classList.remove('dragging');
+resizer2.classList.remove('dragging');
+document.body.style.cursor = '';
+});
+})();
+</script>
 </body>
 
 </html>
