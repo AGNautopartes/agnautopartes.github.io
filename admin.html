@@ -218,7 +218,7 @@
 
 .app-body {
 display: grid;
-grid-template-columns: 50% 30% 20%;
+grid-template-columns: 30% 50% 20%;
 gap: 0;
 overflow: hidden;
 }
@@ -1453,9 +1453,6 @@ border-color:var(--blue);color:var(--blue);
 </div>
 </div>
 </div>
-
-<!-- Resizer entre detail-panel y ai-sidebar -->
-<div class="panel-resizer" id="resizer-2"></div>
 
 <!-- Persistent Aria AI Chat -->
 <div class="ai-sidebar">
@@ -3114,19 +3111,14 @@ function exportCSV() {
 showToast('CSV descargado','success');
 }
 
-// Panel Resizers - Redimensionable layout 50% | 30% | 20%
+// Panel Resizers - Redimensionable layout 30% | 50% | 20% (Panel 3 fijo)
 (function initResizers() {
 const resizer1 = document.getElementById('resizer-1');
-const resizer2 = document.getElementById('resizer-2');
 const appBody = document.querySelector('.app-body');
-const ordersMain = document.querySelector('.orders-main');
-const detailPanel = document.querySelector('.detail-panel');
-const aiSidebar = document.querySelector('.ai-sidebar');
 
 let isDragging1 = false;
-let isDragging2 = false;
 
-if (!resizer1 || !resizer2 || !appBody) return;
+if (!resizer1 || !appBody) return;
 
 resizer1.addEventListener('mousedown', (e) => {
 isDragging1 = true;
@@ -3135,37 +3127,22 @@ document.body.style.cursor = 'col-resize';
 e.preventDefault();
 });
 
-resizer2.addEventListener('mousedown', (e) => {
-isDragging2 = true;
-resizer2.classList.add('dragging');
-document.body.style.cursor = 'col-resize';
-e.preventDefault();
-});
-
 document.addEventListener('mousemove', (e) => {
-if (!isDragging1 && !isDragging2) return;
+if (!isDragging1) return;
 
 const containerWidth = appBody.offsetWidth;
 const leftPercent = (e.clientX / containerWidth) * 100;
 
-if (isDragging1) {
-// Panel 1 (orders-main): 20% - 60%
-const newLeft = Math.min(Math.max(leftPercent, 20), 60);
-appBody.style.gridTemplateColumns = `${newLeft}% ${100-newLeft-20}% 20%`;
-}
+// Panel 1: 20% - 50%, Panel 2: 30% - 60%, Panel 3: 20% fijo
+const newLeft = Math.min(Math.max(leftPercent, 20), 50);
+const panel2 = 100 - newLeft - 20;
 
-if (isDragging2) {
-// Panel 2 (detail-panel): 20% - 60%
-const middlePercent = (e.clientX / containerWidth) * 100;
-appBody.style.gridTemplateColumns = `${50}% ${middlePercent-50}% ${100-middlePercent}%`;
-}
+appBody.style.gridTemplateColumns = `${newLeft}% ${panel2}% 20%`;
 });
 
 document.addEventListener('mouseup', () => {
 isDragging1 = false;
-isDragging2 = false;
 resizer1.classList.remove('dragging');
-resizer2.classList.remove('dragging');
 document.body.style.cursor = '';
 });
 })();
