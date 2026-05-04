@@ -23,7 +23,7 @@
 --purple: #A855F7;
 --cyan: #06B6D4;
 --gray: #6B7280;
---sidebar-w: 20%;
+--sidebar-w: 20%; /* Deprecated - usando flex layout */
 }
 
         * {
@@ -485,8 +485,8 @@ overflow: hidden;
         }
 
         /* ══ DETAIL PANEL ══ */
-        .detail-panel {
-            width: 506px;
+.detail-panel {
+/* width: 506px; */ /* Removido - ahora usa flex layout */
             /* Increased from 460px (original 380px) for better readability */
             border-left: 1px solid var(--border);
             background: var(--surface);
@@ -499,262 +499,9 @@ overflow: hidden;
         }
 
 
-        .detail-panel.collapsed {
-            width: 50px;
-        }
-
-        .detail-panel.collapsed .detail-header h3,
-        .detail-panel.collapsed .detail-header .detail-sub,
-        .detail-panel.collapsed .detail-body {
-            display: none;
-        }
-
-        .btn-toggle-detail {
-            position: absolute;
-            top: 1.25rem;
-            right: 1.25rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            color: var(--text2);
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        .detail-panel.collapsed .btn-toggle-detail {
-            right: 10px;
-            left: 10px;
-        }
-
-        .detail-panel.empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text2);
-            font-size: 0.85rem;
-        }
-
-
-        .detail-header {
-            padding: 1.25rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .detail-header h3 {
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-        .detail-header .detail-sub {
-            font-size: 0.8rem;
-            color: var(--text2);
-            margin-top: 0.2rem;
-        }
-
-        .detail-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
-        .detail-section h4 {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text2);
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .info-item .il {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: var(--text2);
-            font-weight: 600;
-            margin-bottom: 0.1rem;
-        }
-
-        .info-item .iv input {
-            width: 100%;
-            padding: 0.25rem 0.5rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text);
-            font-size: 0.8rem;
-            margin-top: 0.1rem;
-        }
-
-        .info-item .iv {
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .financial-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .fin-item {
-            background: var(--surface2);
-            border-radius: 8px;
-            padding: 0.6rem 0.75rem;
-        }
-
-        .fin-item .fl {
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            color: var(--text2);
-        }
-
-        .fin-item .fv {
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-        .fin-item.profit {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-
-        .fin-item.profit .fv {
-            color: var(--green);
-        }
-
-        .status-changer {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .status-changer select {
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 0.8rem;
-        }
-
-        .btn-action {
-            padding: 0.5rem 0.85rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .btn-blue {
-            background: var(--blue);
-            color: white;
-        }
-
-        .btn-blue:hover {
-            background: #3B73D4;
-        }
-
-        .btn-danger {
-            background: rgba(230, 73, 55, 0.1);
-            color: var(--accent);
-            border: 1px solid rgba(230, 73, 55, 0.3);
-        }
-
-        .btn-danger:hover {
-            background: var(--accent);
-            color: white;
-        }
-
-
-        .notes-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .note-item {
-            background: var(--surface2);
-            border-radius: 8px;
-            padding: 0.6rem 0.75rem;
-        }
-
-        .note-author {
-            font-size: 0.65rem;
-            color: var(--text2);
-            font-weight: 600;
-        }
-
-        .note-text {
-            font-size: 0.8rem;
-            margin-top: 0.2rem;
-        }
-
-        .note-date {
-            font-size: 0.6rem;
-            color: var(--text2);
-            margin-top: 0.2rem;
-            font-family: monospace;
-        }
-
-        .note-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .note-input {
-            width: 100%;
-            padding: 0.6rem 0.75rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 0.8rem;
-            resize: none;
-            height: 60px;
-        }
-
-        .note-input:focus {
-            outline: none;
-            border-color: var(--blue);
-        }
-
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .history-item {
-            display: flex;
-            gap: 0.6rem;
-            padding: 0.4rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .history-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--blue);
-            flex-shrink: 0;
+.detail-panel {
+/* Neutralizado: sin funcionalidad de colapsado */
+flex-shrink: 0;
             margin-top: 5px;
         }
 
@@ -768,8 +515,8 @@ overflow: hidden;
         }
 
         /* ══ AI CHAT SIDEBAR ══ */
-        .ai-sidebar {
-            width: var(--sidebar-w);
+.ai-sidebar {
+/* width: var(--sidebar-w); */ /* Removido - ahora usa flex layout */
             border-left: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -1359,7 +1106,7 @@ border-color:var(--blue);color:var(--blue);
 
 <!-- Order Detail -->
 <div class="detail-panel empty" id="detail-panel">
-<button class="btn-toggle-detail" id="toggle-detail" title="Expand/Collapse">↔</button>
+<!-- Botón toggle neutralizado -->
 <div id="detail-content"
 style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
 <div
