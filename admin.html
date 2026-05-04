@@ -217,39 +217,27 @@
         }
 
 .app-body {
-display: grid;
-grid-template-columns: 30% 50% 20%;
-gap: 0;
+display: flex;
+flex: 1;
 overflow: hidden;
 }
 
-/* Resizers para redimensionar paneles */
-.panel-resizer {
-width: 4px;
-cursor: col-resize;
-background: var(--border);
-transition: background 0.2s;
-z-index: 100;
-}
-
-.panel-resizer:hover,
-.panel-resizer.dragging {
-background: var(--accent);
-}
-
-/* Ajustar orders-main y detail-panel para grid layout */
+/* Layout fijo con porcentajes de viewport */
 .orders-main {
-width: 100%;
+width: 30vw;
+flex-shrink: 0;
 overflow: hidden;
 }
 
 .detail-panel {
-width: 100%;
+width: 50vw;
+flex-shrink: 0;
 overflow: hidden;
 }
 
 .ai-sidebar {
-width: 100%;
+width: 20vw;
+flex-shrink: 0;
 overflow: hidden;
 }
 
@@ -1364,9 +1352,6 @@ border-color:var(--blue);color:var(--blue);
                         <div class="empty-state">Loading orders...</div>
 </div>
 </div>
-
-<!-- Resizer entre orders-main y detail-panel -->
-<div class="panel-resizer" id="resizer-1"></div>
 
 <!-- Order Detail -->
 <div class="detail-panel empty" id="detail-panel">
@@ -3110,42 +3095,6 @@ function exportCSV() {
 	URL.revokeObjectURL(url);
 showToast('CSV descargado','success');
 }
-
-// Panel Resizers - Redimensionable layout 30% | 50% | 20% (Panel 3 fijo)
-(function initResizers() {
-const resizer1 = document.getElementById('resizer-1');
-const appBody = document.querySelector('.app-body');
-
-let isDragging1 = false;
-
-if (!resizer1 || !appBody) return;
-
-resizer1.addEventListener('mousedown', (e) => {
-isDragging1 = true;
-resizer1.classList.add('dragging');
-document.body.style.cursor = 'col-resize';
-e.preventDefault();
-});
-
-document.addEventListener('mousemove', (e) => {
-if (!isDragging1) return;
-
-const containerWidth = appBody.offsetWidth;
-const leftPercent = (e.clientX / containerWidth) * 100;
-
-// Panel 1: 20% - 50%, Panel 2: 30% - 60%, Panel 3: 20% fijo
-const newLeft = Math.min(Math.max(leftPercent, 20), 50);
-const panel2 = 100 - newLeft - 20;
-
-appBody.style.gridTemplateColumns = `${newLeft}% ${panel2}% 20%`;
-});
-
-document.addEventListener('mouseup', () => {
-isDragging1 = false;
-resizer1.classList.remove('dragging');
-document.body.style.cursor = '';
-});
-})();
 </script>
 </body>
 
