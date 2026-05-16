@@ -9,20 +9,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
 :root {
---bg: #2D3748;
---surface: #3D4A5C;
---surface2: #4A5568;
---border: #5A6A7C;
---text: #FFFFFF;
---text2: #A0AEC0;
---accent: #C53030;
---accent2: #D1432E;
---blue: #4F8EF7;
---green: #22C55E;
---yellow: #F59E0B;
---purple: #A855F7;
---cyan: #06B6D4;
---gray: #6B7280;
+--bg: #F8FAFC;
+--surface: #FFFFFF;
+--surface2: #F1F5F9;
+--border: #E2E8F0;
+--text: #0F172A;
+--text2: #475569;
+--accent: #DC2626;
+--accent2: #EA583C;
+--blue: #2563EB;
+--green: #16A34A;
+--yellow: #D97706;
+--purple: #9333EA;
+--cyan: #0891B2;
+--gray: #64748B;
 --sidebar-w: 20%;
 }
 
@@ -47,7 +47,7 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: radial-gradient(ellipse at 50% 0%, #1A1030 0%, var(--bg) 70%);
+            background: radial-gradient(ellipse at 50% 0%, #E0E7FF 0%, var(--bg) 70%);
         }
 
         .login-card {
@@ -426,59 +426,59 @@ overflow: hidden;
             letter-spacing: 0.3px;
         }
 
-        .s-solicitado {
-            background: rgba(107, 114, 128, 0.2);
-            color: #9CA3AF;
-            border: 1px solid rgba(107, 114, 128, 0.3);
-        }
+.s-solicitado {
+background: #F1F5F9;
+color: #475569;
+border: 1px solid #E2E8F0;
+}
 
-        .s-cotizado {
-            background: rgba(79, 142, 247, 0.15);
-            color: var(--blue);
-            border: 1px solid rgba(79, 142, 247, 0.3);
-        }
+.s-cotizado {
+background: #DBEAFE;
+color: #1D4ED8;
+border: 1px solid #BFDBFE;
+}
 
-        .s-comprado {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--yellow);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
+.s-comprado {
+background: #FEF3C7;
+color: #D97706;
+border: 1px solid #FDE68A;
+}
 
-        .s-transito1 {
-            background: rgba(168, 85, 247, 0.15);
-            color: var(--purple);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-        }
+.s-transito1 {
+background: #F3E8FF;
+color: #7C3AED;
+border: 1px solid #DDD6FE;
+}
 
-        .s-transito2 {
-            background: rgba(6, 182, 212, 0.15);
-            color: var(--cyan);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-        }
+.s-transito2 {
+background: #E0F2FE;
+color: #0284C7;
+border: 1px solid #BAE6FD;
+}
 
-        .s-en-aduana {
-            background: rgba(245, 158, 11, 0.2);
-            color: #FCD34D;
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
+.s-en-aduana {
+background: #DBEAFE;
+color: #1D4ED8;
+border: 1px solid #BFDBFE;
+}
 
-        .s-entregado {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--green);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
+.s-entregado {
+background: #DCFCE7;
+color: #15803D;
+border: 1px solid #BBF7D0;
+}
 
-        .s-recogido {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--cyan);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
+.s-recogido {
+background: #DCFCE7;
+color: #15803D;
+border: 1px solid #BBF7D0;
+}
 
-        .s-cancelado {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--accent);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
+.s-cancelado {
+background: #FEE2E2;
+color: #DC2626;
+border: 1px solid #FECACA;
+}
 
         /* ══ DETAIL PANEL ══ */
         .detail-panel {
@@ -623,10 +623,10 @@ overflow: hidden;
             font-weight: 700;
         }
 
-        .fin-item.profit {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
+.fin-item.profit {
+background: #DCFCE7;
+border: 1px solid #86EFAC;
+}
 
         .fin-item.profit .fv {
             color: var(--green);
@@ -835,12 +835,12 @@ overflow: hidden;
             border-bottom-left-radius: 4px;
         }
 
-        .ai-msg.system {
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--green);
-            align-self: center;
-            font-size: 0.75rem;
-            border: 1px solid rgba(34, 197, 94, 0.2);
+.ai-msg.system {
+background: #DCFCE7;
+color: #15803D;
+align-self: center;
+font-size: 0.75rem;
+border: 1px solid #86EFAC;
             text-align: center;
             padding: 0.4rem 0.7rem;
         }
@@ -1264,7 +1264,7 @@ border-color:var(--blue);color:var(--blue);
 
     <!-- ══════ LOGIN ══════ -->
     <div id="login-screen">
-        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.8); color:#00ff00; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #00ff00;">V202604240000</div>
+        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:#F1F5F9; color:#475569; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #E2E8F0;">V202600515</div>
         <div class="login-card">
             <div class="login-logo">
                 <img src="images/logo-agn.png"
