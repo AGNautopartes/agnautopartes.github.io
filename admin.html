@@ -1795,7 +1795,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                 <div class="detail-header" style="display:flex; justify-content:space-between; align-items:flex-start">
                     <div>
                         <div style="font-size:0.7rem; color:var(--blue); font-weight:800; margin-bottom:0.25rem">ORDER #${o.readable_id || 'ID'}</div>
-                        <input type="text" id="edit-part-name" value="${o.part_name || ''}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:white; width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
+                        <input type="text" id="edit-part-name" value="${o.part_name || ''}" style="font-size:1.1rem; font-weight:700; background:none; border:none; color:var(--text); width:100%; border-bottom:1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--blue)'" onblur="this.style.borderBottom='1px solid var(--border)'">
                         <div class="detail-sub">${o.customers?.full_name || 'No name'} · ${o.customers?.phone || '—'}</div>
                     </div>
                     <div style="display:flex; gap:0.5rem">
