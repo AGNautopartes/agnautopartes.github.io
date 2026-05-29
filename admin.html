@@ -26,6 +26,12 @@
 --sidebar-w: 20%;
 }
 
+/* Alarm state styling */
+.order-alarm {
+    background-color: #FEE2E2 !important;  /* Red-50 */
+    border-left: 4px solid #DC2626 !important;  /* Red-600 */
+}
+
         * {
             margin: 0;
             padding: 0;
@@ -1745,16 +1751,22 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
             list.innerHTML = orders.map(o => {
                 const date = o.created_at ? new Date(o.created_at).toLocaleDateString('en-US') : '—';
                 const vehicle = [o.vehicle_brand, o.vehicle_model, o.vehicle_year].filter(Boolean).join(' ');
-                return `<div class="order-card${selectedOrder?.id === o.id ? ' selected' : ''}" onclick="selectOrder('${o.id}')">
+                return `<div class="order-card${selectedOrder?.id === o.id ? ' selected' : ''}${o.alarm ? ' order-alarm' : ''}" onclick="selectOrder('${o.id}')">
             <div>
                 <div class="order-id" style="font-size:0.65rem; font-weight:800; color:var(--blue); margin-bottom:0.2rem">#${o.readable_id || 'ID'}</div>
                 <div class="order-client">${o.customers?.full_name || 'No name'} <span style="color:var(--text2);font-weight:400;font-size:0.78rem">${o.customers?.phone || ''}</span></div>
                 <div class="order-part">${o.part_name}${o.part_number ? ` — #${o.part_number}` : ''}</div>
                 ${vehicle ? `<div class="order-vehicle">🚗 ${vehicle}</div>` : ''}
             </div>
-            <div class="order-meta">
-                <span class="sbadge ${getStatusClass(o.status)}">${o.status}</span>
-                <span class="order-date">${date}</span>
+            <div class="order-meta" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span class="sbadge ${getStatusClass(o.status)}">${o.status}</span>
+                    <span class="order-date">${date}</span>
+                </div>
+                <label style="font-size:0.75rem; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:0.25rem;">
+                    <input type="checkbox" id="alarm-switch-${o.id}" ${o.alarm ? 'checked' : ''} onchange="toggleAlarm('${o.id}', this.checked)" style="width:16px; height:16px;">
+                    🚨 Alarma
+                </label>
             </div>
         </div>`;
              }).join('');
@@ -1838,10 +1850,24 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                     if (!Array.isArray(items)) {
                         try { items = JSON.parse(items); } catch (e) { items = []; }
                     }
-                    // Si no hay items, crear default
-                    if (!items || items.length === 0) {
-                        items = [{ part_name: o.part_name || '', part_number: o.part_number || '', quantity: 1, cost_fob: 0, sale_price: 0, supplier_url: o.supplier_url || '' }];
-                    }
+                     // Si no hay items, crear default
+                     if (!items || items.length === 0) {
+                         const today = new Date().toISOString().split('T')[0];
+                         const sixteenDaysLater = new Date();
+                         sixteenDaysLater.setDate(sixteenDaysLater.getDate() + 16);
+                         const sixteenDaysLaterStr = sixteenDaysLater.toISOString().split('T')[0];
+                         
+                         items = [{ 
+                             part_name: o.part_name || '', 
+                             part_number: o.part_number || '', 
+                             quantity: 1, 
+                             cost_fob: 0, 
+                             sale_price: 0, 
+                             supplier_url: o.supplier_url || '',
+                             order_date: today,
+                             estimated_arrival: sixteenDaysLaterStr 
+                         }];
+                     }
                     // Deduplicar por part_name
                     const seen = new Set();
                     items = items.filter(item => {
@@ -1878,6 +1904,10 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 		<div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
 		<div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking" value="${item.tracking_number || ''}"></div></div>
 		<div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.supplier_name || ''}"></div></div>
+		<!-- FECHA DE ORDEN -->
+		<div class="info-item"><div class="il">Fecha Orden</div><div class="iv"><input type="date" class="dyn-order-date" value="${item.order_date || ''}" oninput="handleItemChange(this, 'order_date')"></div></div>
+		<!-- FECHA TENTATIVA DE LLEGADA -->
+		<div class="info-item"><div class="il">Fecha Llegada Estimada</div><div class="iv"><input type="date" class="dyn-estimated-arrival" value="${item.estimated_arrival || ''}" oninput="handleItemChange(this, 'estimated_arrival')"></div></div>
 		<div class="info-item" style="grid-column:1/-1;"><div class="il">Link / URL</div><div class="iv"><input type="text" class="dyn-url" placeholder="Paste link here..." value="${item.supplier_url || ''}"></div></div>
     </div>
 </div>
@@ -2161,6 +2191,41 @@ function handleItemFinancialChange(inputEl) {
 	recalculateTotals();
 }
 
+function handleItemChange(inputEl, fieldName) {
+	const itemEl = inputEl.closest('.dynamic-item') || inputEl.closest('.accordion-item');
+	if (!itemEl) return;
+	
+	// Update the item data in the order object
+	const itemIndex = Array.from(itemEl.parentElement.children).indexOf(itemEl);
+	const orderId = itemEl.closest('.detail-panel')?.dataset?.orderId;
+	
+	if (orderId !== undefined && itemIndex !== -1) {
+		// Find the order in our data structure and update the specific field
+		const order = window.ordersData?.find(o => o.id === orderId);
+		if (order && order.order_items && order.order_items[itemIndex]) {
+			order.order_items[itemIndex][fieldName] = inputEl.value;
+			
+			// If this is the order date and estimated_arrival is empty, set default
+			if (fieldName === 'order_date' && !order.order_items[itemIndex].estimated_arrival) {
+				const orderDate = new Date(inputEl.value);
+				const estimatedDate = new Date(orderDate);
+				estimatedDate.setDate(estimatedDate.getDate() + 16);
+				const estimatedStr = estimatedDate.toISOString().split('T')[0];
+				
+				// Update the estimated arrival field in the UI
+				const estimatedInput = itemEl.querySelector('.dyn-estimated-arrival');
+				if (estimatedInput) {
+					estimatedInput.value = estimatedStr;
+					order.order_items[itemIndex].estimated_arrival = estimatedStr;
+				}
+			}
+			
+			// Persist changes to backend
+			updateManualOrder(orderId);
+		}
+	}
+}
+
 function syncNewTitle() {
             const first = document.querySelector('#new-items-container .dyn-part-name');
             const title = document.getElementById('new-part-name');
@@ -2204,22 +2269,24 @@ function syncNewTitle() {
             try {
                 const items = [];
                 // Selector más específico para evitar cruces con el formulario de Nueva Orden
-                document.querySelectorAll('#dynamic-items-container .dynamic-item').forEach(el => {
-                    const nameInput = el.querySelector('.dyn-part-name');
-                    if (nameInput) {
-	items.push({
-	part_name: nameInput.value.trim(),
-	part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
-	fob_cost: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
-	supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
-	customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
-	margin_percent: parseFloat(el.querySelector('.dyn-margin')?.value) || 0,
-	sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
-	item_status: el.querySelector('.dyn-status')?.value || 'Solicitado',
-	supplier_url: el.querySelector('.dyn-url')?.value.trim() || ''
-	});
-                    }
-                });
+document.querySelectorAll('#dynamic-items-container .dynamic-item').forEach(el => {
+		const nameInput = el.querySelector('.dyn-part-name');
+		if (nameInput) {
+		items.push({
+		part_name: nameInput.value.trim(),
+		part_number: el.querySelector('.dyn-part-no')?.value.trim() || '',
+		fob_cost: parseFloat(el.querySelector('.dyn-cost')?.value) || 0,
+		supplier_freight: parseFloat(el.querySelector('.dyn-flete')?.value) || 0,
+		customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
+		margin_percent: parseFloat(el.querySelector('.dyn-margin')?.value) || 0,
+		sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
+		item_status: el.querySelector('.dyn-status')?.value || 'Solicitado',
+		supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
+		order_date: el.querySelector('.dyn-order-date')?.value || '',
+		estimated_arrival: el.querySelector('.dyn-estimated-arrival')?.value || ''
+		});
+		}
+		});
 
 	const data = {
 	orderId,
