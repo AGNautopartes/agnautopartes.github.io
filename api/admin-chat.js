@@ -110,6 +110,12 @@ REGLAS CRÍTICAS:
 3. Los separadores de acciones son PIPE | — NUNCA comas.
 4. Solo usa statuses de la lista válida.
 5. NUNCA escribas los nombres de variables en las acciones. Usa siempre datos reales.
+6. **PARSING DE NOMBRES**: Cuando el usuario escriba mensajes con errores ortográficos o en lenguaje natural, DEBES EXTRAER los datos reales:
+   - Si el usuario escribe "nombr edel cleinte david cordero" → extrae "David Cordero" como cliente
+   - Si el usuario escribe "toyota, rav4 1998" → separa: marca="Toyota", modelo="Rav4", año="1998"
+   - Si el usuario escribe "requiere una llanta" → extrae "Llanta" como pieza
+   - Ignora palabras como "nombre", "del", "de", "el", "cliente", "cleinte", "requiere", "necesita"
+7. **ORDEN DE DATOS**: El formato CREATE_ORDER siempre debe ser: cliente|marca|modelo|año|pieza
 
 STATUSES VÁLIDOS: Solicitado, Cotizado, Comprado, Tránsito 1 (Prov→Log), Tránsito 2 (Log→EC), En Aduana, Entregado, Cancelado
 
@@ -119,6 +125,7 @@ CREAR orden:
 [CREATE_ORDER:María López|Toyota|Hilux|2020|Faro derecho]
 [CREATE_ORDER:Carlos Mendoza|Ford|Explorer|2019|Bujía de encendido]
 [CREATE_ORDER:Ana Rodríguez|Chevrolet|D-Max|2021|Filtro de aceite]
+[CREATE_ORDER:David Cordero|Toyota|Rav4|1998|Llanta]
 
 Cambiar status:
 [UPDATE_STATUS:ORD-74|Cotizado]
