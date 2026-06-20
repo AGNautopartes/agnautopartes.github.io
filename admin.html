@@ -1270,7 +1270,7 @@ border-color:var(--blue);color:var(--blue);
 
     <!-- ══════ LOGIN ══════ -->
     <div id="login-screen">
-        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:#F1F5F9; color:#475569; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #E2E8F0;">V20260620-Fix1</div>
+        <div id="v-tag" style="position:absolute; top:20px; right:20px; background:#F1F5F9; color:#475569; padding:4px 10px; border-radius:4px; font-family:monospace; font-size:12px; z-index:99999; border:1px solid #E2E8F0;">V20260620-Fix2</div>
         <div class="login-card">
             <div class="login-logo">
                 <img src="images/logo-agn.png"
@@ -1550,10 +1550,24 @@ border-color:var(--blue);color:var(--blue);
 
         let adminPass = '', adminName = 'Admin';
 let isCreatingOrder = false; // global flag to prevent duplicate order creation
-// Reset possible stale login flag from previous broken session
-sessionStorage.removeItem('agn-admin-logged');
-        let allOrders = [], selectedOrder = null;
-        let ariaHistory = [];
+let allOrders = [], selectedOrder = null;
+let ariaHistory = [];
+
+// Check if user is already logged in (session persists while browser is open)
+if (sessionStorage.getItem('agn-admin-logged') === 'true') {
+    console.log('Restoring session...');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    // Load orders with stored password
+    const storedPass = sessionStorage.getItem('agn-admin-pass');
+    const storedName = sessionStorage.getItem('agn-admin-name');
+    if (storedPass) {
+        adminPass = storedPass;
+        adminName = storedName || 'Admin';
+        document.getElementById('nav-user').textContent = adminName;
+        loadOrdersAndShowApp();
+    }
+}
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
@@ -1681,8 +1695,10 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                 renderOrders(allOrders);
                 updateStats(allOrders);
 
-                // Guardar login básico en session
+                // Guardar login en session (persiste mientras navegador esté abierto)
                 sessionStorage.setItem('agn-admin-logged', 'true');
+                sessionStorage.setItem('agn-admin-pass', pwd);
+                sessionStorage.setItem('agn-admin-name', name);
             } catch (e) {
                 console.error('Login error:', e);
                 err.textContent = 'Error de conexión. Verifique su internet.';
@@ -1690,7 +1706,38 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
             }
         }
 
-        document.getElementById('btn-logout').addEventListener('click', () => location.reload());
+        // Función para cargar órdenes cuando se restaura sesión
+        async function loadOrdersAndShowApp() {
+            try {
+                const res = await fetch(`${API}/api/get-all-orders`, {
+                    headers: { 'x-admin-password': adminPass }
+                });
+                if (res.ok) {
+                    allOrders = await res.json();
+                    renderOrders(allOrders);
+                    updateStats(allOrders);
+                } else {
+                    console.error('Error restoring session, clearing...');
+                    sessionStorage.removeItem('agn-admin-logged');
+                    sessionStorage.removeItem('agn-admin-pass');
+                    sessionStorage.removeItem('agn-admin-name');
+                    location.reload();
+                }
+            } catch (e) {
+                console.error('Error restoring session:', e);
+                sessionStorage.removeItem('agn-admin-logged');
+                sessionStorage.removeItem('agn-admin-pass');
+                sessionStorage.removeItem('agn-admin-name');
+                location.reload();
+            }
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            sessionStorage.removeItem('agn-admin-logged');
+            sessionStorage.removeItem('agn-admin-pass');
+            sessionStorage.removeItem('agn-admin-name');
+            location.reload();
+        });
 
         // ══ NAVIGATION ══
         document.querySelectorAll('.tab-btn').forEach(btn => {
