@@ -2514,8 +2514,16 @@ if (!res.ok) {
 
                 // Auto-refresh orders if needed (using existing loadData function)
                 if (data.refreshOrders === true) {
-                    console.log('Orden creada, actualizando lista...');
+                    console.log('Orden actualizada, refrescando lista...');
                     await loadData();
+                    // Refresh detalle si hay orden seleccionada
+                    if (selectedOrder) {
+                        const updatedOrder = allOrders.find(o => o.id === selectedOrder.id);
+                        if (updatedOrder) {
+                            selectedOrder = { ...updatedOrder };
+                            renderDetail(selectedOrder);
+                        }
+                    }
                 }
 
                 let responseText = data.response;
