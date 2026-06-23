@@ -1,87 +1,72 @@
-# AGNautopartes
+# AGN Autopartes ERP
 
-\u00a1Bienvenido a la aplicación AGNautopartes!
+**Sistema de Gestión de Órdenes de Repuestos Automotrices**
 
+[🔗 Acceder al Panel de Administración](https://agnautopartes.vercel.app)
 
-🏎️ AGN Autopartes — Plataforma Integral de Gestión ERP
-AGN Autopartes es una solución robusta diseñada para centralizar la operatividad de repuestos automotrices. Aunque el sistema cuenta con una Landing Page para la captación de clientes, el núcleo del proyecto reside en su Panel de Administración (ERP), un entorno diseñado para el control total sobre el ciclo de vida de las órdenes y la cadena de suministro.
+---
 
-📦 1. Gestión de Órdenes: El Núcleo Operativo
-La funcionalidad principal del sistema es la administración manual y granular de cada pedido, garantizando que cada pieza sea rastreable desde la solicitud hasta la entrega final.
+## 🏎️ ¿Qué es AGN Autopartes?
 
-🛠️ Creación e Ingreso Manual
-Identificadores Únicos (ORD-X): Cada orden generada posee un ID legible que facilita la trazabilidad y comunicación interna.
+AGN Autopartes es un sistema ERP diseñado para gestionar el ciclo completo de órdenes de repuestos automotrices, desde la solicitud del cliente hasta la entrega final.
 
-Control de Datos Críticos: El sistema permite el ingreso manual de información vital como el VIN (Vehicle Identification Number), números de Tracking y datos financieros (Precio de Venta y Costo FOB).
+El núcleo del sistema es su **Panel de Administración**, donde se centraliza toda la operatividad: creación de órdenes, tracking de estados, cálculos financieros y comunicación con proveedores.
 
-Asignación de Responsabilidades: Las órdenes pueden ser asignadas a empleados específicos para un seguimiento personalizado.
+---
 
-📝 Edición y Control en Tiempo Real
-Persistencia Instantánea: Todos los campos del panel son editables manualmente con guardado instantáneo a través de Supabase.
+## 📦 Funcionalidades Principales
 
-Estados de Flujo (Ciclo de Vida): Las órdenes atraviesan un flujo dinámico que incluye:
+### 1. Gestión de Órdenes
+- **Identificadores únicos** (ej: ORD-196) para trazabilidad completa
+- **Datos del vehículo**: Marca, modelo, año, VIN
+- **Tracking**: Números de seguimiento y estado en tiempo real
+- **Multi-repuesto**: Múltiples ítems por orden
+- **Estados del flujo**: Solicitado → Cotizado → Comprado → Tránsito → Aduana → Entregado
 
-Solicitado: Recepción del pedido inicial.
+### 2. Control Financiero
+- Cálculo de **landed cost** (FOB + fletes + aduanas + otros)
+- Márgenes de ganancia configurables
+- IVA automático (15%)
+- Reportes de rentabilidad por orden
 
-Cotizado: Definición de precios y costos.
+### 3. Aria - Asistente de IA 🤖
+- Comandos por **lenguaje natural** en español
+- Creación y actualización de órdenes por chat
+- Voice input/output (dictado por voz)
+- Detección inteligente de typos y variaciones
 
-Comprado: Adquisición de la pieza con el proveedor.
+### 4. Reportes y Analytics
+- Filtros por fecha, marca, modelo, estado, cliente
+- Exportación a CSV compatible con Excel
+- Pipeline de órdenes en curso
+- Análisis financiero consolidado
 
-Tránsito 1 (Prov a Log): Traslado del proveedor a la central logística.
+### 5. Seguridad y Auditoría
+- Login con autenticación
+- Bitácora de cambios (quién hizo qué y cuándo)
+- Sesión persistente mientras el navegador esté abierto
 
-Tránsito 2 (Log a EC): Envío hacia el centro de distribución.
+---
 
-Aduana: Proceso de nacionalización y trámites legales.
+## 🖥️ Capturas
 
-Entregado: Cierre exitoso de la operación.
+*(Espacio para screenshots del sistema)*
 
-Cancelación: Opción de invalidar órdenes en cualquier etapa del proceso.
+---
 
-🖥️ 2. Arquitectura de Interfaz (Layout Premium)
-La interfaz administrativa está diseñada para maximizar la productividad mediante un manejo inteligente del espacio:
+## 📞 Soporte
 
-Área Central de Lista de Órdenes: Presenta el inventario de todas las solicitudes con filtros de estado.
+Para acceso o soporte técnico, contactar al administrador del sistema.
 
-Panel de Detalles Colapsable: Un sistema de "toggle" lateral que permite abrir la información técnica y financiera de una orden sin abandonar la lista principal, optimizando la multitarea.
+---
 
-Ventana de Reportes: Una sección dedicada a la inteligencia de negocio que permite:
+## 📚 Documentación Técnica
 
-Filtros Multidimensionales: Cruce de datos por fechas, marcas de vehículos y modelos.
+- [**CHANGELOG**](CHANGELOG.md) - Historial de versiones y cambios
+- [**README para Desarrolladores**](README_DEV.md) - Arquitectura, deploy y código
 
-Análisis de Rentabilidad: Cálculo automático de ganancias basado en la diferencia entre la venta y el costo FOB ingresado.
+---
 
-Exportación Premium: Generación de archivos CSV con codificación BOM para compatibilidad total con Microsoft Excel, respetando caracteres especiales y tildes.
-
-🤖 3. Aria: Asistente de IA (Soporte y Ejecución)
-Aria actúa como una capa de inteligencia secundaria que asiste en la gestión de las órdenes mencionadas anteriormente:
-
-Lectura de Contexto: Aria analiza el estado de las órdenes en la base de datos para responder consultas o realizar actualizaciones precisas.
-
-Operación Manos Libres: Integración con Web Speech API para el dictado de órdenes y síntesis de voz (TTS) para vocalizar respuestas.
-
-Ejecución de Acciones: Capacidad de realizar comandos de creación (CREATE), actualización (UPDATE) o borrado (DELETE) mediante lenguaje natural.
-
-⚙️ 4. Control de Inventario y Seguridad
-Reposiciones de Repuestos: Control de stock actual, gestión de pedidos con proveedores y alertas automáticas de bajo inventario.
-
-Gestión de Usuarios: Sistema basado en roles y permisos para delimitar el acceso a RRHH y administradores.
-
-Bitácora de Acciones: Registro histórico de todos los movimientos realizados en el sistema para auditoría y seguridad.
-
-💻 5. Especificaciones Técnicas
-Frontend: React.
-
-Backend: Node.js/Express.
-
-Base de Datos: PostgreSQL / Supabase para almacenamiento y tiempo real.
-
-Despliegue: Vercel.
-
-🚀 6. Instalación y Despliegue
-Configuración: Requiere autenticación de administrador.
-
-Instalación: npm install.
-
-Build: npm run build.
-
-Despliegue: vercel para entornos de producción.
+**Última versión**: V20260620-Fix3  
+**Deploy automático**: Vercel  
+**Base de datos**: Supabase (PostgreSQL)

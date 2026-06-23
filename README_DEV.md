@@ -433,6 +433,6 @@ export default async function handler(req, res) {
 
 ---
 
-**Última actualización**: 2026-06-20
-**Versión actual**: `V20260620-Fix3`
-**Commit**: `d371aa9`
+**Última actualización**: 2026-06-20  
+**Versión actual**: `V20260620-Fix3`  
+**Commit**: `7124c1c`
