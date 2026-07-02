@@ -1950,7 +1950,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 		<div class="info-item"><div class="il">Precio con IVA</div><div class="iv"><input type="number" class="dyn-price-vat" value="${item.price_with_vat || 0}" readonly style="background:var(--surface2); color:var(--text2)"></div></div>
 		<div class="info-item"><div class="il">Núm. Parte</div><div class="iv"><input type="text" class="dyn-part-no" placeholder="Opcional" value="${item.part_number || ''}"></div></div>
 		<div class="info-item"><div class="il">Tracking</div><div class="iv"><input type="text" class="dyn-tracking" placeholder="Tracking" value="${item.tracking_number || ''}"></div></div>
-		<div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.supplier_name || ''}"></div></div>
+		<div class="info-item"><div class="il">Proveedor</div><div class="iv"><input type="text" class="dyn-supplier" placeholder="Proveedor" value="${item.vendor_name || item.supplier_name || ''}"></div></div>
 		<!-- FECHA DE ORDEN -->
 		<div class="info-item"><div class="il">Fecha Orden</div><div class="iv"><input type="date" class="dyn-order-date" value="${item.order_date || ''}" oninput="handleItemChange(this, 'order_date')"></div></div>
 		<!-- FECHA TENTATIVA DE LLEGADA -->
@@ -2140,8 +2140,10 @@ function openNewManualOrder() {
 	customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
 	margin_percent: el.querySelector('.dyn-margin')?.value ? parseFloat(el.querySelector('.dyn-margin').value) : null,
 	sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
-	supplier_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
-	item_status: el.querySelector('.dyn-status')?.value || 'Solicitado'
+	vendor_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
+	item_status: el.querySelector('.dyn-status')?.value || 'Solicitado',
+	order_date: el.querySelector('.dyn-order-date')?.value || '',
+	estimated_arrival: el.querySelector('.dyn-estimated-arrival')?.value || ''
 	});
         }
     });
@@ -2327,8 +2329,10 @@ document.querySelectorAll('#dynamic-items-container .dynamic-item').forEach(el =
 		customs_nationalization: parseFloat(el.querySelector('.dyn-customs')?.value) || 0,
 		margin_percent: parseFloat(el.querySelector('.dyn-margin')?.value) || 0,
 		sale_price: parseFloat(el.querySelector('.dyn-sale-price')?.value) || 0,
+		vendor_name: el.querySelector('.dyn-supplier')?.value.trim() || '',
 		item_status: el.querySelector('.dyn-status')?.value || 'Solicitado',
 		supplier_url: el.querySelector('.dyn-url')?.value.trim() || '',
+		tracking_number: el.querySelector('.dyn-tracking')?.value.trim() || '',
 		order_date: el.querySelector('.dyn-order-date')?.value || '',
 		estimated_arrival: el.querySelector('.dyn-estimated-arrival')?.value || ''
 		});

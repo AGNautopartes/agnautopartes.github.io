@@ -175,7 +175,6 @@ if (customer_name || customer_phone || customer_ruc || customer_cedula) {
 	item_status: it.item_status || 'Solicitado',
 	vendor_name: it.vendor_name || '',
 	supplier_url: it.supplier_url || '',
-	supplier_name: it.supplier_name || '',
 	tracking_number: it.tracking_number || '',
 	updated_at: new Date().toISOString()
 	};

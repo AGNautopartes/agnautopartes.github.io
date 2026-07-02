@@ -211,7 +211,6 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
 	item_status: item.item_status || 'Solicitado',
 	vendor_name: item.vendor_name || '',
 	supplier_url: item.supplier_url || '',
-	supplier_name: item.supplier_name || '',
 	tracking_number: item.tracking_number || '',
 	image_data: item.image_data || ''
 	};

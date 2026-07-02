@@ -380,7 +380,12 @@ async function executeCreateOrder(actionData, req) {
                 vehicle_brand: vehicleBrand,
                 vehicle_model: vehicleModel || vehicleBrand,
                 vehicle_year: vehicleYear,
-                part_name: partName
+                part_name: partName,
+                part_number: '',
+                vendor_name: '',
+                supplier_url: '',
+                cost_fob: 0,
+                sale_price: 0
             })
         });
 
@@ -677,7 +682,7 @@ async function executeAddPart(actionData, req) {
         }
         
         const currentItems = order.items_json || [];
-        const newItem = { part_name: partName, cost_fob: parseFloat(partCost) || 0, quantity: 1 };
+        const newItem = { part_name: partName, part_number: '', cost_fob: parseFloat(partCost) || 0, quantity: 1, vendor_name: '', supplier_url: '', tracking_number: '', item_status: 'Solicitado', margin_percent: null, sale_price: 0, supplier_freight: 0, customs_nationalization: 0 };
         const updatedItems = [...currentItems, newItem];
         
         const apiUrl = process.env.VERCEL_URL 
