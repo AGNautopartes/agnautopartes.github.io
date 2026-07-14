@@ -2,6 +2,12 @@
 
 Todos los cambios notables en este proyecto.
 
+## [2026-07-14] - WhatsApp del landing
+
+### Cambiado
+- El flujo activo de Alex y el envío final del formulario ahora utilizan `+593 98 959 9639`.
+- El número comercial se centralizó en constantes del landing para evitar divergencias entre el prompt y el enlace `wa.me`.
+
 ## [2026-06-20] - Fix #3: Parsing de Nombres + Fix #2 Login + Fix #1 Refresh
 
 ### Agregado
