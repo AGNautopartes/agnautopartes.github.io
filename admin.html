@@ -1811,7 +1811,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                     <span class="order-date">${date}</span>
                 </div>
                 <label style="font-size:0.75rem; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:0.25rem;">
-                    <input type="checkbox" id="alarm-switch-${o.id}" ${o.alarm ? 'checked' : ''} onchange="toggleAlarm('${o.id}', this.checked)" style="width:16px; height:16px;">
+                    <input type="checkbox" id="alarm-switch-${o.id}" ${o.alarm ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleAlarm('${o.id}', this.checked)" style="width:16px; height:16px;">
                     🚨 Alarma
                 </label>
             </div>
@@ -1819,9 +1819,34 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
              }).join('');
          }
 
+		async function toggleAlarm(orderId, enabled) {
+			const order = allOrders.find(o => o.id === orderId);
+			if (!order) return;
+
+			const previousValue = Boolean(order.alarm);
+			order.alarm = enabled;
+			renderOrders(allOrders);
+
+			try {
+				const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+					body: JSON.stringify({ orderId, alarm: enabled }),
+					timeout: 10000
+				});
+
+				if (!res.ok) throw new Error('No se pudo guardar la alarma');
+				showToast(enabled ? '🚨 Alarma activada' : '✅ Alarma desactivada', 'success');
+			} catch (error) {
+				order.alarm = previousValue;
+				renderOrders(allOrders);
+				showToast('❌ La alarma no se guardó', 'error');
+			}
+		}
 
 
-        // ══ SELECT ORDER ══
+
+         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
             if (!selectedOrder) return;
@@ -2577,45 +2602,10 @@ if (!res.ok) {
                     }
                 }
 
-                let responseText = data.response;
-                const actionRegex = /\[ACTION:.*?\]/g;
-                let actions = [];
-                let match;
-
-                while ((match = actionRegex.exec(responseText)) !== null) {
-                    try {
-                        let actionJson = match[0].substring(8, match[0].length - 1);
-                        let action = null;
-                        try {
-                            action = JSON.parse(actionJson);
-                        } catch (e1) {
-                            let openBraces = (actionJson.match(/\{/g) || []).length;
-                            let closeBraces = (actionJson.match(/\}/g) || []).length;
-                            let openBrackets = (actionJson.match(/\[/g) || []).length;
-                            let closeBrackets = (actionJson.match(/\]/g) || []).length;
-
-                            while (closeBrackets < openBrackets) { actionJson += ']'; closeBrackets++; }
-                            while (closeBraces < openBraces) { actionJson += '}'; closeBraces++; }
-                            action = JSON.parse(actionJson);
-                        }
-                        if (action) actions.push(action);
-                    } catch (e) {
-                        console.error('Error parsing action block:', e);
-                    }
-                }
-
-                let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
-                if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
-
-                if (cleanResponseText) {
-                    addAiMsg('assistant', cleanResponseText);
-                    ariaHistory.push({ role: 'assistant', content: cleanResponseText });
-                    ariaSpeak(cleanResponseText);
-                }
-
-                for (const action of actions) {
-                    if (action && action.type) await executeAriaAction(action);
-                }
+                const responseText = data.response || 'No recibí una respuesta válida.';
+                addAiMsg('assistant', responseText);
+                ariaHistory.push({ role: 'assistant', content: responseText });
+                ariaSpeak(responseText);
             } catch (e) {
                 console.error('Aria Error:', e);
                 if (thinking && thinking.parentNode) thinking.remove();

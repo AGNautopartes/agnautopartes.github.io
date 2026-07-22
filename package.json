@@ -2,6 +2,9 @@
   "name": "agnautopartes",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "test": "node --test test/aria-actions.test.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
     "dotenv": "^17.3.1",

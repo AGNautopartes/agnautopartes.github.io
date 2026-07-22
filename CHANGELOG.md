@@ -2,6 +2,21 @@
 
 Todos los cambios notables en este proyecto.
 
+## [Unreleased] - Estabilización P0
+
+### Corregido
+- Persistencia de alarmas conectada entre Admin, API y Supabase.
+- Aria procesa múltiples acciones, evita duplicar el mensaje actual e implementa `UPDATE_CUSTOMER`.
+- Eliminado el parser activo incompatible de acciones JSON en el frontend.
+- Reemplazo de `order_items` delegado a una función PostgreSQL transaccional.
+- Persistencia de `order_date` y `estimated_arrival` al sincronizar ítems.
+
+### Pruebas
+- Añadidas pruebas de contrato para historial y parsing de acciones de Aria.
+
+### Pendiente de despliegue
+- Aplicar `supabase/migrations/20260721_p0_stabilization.sql` antes de publicar el código.
+
 ## [2026-07-14] - WhatsApp del landing
 
 ### Cambiado

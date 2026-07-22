@@ -1,4 +1,5 @@
 import supabase from '../supabase-client.js';
+import { normalizeConversationHistory, parseActionBlocks } from './lib/aria-actions.js';
 export const maxDuration = 60;
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -42,6 +43,12 @@ export default async function handler(req, res) {
     // 2. Extraer parámetros
     const { message, conversationHistory = [], adminName = 'Admin' } = req.body;
     const model = req.body.model || 'minimax/minimax-m2.5:free';
+
+    if (typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ error: 'El mensaje es requerido.' });
+    }
+
+    const historyWithoutDuplicate = normalizeConversationHistory(conversationHistory, message);
 
     console.log('=== ARIA DEBUG ===');
     console.log('Model recibido:', model);
@@ -156,7 +163,7 @@ Eliminar orden:
             // === OPENROUTER CALL ===
             const messagesForAPI = [
                 { role: 'system', content: SYSTEM_PROMPT },
-                ...conversationHistory.map(m => ({
+                ...historyWithoutDuplicate.map(m => ({
                     role: m.role,
                     content: m.content
                 })),
@@ -208,7 +215,7 @@ Eliminar orden:
 
             const messagesForAPI = [
                 { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-                ...conversationHistory.map(m => ({
+                ...historyWithoutDuplicate.map(m => ({
                     role: m.role === 'assistant' ? 'model' : 'user',
                     parts: [{ text: m.content }]
                 })),
@@ -235,44 +242,45 @@ Eliminar orden:
         }
 
         // Detectar si la respuesta contiene una accion ejecutable
-        const actionMatch = responseText.match(/\[([A-Z_]+):([^\]]+)\]/);
-        
-        let displayText = responseText;
-        let actionDetected = false;
-        let actionType = null;
-        let actionData = null;
-        let actionResult = null;
+        const actions = parseActionBlocks(responseText);
 
-        if (actionMatch) {
-            actionDetected = true;
-            actionType = actionMatch[1];
-            actionData = actionMatch[2];
-            console.log('=== ARIA ACTION DETECTED ===');
-            console.log('Action:', actionType);
-            console.log('Data:', actionData);
-            
-            // Ejecutar la accion
-            if (actionType === 'CREATE_ORDER') {
-                actionResult = await executeCreateOrder(actionData, req);
-            } else if (actionType === 'UPDATE_VEHICLE') {
-                actionResult = await executeUpdateVehicle(actionData, req);
-            } else if (actionType === 'UPDATE_STATUS') {
-                actionResult = await executeUpdateStatus(actionData, req);
-            } else if (actionType === 'UPDATE_COST') {
-                actionResult = await executeUpdateCost(actionData, req);
-            } else if (actionType === 'ADD_PART') {
-                actionResult = await executeAddPart(actionData, req);
-            } else if (actionType === 'ADD_NOTE') {
-                actionResult = await executeAddNote(actionData, req);
-            } else if (actionType === 'DELETE_ORDER') {
-                actionResult = await executeDeleteOrder(actionData, req);
+        let displayText = responseText;
+        const actionResults = [];
+        const executors = {
+            CREATE_ORDER: executeCreateOrder,
+            UPDATE_VEHICLE: executeUpdateVehicle,
+            UPDATE_STATUS: executeUpdateStatus,
+            UPDATE_COST: executeUpdateCost,
+            UPDATE_CUSTOMER: executeUpdateCustomer,
+            ADD_PART: executeAddPart,
+            ADD_NOTE: executeAddNote,
+            DELETE_ORDER: executeDeleteOrder
+        };
+
+        for (const action of actions) {
+            const actionType = action.type;
+            const actionData = action.data;
+            const executor = executors[actionType];
+
+            console.log('ARIA ACTION:', actionType);
+            if (!executor) {
+                actionResults.push({
+                    type: actionType,
+                    message: `Acción no soportada: ${actionType}`,
+                    error: true
+                });
+                continue;
             }
+
+            const result = await executor(actionData, req);
+            actionResults.push({ type: actionType, ...result });
         }
 
-        // Si se ejecuto una accion, usar su resultado
-        if (actionResult) {
-            displayText = actionResult.message || "Accion ejecutada exitosamente";
-            const needsRefresh = actionResult.refreshRequired === true;
+        if (actionResults.length > 0) {
+            displayText = actionResults
+                .map(result => result.message || `${result.type} ejecutada`)
+                .join('\n');
+            const needsRefresh = actionResults.some(result => result.refreshRequired === true);
             return res.status(200).json({ 
                 response: displayText,
                 refreshOrders: needsRefresh,
@@ -281,11 +289,8 @@ Eliminar orden:
                     useOpenRouter, 
                     useGeminiNative, 
                     ordersCount: existingOrders?.length || 0,
-                    actionDetected,
-                    actionType,
-                    actionData,
-                    actionExecuted: true,
-                    actionResult
+                    actionCount: actionResults.length,
+                    actionResults
                 } 
             });
         }
@@ -301,9 +306,7 @@ Eliminar orden:
                 useOpenRouter, 
                 useGeminiNative, 
                 ordersCount: existingOrders?.length || 0,
-                actionDetected,
-                actionType,
-                actionData
+                actionCount: 0
             } 
         });
 
@@ -515,6 +518,82 @@ async function executeUpdateVehicle(actionData, req) {
             message: `Error: ${error.message}`,
             error: true 
         };
+    }
+}
+
+async function executeUpdateCustomer(actionData, req) {
+    const [orderIdInput, rawField, ...valueParts] = actionData.split('|').map(s => s.trim());
+    const value = valueParts.join('|').trim();
+    const normalizedField = (rawField || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const fieldMap = {
+        nombre: 'customer_name',
+        name: 'customer_name',
+        telefono: 'customer_phone',
+        phone: 'customer_phone',
+        ruc: 'customer_ruc',
+        cedula: 'customer_cedula'
+    };
+    const targetField = fieldMap[normalizedField];
+
+    if (!orderIdInput || !targetField || !value) {
+        return {
+            message: 'Datos incompletos. Formato: id|nombre/teléfono/ruc/cédula|valor',
+            error: true
+        };
+    }
+
+    try {
+        const adminPassword = req.headers['x-admin-password'];
+        const baseUrl = process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : 'http://localhost:3000';
+        const getRes = await fetch(`${baseUrl}/api/get-all-orders`, {
+            headers: { 'x-admin-password': adminPassword }
+        });
+
+        if (!getRes.ok) {
+            return { message: 'Error al consultar la orden', error: true };
+        }
+
+        const orders = await getRes.json();
+        const order = orders.find(o =>
+            o.readable_id === orderIdInput ||
+            o.readable_id?.toLowerCase() === orderIdInput.toLowerCase() ||
+            o.readable_id === `ORD-${orderIdInput}` ||
+            o.id === orderIdInput
+        );
+
+        if (!order) {
+            return { message: `Orden ${orderIdInput} no encontrada`, error: true };
+        }
+
+        const updateRes = await fetch(`${baseUrl}/api/update-order-full`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': adminPassword
+            },
+            body: JSON.stringify({ orderId: order.id, [targetField]: value })
+        });
+
+        if (!updateRes.ok) {
+            const errorResult = await updateRes.json().catch(() => ({}));
+            return {
+                message: `Error: ${errorResult.message || 'No se pudo actualizar el cliente'}`,
+                error: true
+            };
+        }
+
+        return {
+            message: `${rawField} actualizado en ${order.readable_id}`,
+            orderId: order.readable_id,
+            refreshRequired: true
+        };
+    } catch (error) {
+        return { message: `Error: ${error.message}`, error: true };
     }
 }
 
