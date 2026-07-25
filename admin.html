@@ -1607,13 +1607,26 @@ if (sessionStorage.getItem('agn-admin-logged') === 'true') {
             if (provider === 'google') filtered = allAriaModels.filter(m => m.id.startsWith('google/'));
             else if (provider === 'openrouter') filtered = allAriaModels.filter(m => !m.id.startsWith('google/'));
             const savedModel = localStorage.getItem('agn-admin-selected-model');
-            select.innerHTML = filtered.length
-                ? filtered.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
-                : '<option value="">No models for this provider</option>';
+            select.replaceChildren();
+            if (filtered.length) {
+                filtered.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    select.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No models for this provider';
+                select.appendChild(option);
+            }
 if (savedModel && filtered.some(m => m.id === savedModel)) {
 		select.value = savedModel;
 	} else {
-		const defaultModel = filtered.find(m => m.id === 'minimax/minimax-m2.5:free') || filtered[0];
+		const defaultModel = filtered.find(m => m.isDefault) ||
+			filtered.find(m => m.id === 'minimax/minimax-m2.5:free') ||
+			filtered[0];
 		if (defaultModel) select.value = defaultModel.id;
 	}
         }
@@ -2538,7 +2551,8 @@ async function loadHistory(orderId) {
         function addAiMsg(role, text) {
             const el = document.createElement('div');
             el.className = `ai-msg ${role}`;
-            el.innerHTML = text.replace(/\n/g, '<br>');
+            el.textContent = String(text || '');
+            el.style.whiteSpace = 'pre-wrap';
             aiMessages.appendChild(el);
             aiMessages.scrollTop = aiMessages.scrollHeight;
             return el;
@@ -2602,6 +2616,13 @@ if (!res.ok) {
                     }
                 }
 
+                if (data.result?.openOrderId) {
+                    if (!allOrders.some(order => order.id === data.result.openOrderId)) {
+                        await loadData();
+                    }
+                    await selectOrder(data.result.openOrderId);
+                }
+
                 const responseText = data.response || 'No recibí una respuesta válida.';
                 addAiMsg('assistant', responseText);
                 ariaHistory.push({ role: 'assistant', content: responseText });
@@ -2614,168 +2635,6 @@ if (!res.ok) {
                 ariaSend.disabled = false;
             }
         }
-
-        async function executeAriaAction(action) {
-            try {
-                if (action.type === 'DELETE_ORDER') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/delete-order`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            allOrders = allOrders.filter(o => o.id !== found.id);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
-                            if (selectedOrder?.id === found.id) {
-                                document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
-                                document.getElementById('detail-panel').classList.add('empty');
-                            }
-                            showToast(`🗑️ Orden #${found.readable_id} eliminada`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
-                    }
-                } else if (action.type === 'UPDATE_STATUS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const newStatus = action.data.new_status;
-                        const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, newStatus }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            found.status = newStatus;
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder.status = newStatus;
-                                renderDetail(selectedOrder);
-                            }
-                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${newStatus}`);
-                            showToast(`✅ Estado actualizado: ${newStatus}`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error actualizando estado de [#${found.readable_id}].`);
-                        }
-                    }
-                } else if (action.type === 'ADD_NOTE') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/add-note`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
-                            if (selectedOrder?.id === found.id) loadNotes(found.id);
-                            showToast(`📝 Nota agregada a #${found.readable_id}`, 'success');
-                        }
-                    }
-                } else if (action.type === 'UPDATE_FIELDS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const currentItems = Array.isArray(found.items_json) ? [...found.items_json] : [];
-                        const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
-
-                        ariaItems.forEach(newItem => {
-                            const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
-                            const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
-                            if (idx !== -1) {
-                                currentItems[idx] = { ...currentItems[idx], ...itemObj };
-                            } else {
-                                currentItems.push(itemObj);
-                            }
-                        });
-
-                        const updateData = {
-                            orderId: found.id,
-                            ...action.data.fields,
-                            items_json: currentItems
-                        };
-
-                        const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify(updateData),
-                            timeout: 15000
-                        });
-                        if (res.ok) {
-                            Object.assign(found, updateData);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder = { ...found };
-                                renderDetail(selectedOrder);
-                            }
-                            showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
-                        }
-                    }
-                } else if (action.type === 'CREATE_ORDER') {
-                    // Handle different possible action structures
-                    let fields = {};
-
-
-
-                    const data = {
-                        customer_name: name,
-                        customer_phone: fields.customer_phone || fields.telefono || fields.phone || 'N/A',
-                        customer_email: fields.customer_email || fields.email || fields.correo || '',
-                        vehicle_brand: fields.vehicle_brand || fields.marca || fields.brand || 'N/A',
-                        vehicle_model: model,
-                        vehicle_year: fields.vehicle_year || fields.ano || fields.year || 'N/A',
-                        part_name: part,
-                        part_number: fields.part_number || fields.numero_pieza || '',
-                        cost_fob: parseFloat(fields.cost_fob || fields.costo || 0),
-                        sale_price: parseFloat(fields.sale_price || fields.precio || 0),
-                        vendor_name: fields.vendor_name || fields.vendedor || '',
-                        supplier_url: fields.supplier_url || fields.url || '',
-                        status: fields.status || 'Solicitado',
-                        tracking_number: fields.tracking_number || '',
-                        estimated_delivery_client: fields.estimated_delivery_client || '',
-                        notes: fields.notes || fields.notas || '',
-                        created_by: fields.created_by || adminName
-                    };
-
-                    const res = await fetch(`${API}/api/create-order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify(data)
-                    });
-
-                    if (res.ok) {
-                        addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
-                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
-                        allOrders = await ordersRes.json();
-                        renderOrders(allOrders);
-                        updateStats(allOrders);
-                    } else {
-                        const errorData = await res.json();
-                        addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
-                    }
-                }
-            } catch (e) {
-                console.error('Action Error:', e);
-                addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
-            }
-        }
-
-
-
 
         // ══ VOICE (NATIVE CHROME API) ══
         let recognition;
