@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createCommandRegistry } from '../lib/agent-core/command-registry.js';
 import { invokeApiHandler } from '../lib/agent-core/handler-adapter.js';
 import {
@@ -473,4 +474,31 @@ test('translates multiple provider tool calls in their original order', async ()
     } finally {
         globalThis.fetch = originalFetch;
     }
+});
+
+test('manual order deletion uses one restricted transactional RPC', async () => {
+    const migration = await readFile(
+        new URL('../migrations/2026-07-25-delete-order-with-relations.sql', import.meta.url),
+        'utf8'
+    );
+    const endpoint = await readFile(
+        new URL('../api/delete-order.js', import.meta.url),
+        'utf8'
+    );
+
+    for (const table of [
+        'order_documents',
+        'order_notes',
+        'order_history',
+        'order_items',
+        'financials',
+        'orders'
+    ]) {
+        assert.match(migration, new RegExp(`DELETE FROM public\\.${table}`));
+    }
+
+    assert.match(migration, /REVOKE ALL .* FROM PUBLIC/);
+    assert.match(migration, /GRANT EXECUTE .* TO service_role/);
+    assert.match(endpoint, /rpc\(\s*'delete_order_with_relations'/);
+    assert.doesNotMatch(endpoint, /from\('orders'\)\.delete\(\)/);
 });
