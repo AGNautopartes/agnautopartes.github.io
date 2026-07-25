@@ -393,7 +393,7 @@ test('Aria prompt guides an unsure user and defines financial sequencing', async
         await import('../lib/aria/aria-prompt.js');
     const prompt = buildAriaSystemPrompt({ adminName: 'Admin', orders: [] });
 
-    assert.equal(ARIA_PROMPT_VERSION, '2.3.0');
+    assert.equal(ARIA_PROMPT_VERSION, '2.3.1');
     assert.match(prompt, /cómo usar Aria/i);
     assert.match(prompt, /ORD-205/);
     assert.match(prompt, /No afirmar que una acción fue realizada/i);
@@ -403,6 +403,21 @@ test('Aria prompt guides an unsure user and defines financial sequencing', async
     assert.match(prompt, /create_order, set_order_fob y set_order_price/i);
     assert.match(prompt, /precio antes de IVA/i);
     assert.match(prompt, /\$new_order/i);
+    assert.match(prompt, /update_order_customer con order_ref y customer_phone/i);
+});
+
+test('customer update command exposes WhatsApp as customer_phone', async () => {
+    const { createAgnCommandRegistry } =
+        await import('../lib/agn-erp/command-catalog.js');
+    const command = createAgnCommandRegistry()
+        .describe()
+        .find(item => item.name === 'update_order_customer');
+
+    assert.match(command.description, /teléfono o WhatsApp/i);
+    assert.match(
+        command.parameters.properties.customer_phone.description,
+        /ficha de la orden/i
+    );
 });
 
 test('translates multiple provider tool calls in their original order', async () => {

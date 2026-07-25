@@ -97,33 +97,31 @@ if (items_json !== undefined) updateData.items_json = items_json;
 
         if (orderErr) throw orderErr;
 
-// Update customer data if provided
+// Update customer data if provided. Never report success if this write fails.
 if (customer_name || customer_phone || customer_ruc || customer_cedula) {
-  try {
-    const { data: order } = await supabase
-      .from('orders')
-      .select('customer_id')
-      .eq('id', orderId)
-      .single();
+  const { data: order, error: orderLookupError } = await supabase
+    .from('orders')
+    .select('customer_id')
+    .eq('id', orderId)
+    .single();
 
-    if (order && order.customer_id) {
-      const customerUpdate = {};
-      if (customer_name) customerUpdate.full_name = customer_name;
-      if (customer_phone) customerUpdate.phone = customer_phone;
-      if (customer_ruc) customerUpdate.ruc = customer_ruc;
-      if (customer_cedula) customerUpdate.cedula = customer_cedula;
-
-      if (Object.keys(customerUpdate).length > 0) {
-        const { error: custErr } = await supabase
-          .from('customers')
-          .update(customerUpdate)
-          .eq('id', order.customer_id);
-        if (custErr) console.error('Error updating customer:', custErr);
-      }
-    }
-  } catch (custError) {
-    console.error('Customer update skipped:', custError.message);
+  if (orderLookupError) throw orderLookupError;
+  if (!order?.customer_id) {
+    throw new Error('La orden no tiene un cliente asociado');
   }
+
+  const customerUpdate = {};
+  if (customer_name) customerUpdate.full_name = customer_name;
+  if (customer_phone) customerUpdate.phone = customer_phone;
+  if (customer_ruc) customerUpdate.ruc = customer_ruc;
+  if (customer_cedula) customerUpdate.cedula = customer_cedula;
+
+  const { error: customerUpdateError } = await supabase
+    .from('customers')
+    .update(customerUpdate)
+    .eq('id', order.customer_id);
+
+  if (customerUpdateError) throw customerUpdateError;
 }
 
         // 🟢 Misión: Sincronización Atómica (Fase 5)
