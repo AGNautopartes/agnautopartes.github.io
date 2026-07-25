@@ -83,6 +83,25 @@ test('rejects oversized string arguments', async () => {
     assert.match(result.message, /2000 caracteres/);
 });
 
+test('rejects numbers below the command minimum', async () => {
+    const registry = createCommandRegistry([{
+        name: 'set_price',
+        parameters: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+                price: { type: 'number', minimum: 0 }
+            },
+            required: ['price']
+        },
+        execute: async () => ({ ok: true })
+    }]);
+
+    const result = await registry.execute('set_price', { price: -1 });
+    assert.equal(result.code, 'INVALID_ARGUMENTS');
+    assert.match(result.message, /mayor o igual a 0/);
+});
+
 test('requires confirmation and then executes the same registered command', async () => {
     let receivedArgs;
     const registry = buildRegistry(async args => {
@@ -187,6 +206,8 @@ test('AGN command catalog is explicit and readable', async () => {
 
     assert.deepEqual(commandNames, [
         'create_order',
+        'set_order_fob',
+        'set_order_price',
         'open_order',
         'set_order_status',
         'set_order_alarm',
@@ -252,16 +273,142 @@ test('open_order limits exact-name lookup and rejects ambiguity', async () => {
     assert.equal(result.code, 'MULTIPLE_ORDERS_FOUND');
 });
 
-test('Aria prompt guides an unsure user without claiming execution', async () => {
+test('financial commands preserve FOB decimals and price before VAT', async () => {
+    const { createAgnCommandRegistry } =
+        await import('../lib/agn-erp/command-catalog.js');
+    let order = {
+        id: 'uuid-209',
+        readable_id: 'ORD-209',
+        order_items: [{
+            part_name: 'Mascarilla',
+            fob_cost: 0,
+            cost_fob: 0,
+            sale_price: 0,
+            price: 0
+        }]
+    };
+    const context = {
+        readOrders: async () => ({ ok: true, orders: [order] }),
+        updateOrder: async body => {
+            order = { ...order, order_items: body.items_json };
+            return { ok: true, message: 'Actualizado', refreshOrders: true };
+        }
+    };
+    const registry = createAgnCommandRegistry();
+
+    const fobResult = await registry.execute('set_order_fob', {
+        order_ref: 'ORD-209',
+        cost_fob: 19.81
+    }, context);
+    const priceResult = await registry.execute('set_order_price', {
+        order_ref: 'ORD-209',
+        price_before_vat: 109
+    }, context);
+
+    assert.equal(fobResult.ok, true);
+    assert.equal(priceResult.ok, true);
+    assert.equal(order.order_items[0].fob_cost, 19.81);
+    assert.equal(order.order_items[0].sale_price, 109);
+});
+
+test('command sequence reuses the newly created order reference', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||= 'https://example.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-key';
+    const { executeCommandSequence } = await import('../api/admin-chat.js');
+    const received = [];
+    const registry = {
+        execute: async (name, args) => {
+            received.push({ name, args });
+            if (name === 'create_order') {
+                return {
+                    ok: true,
+                    message: 'Creada',
+                    data: { orderId: 'ORD-209' }
+                };
+            }
+            return { ok: true, message: 'Actualizada', data: {} };
+        }
+    };
+
+    const result = await executeCommandSequence(registry, [
+        { name: 'create_order', args: { customer_name: 'Ana' } },
+        { name: 'set_order_fob', args: { order_ref: '$new_order', cost_fob: 19.81 } },
+        { name: 'set_order_price', args: { order_ref: '$new_order', price_before_vat: 109 } }
+    ], {});
+
+    assert.equal(result.ok, true);
+    assert.equal(received[1].args.order_ref, 'ORD-209');
+    assert.equal(received[2].args.order_ref, 'ORD-209');
+});
+
+test('Aria prompt guides an unsure user and defines financial sequencing', async () => {
     const { ARIA_PROMPT_VERSION, buildAriaSystemPrompt } =
         await import('../lib/aria/aria-prompt.js');
     const prompt = buildAriaSystemPrompt({ adminName: 'Admin', orders: [] });
 
-    assert.equal(ARIA_PROMPT_VERSION, '2.2.0');
+    assert.equal(ARIA_PROMPT_VERSION, '2.3.0');
     assert.match(prompt, /cómo usar Aria/i);
     assert.match(prompt, /ORD-205/);
     assert.match(prompt, /No afirmar que una acción fue realizada/i);
     assert.match(prompt, /No puedes eliminar órdenes/i);
     assert.match(prompt, /No hay órdenes precargadas/i);
     assert.match(prompt, /Carls Castro/i);
+    assert.match(prompt, /create_order, set_order_fob y set_order_price/i);
+    assert.match(prompt, /precio antes de IVA/i);
+    assert.match(prompt, /\$new_order/i);
+});
+
+test('translates multiple provider tool calls in their original order', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+            model: 'vendor/tool-model:free',
+            choices: [{
+                message: {
+                    tool_calls: [
+                        {
+                            function: {
+                                name: 'create_order',
+                                arguments: '{"customer_name":"Ana","vehicle_brand":"Kia","vehicle_model":"Cerato","part_name":"Faro"}'
+                            }
+                        },
+                        {
+                            function: {
+                                name: 'set_order_fob',
+                                arguments: '{"order_ref":"$new_order","cost_fob":19.81}'
+                            }
+                        },
+                        {
+                            function: {
+                                name: 'set_order_price',
+                                arguments: '{"order_ref":"$new_order","price_before_vat":109}'
+                            }
+                        }
+                    ]
+                }
+            }]
+        })
+    });
+
+    try {
+        const result = await requestAriaDecision({
+            apiKey: 'test-key',
+            requestedModel: 'vendor/tool-model:free',
+            message: 'Crea una orden con FOB 19.81 y precio 109',
+            conversationHistory: [],
+            adminName: 'Admin',
+            orders: [],
+            tools: []
+        });
+
+        assert.deepEqual(
+            result.commands.map(command => command.name),
+            ['create_order', 'set_order_fob', 'set_order_price']
+        );
+        assert.equal(result.commands[1].args.cost_fob, 19.81);
+        assert.equal(result.commands[2].args.price_before_vat, 109);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
 });

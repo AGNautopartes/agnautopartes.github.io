@@ -59,6 +59,51 @@ const commandResponse = (result, metadata = {}) => {
     };
 };
 
+const NEW_ORDER_REFERENCE = '$new_order';
+
+export const executeCommandSequence = async (registry, commands, context) => {
+    const completed = [];
+    let createdOrderReference = null;
+
+    for (const command of commands) {
+        const args = { ...(command.args || {}) };
+        if (args.order_ref === NEW_ORDER_REFERENCE) {
+            if (!createdOrderReference) {
+                return {
+                    ok: false,
+                    code: 'NEW_ORDER_REFERENCE_UNAVAILABLE',
+                    message: 'No existe una orden recién creada para continuar',
+                    completed
+                };
+            }
+            args.order_ref = createdOrderReference;
+        }
+
+        const result = await registry.execute(command.name, args, context);
+        if (!result.ok) return { ...result, completed };
+
+        completed.push({
+            command: command.name,
+            message: result.message,
+            data: result.data
+        });
+
+        if (command.name === 'create_order') {
+            createdOrderReference =
+                result.data?.orderId ||
+                result.data?.readableId ||
+                null;
+        }
+    }
+
+    return {
+        ok: true,
+        message: completed.map(item => item.message).filter(Boolean).join('. '),
+        data: { completed, createdOrderReference },
+        refreshOrders: completed.length > 0
+    };
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -119,14 +164,17 @@ export default async function handler(req, res) {
             });
         }
 
-        const result = await registry.execute(
-            decision.command.name,
-            decision.command.args,
+        const commands = Array.isArray(decision.commands)
+            ? decision.commands
+            : [decision.command];
+        const result = await executeCommandSequence(
+            registry,
+            commands,
             commandContext
         );
         const response = commandResponse(result, {
             ...metadata,
-            command: decision.command.name
+            commands: commands.map(command => command.name)
         });
 
         return res.status(response.status).json(response.body);

@@ -5,6 +5,8 @@ Todos los cambios notables en este proyecto.
 ## [Unreleased] - Estabilización P0
 
 ### Corregido
+- Aria ejecuta `create_order`, `set_order_fob` y `set_order_price` en secuencia, reutiliza la orden recién creada y verifica los valores guardados.
+- El precio administrado por Aria es siempre antes de IVA; el ERP mantiene el cálculo automático del 15%.
 - Persistencia de alarmas conectada entre Admin, API y Supabase.
 - Aria procesa múltiples acciones, evita duplicar el mensaje actual e implementa `UPDATE_CUSTOMER`.
 - Eliminado el parser activo incompatible de acciones JSON en el frontend.
@@ -12,6 +14,7 @@ Todos los cambios notables en este proyecto.
 - Persistencia de `order_date` y `estimated_arrival` al sincronizar ítems.
 
 ### Pruebas
+- Añadidas pruebas para secuencias de funciones, FOB decimal y precio antes de IVA.
 - Añadidas pruebas de contrato para historial y parsing de acciones de Aria.
 
 ### Pendiente de despliegue
