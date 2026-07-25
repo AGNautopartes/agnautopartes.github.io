@@ -42,7 +42,7 @@ export default async function handler(req, res) {
         }
 
         const allowlist = configuredAllowlist();
-        const models = (payload?.data || [])
+        const catalogModels = (payload?.data || [])
             .filter(model => !isUnsafeAgentModel(model))
             .filter(modelSupportsAgentUse)
             .filter(model => allowlist.size > 0
@@ -54,7 +54,17 @@ export default async function handler(req, res) {
                 name: model.name || model.id,
                 provider: model.id.split('/')[0],
                 isDefault: model.id === DEFAULT_ARIA_MODEL
-            }))
+            }));
+        const freeRouter = {
+            id: 'openrouter/free',
+            name: 'OpenRouter: Free Models Router',
+            provider: 'openrouter',
+            isDefault: DEFAULT_ARIA_MODEL === 'openrouter/free'
+        };
+        const models = [
+            freeRouter,
+            ...catalogModels.filter(model => model.id !== freeRouter.id)
+        ]
             .sort((left, right) => {
                 if (left.isDefault !== right.isDefault) return left.isDefault ? -1 : 1;
                 return left.name.localeCompare(right.name);

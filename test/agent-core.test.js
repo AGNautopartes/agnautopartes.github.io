@@ -117,11 +117,11 @@ test('invokes an existing ERP API handler without an HTTP request', async () => 
     assert.equal(result.body.received.customer_name, 'Juan');
 });
 
-test('blocks random routers and safety-only models', () => {
-    assert.equal(isAllowedAgentModel('openrouter/free'), false);
+test('allows the free router and blocks safety-only models', () => {
+    assert.equal(isAllowedAgentModel('openrouter/free'), true);
     assert.equal(isAllowedAgentModel('nvidia/content-safety:free'), false);
     assert.equal(isAllowedAgentModel('vendor/useful-tool-model:free'), true);
-    assert.notEqual(selectAgentModel('openrouter/free'), 'openrouter/free');
+    assert.equal(selectAgentModel('openrouter/free'), 'openrouter/free');
 });
 
 test('accepts only catalog models with tool support', () => {
@@ -169,8 +169,8 @@ test('translates a provider tool call into a validated command request', async (
             order_ref: 'ORD-10',
             enabled: true
         });
-        assert.equal(requestBody.parallel_tool_calls, false);
-        assert.equal(requestBody.provider.require_parameters, true);
+        assert.equal(requestBody.parallel_tool_calls, undefined);
+        assert.equal(requestBody.provider, undefined);
     } finally {
         globalThis.fetch = originalFetch;
     }
