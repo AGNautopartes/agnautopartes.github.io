@@ -4,19 +4,6 @@ import {
     modelSupportsAgentUse
 } from '../lib/agent-core/model-policy.js';
 
-const configuredAllowlist = () =>
-    new Set(
-        (process.env.ARIA_ALLOWED_MODELS || '')
-            .split(',')
-            .map(value => value.trim())
-            .filter(Boolean)
-    );
-
-const isFreeModel = model => {
-    const promptPrice = Number.parseFloat(model.pricing?.prompt || '1');
-    return promptPrice === 0 || model.id.endsWith(':free');
-};
-
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -41,14 +28,9 @@ export default async function handler(req, res) {
             });
         }
 
-        const allowlist = configuredAllowlist();
         const catalogModels = (payload?.data || [])
             .filter(model => !isUnsafeAgentModel(model))
             .filter(modelSupportsAgentUse)
-            .filter(model => allowlist.size > 0
-                ? allowlist.has(model.id)
-                : isFreeModel(model)
-            )
             .map(model => ({
                 id: model.id,
                 name: model.name || model.id,

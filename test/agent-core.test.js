@@ -148,6 +148,53 @@ test('accepts only catalog models with tool support', () => {
     assert.equal(modelSupportsAgentUse({ supported_parameters: ['temperature'] }), false);
 });
 
+test('model catalog includes paid and free tool-capable models', async () => {
+    process.env.OPENROUTER_API_KEY = 'test-key';
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+            data: [
+                {
+                    id: 'vendor/paid-agent',
+                    name: 'Paid Agent',
+                    pricing: { prompt: '0.001' },
+                    supported_parameters: ['tools']
+                },
+                {
+                    id: 'vendor/free-agent:free',
+                    name: 'Free Agent',
+                    pricing: { prompt: '0' },
+                    supported_parameters: ['tool_choice']
+                },
+                {
+                    id: 'vendor/chat-only',
+                    name: 'Chat Only',
+                    pricing: { prompt: '0' },
+                    supported_parameters: ['temperature']
+                }
+            ]
+        })
+    });
+
+    try {
+        const { default: getModelsHandler } = await import('../api/get-models.js');
+        const response = await invokeApiHandler(getModelsHandler, {
+            method: 'GET'
+        });
+        const ids = response.body.map(model => model.id);
+
+        assert.equal(response.ok, true);
+        assert.equal(ids[0], 'openrouter/free');
+        assert.equal(response.body[0].isDefault, true);
+        assert.equal(ids.includes('vendor/paid-agent'), true);
+        assert.equal(ids.includes('vendor/free-agent:free'), true);
+        assert.equal(ids.includes('vendor/chat-only'), false);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('translates a provider tool call into a validated command request', async () => {
     const originalFetch = globalThis.fetch;
     let requestBody;

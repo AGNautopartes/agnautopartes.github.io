@@ -5,6 +5,7 @@ Todos los cambios notables en este proyecto.
 ## [Unreleased] - Estabilización P0
 
 ### Corregido
+- El catálogo de Aria muestra todos los modelos de OpenRouter compatibles con funciones, sin restringirlo únicamente a modelos gratuitos.
 - El selector de Aria aplica una vez `OpenRouter: Free Models Router` como modelo predeterminado, incluso si existía una preferencia antigua.
 - Aria ejecuta `create_order`, `set_order_fob` y `set_order_price` en secuencia, reutiliza la orden recién creada y verifica los valores guardados.
 - El precio administrado por Aria es siempre antes de IVA; el ERP mantiene el cálculo automático del 15%.
