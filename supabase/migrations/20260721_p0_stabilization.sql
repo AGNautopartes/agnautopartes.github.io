@@ -83,6 +83,8 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.replace_order_items(uuid, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.replace_order_items(uuid, jsonb) FROM anon;
+REVOKE ALL ON FUNCTION public.replace_order_items(uuid, jsonb) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.replace_order_items(uuid, jsonb) TO service_role;
 
 -- Rollback:
