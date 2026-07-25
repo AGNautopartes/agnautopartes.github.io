@@ -1,5 +1,5 @@
 import supabase from '../supabase-client.js';
-import { normalizeConversationHistory, parseActionBlocks } from './lib/aria-actions.js';
+import { normalizeConversationHistory, parseActionBlocks } from '../lib/aria-actions.js';
 export const maxDuration = 60;
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

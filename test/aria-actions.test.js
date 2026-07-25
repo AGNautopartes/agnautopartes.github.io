@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     normalizeConversationHistory,
     parseActionBlocks
-} from '../api/lib/aria-actions.js';
+} from '../lib/aria-actions.js';
 
 test('removes a duplicated current user message from history', () => {
     const history = [
