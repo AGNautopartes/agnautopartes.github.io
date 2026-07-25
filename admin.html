@@ -1599,6 +1599,16 @@ if (sessionStorage.getItem('agn-admin-logged') === 'true') {
 
         // Cargar modelos dinamicamente con filtro por proveedor
         let allAriaModels = [];
+        const ARIA_MODEL_DEFAULT_VERSION = 'openrouter-free-20260725';
+
+        function applyCurrentAriaModelDefault() {
+            const appliedVersion = localStorage.getItem('agn-admin-model-default-version');
+            if (appliedVersion === ARIA_MODEL_DEFAULT_VERSION) return;
+
+            localStorage.removeItem('agn-admin-selected-model');
+            localStorage.setItem('agn-admin-selected-provider', 'all');
+            localStorage.setItem('agn-admin-model-default-version', ARIA_MODEL_DEFAULT_VERSION);
+        }
 
         function filterModelsByProvider(provider) {
             const select = document.getElementById('aria-model-select');
@@ -1633,6 +1643,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 
         async function loadAriaModels() {
             try {
+                applyCurrentAriaModelDefault();
                 const res = await fetch(`${API}/api/get-models`);
                 if (!res.ok) return;
                 allAriaModels = await res.json();
