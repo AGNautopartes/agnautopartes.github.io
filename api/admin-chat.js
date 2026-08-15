@@ -61,9 +61,9 @@ const commandResponse = (result, metadata = {}) => {
 
 const NEW_ORDER_REFERENCE = '$new_order';
 
-export const executeCommandSequence = async (registry, commands, context) => {
+export const executeCommandSequence = async (registry, commands, context, state = {}) => {
     const completed = [];
-    let createdOrderReference = null;
+    let createdOrderReference = state.createdOrderReference || null;
 
     for (const command of commands) {
         const args = { ...(command.args || {}) };
@@ -104,6 +104,100 @@ export const executeCommandSequence = async (registry, commands, context) => {
     };
 };
 
+const MAX_AGENT_ROUNDS = 8;
+
+export const runAriaCommandLoop = async ({
+    decide,
+    registry,
+    context,
+    decisionInput,
+    maxRounds = MAX_AGENT_ROUNDS
+}) => {
+    const continuationMessages = [];
+    const completed = [];
+    const executedSignatures = new Set();
+    let createdOrderReference = null;
+    let lastDecision = null;
+
+    for (let round = 0; round < maxRounds; round += 1) {
+        const decision = await decide({
+            ...decisionInput,
+            continuationMessages
+        });
+        lastDecision = decision;
+
+        if (decision.type === 'message') {
+            if (completed.length === 0) return { type: 'message', decision };
+            return {
+                type: 'command',
+                decision,
+                result: {
+                    ok: true,
+                    message: completed.map(item => item.message).filter(Boolean).join('. '),
+                    data: { completed, createdOrderReference },
+                    refreshOrders: true
+                }
+            };
+        }
+
+        const commands = Array.isArray(decision.commands)
+            ? decision.commands
+            : [decision.command];
+        for (const command of commands) {
+            const signature = `${command.name}:${JSON.stringify(command.args || {})}`;
+            if (executedSignatures.has(signature)) {
+                return {
+                    type: 'command',
+                    decision,
+                    result: {
+                        ok: false,
+                        code: 'ARIA_REPEATED_COMMAND',
+                        message: `Aria intentó repetir ${command.name}; la secuencia fue detenida`,
+                        completed
+                    }
+                };
+            }
+            executedSignatures.add(signature);
+        }
+
+        const result = await executeCommandSequence(
+            registry,
+            commands,
+            context,
+            { createdOrderReference }
+        );
+        if (!result.ok) return { type: 'command', decision, result };
+
+        completed.push(...result.data.completed);
+        createdOrderReference = result.data.createdOrderReference || createdOrderReference;
+        continuationMessages.push(decision.assistantMessage);
+        commands.forEach((command, index) => {
+            const commandResult = result.data.completed[index];
+            continuationMessages.push({
+                role: 'tool',
+                tool_call_id: command.callId,
+                name: command.name,
+                content: JSON.stringify({
+                    ok: true,
+                    message: commandResult?.message,
+                    data: commandResult?.data
+                })
+            });
+        });
+    }
+
+    return {
+        type: 'command',
+        decision: lastDecision,
+        result: {
+            ok: false,
+            code: 'ARIA_MAX_ROUNDS',
+            message: 'Aria alcanzó el límite seguro de pasos; la secuencia fue detenida',
+            completed
+        }
+    };
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método no permitido' });
@@ -138,7 +232,7 @@ export default async function handler(req, res) {
             });
         }
 
-        const decision = await requestAriaDecision({
+        const decisionInput = {
             apiKey: process.env.OPENROUTER_API_KEY,
             requestedModel: model,
             message: message.trim(),
@@ -146,7 +240,14 @@ export default async function handler(req, res) {
             adminName,
             orders: [],
             tools: registry.toModelTools()
+        };
+        const loop = await runAriaCommandLoop({
+            decide: requestAriaDecision,
+            registry,
+            context: commandContext,
+            decisionInput
         });
+        const decision = loop.decision;
 
         const metadata = {
             source: 'aria-2',
@@ -156,7 +257,7 @@ export default async function handler(req, res) {
             promptVersion: decision.promptVersion
         };
 
-        if (decision.type === 'message') {
+        if (loop.type === 'message') {
             return res.status(200).json({
                 response: decision.message,
                 refreshOrders: false,
@@ -164,17 +265,10 @@ export default async function handler(req, res) {
             });
         }
 
-        const commands = Array.isArray(decision.commands)
-            ? decision.commands
-            : [decision.command];
-        const result = await executeCommandSequence(
-            registry,
-            commands,
-            commandContext
-        );
+        const result = loop.result;
         const response = commandResponse(result, {
             ...metadata,
-            commands: commands.map(command => command.name)
+            commands: result.data?.completed?.map(item => item.command) || []
         });
 
         return res.status(response.status).json(response.body);

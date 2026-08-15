@@ -256,6 +256,9 @@ test('AGN command catalog is explicit and readable', async () => {
         'create_order',
         'set_order_fob',
         'set_order_price',
+        'set_order_supplier',
+        'set_order_supplier_url',
+        'set_order_date',
         'open_order',
         'set_order_status',
         'set_order_alarm',
@@ -394,17 +397,127 @@ test('Aria prompt guides an unsure user and defines financial sequencing', async
         await import('../lib/aria/aria-prompt.js');
     const prompt = buildAriaSystemPrompt({ adminName: 'Admin', orders: [] });
 
-    assert.equal(ARIA_PROMPT_VERSION, '2.3.1');
+    assert.equal(ARIA_PROMPT_VERSION, '2.4.0');
     assert.match(prompt, /cómo usar Aria/i);
     assert.match(prompt, /ORD-205/);
     assert.match(prompt, /No afirmar que una acción fue realizada/i);
     assert.match(prompt, /No puedes eliminar órdenes/i);
     assert.match(prompt, /No hay órdenes precargadas/i);
     assert.match(prompt, /Carls Castro/i);
-    assert.match(prompt, /create_order, set_order_fob y set_order_price/i);
+    assert.match(prompt, /create_order, set_order_fob, set_order_price, set_order_supplier, set_order_supplier_url y set_order_date/i);
     assert.match(prompt, /precio antes de IVA/i);
     assert.match(prompt, /\$new_order/i);
     assert.match(prompt, /update_order_customer con order_ref y customer_phone/i);
+    assert.match(prompt, /set_order_supplier_url/i);
+    assert.match(prompt, /fecha actual/i);
+});
+
+test('supplier, URL and editable date commands persist and verify item fields', async () => {
+    const { createAgnCommandRegistry } =
+        await import('../lib/agn-erp/command-catalog.js');
+    let order = {
+        id: 'uuid-221',
+        readable_id: 'ORD-221',
+        order_items: [{
+            part_name: 'Anija izquierda trasera',
+            vendor_name: '',
+            supplier_url: '',
+            order_date: ''
+        }]
+    };
+    const context = {
+        readOrders: async () => ({ ok: true, orders: [order] }),
+        updateOrder: async body => {
+            order = { ...order, order_items: body.items_json };
+            return { ok: true, message: 'Actualizado', refreshOrders: true };
+        }
+    };
+    const registry = createAgnCommandRegistry();
+
+    const supplier = await registry.execute('set_order_supplier', {
+        order_ref: 'ORD-221',
+        supplier_name: 'eBay'
+    }, context);
+    const url = await registry.execute('set_order_supplier_url', {
+        order_ref: 'ORD-221',
+        supplier_url: 'https://www.ebay.com/itm/187641861711'
+    }, context);
+    const date = await registry.execute('set_order_date', {
+        order_ref: 'ORD-221',
+        order_date: '2026-08-14'
+    }, context);
+
+    assert.equal(supplier.ok, true);
+    assert.equal(url.ok, true);
+    assert.equal(date.ok, true);
+    assert.equal(order.order_items[0].vendor_name, 'eBay');
+    assert.equal(order.order_items[0].supplier_url, 'https://www.ebay.com/itm/187641861711');
+    assert.equal(order.order_items[0].order_date, '2026-08-14');
+});
+
+test('bounded Aria loop continues after create and preserves dependency order', async () => {
+    const { runAriaCommandLoop } = await import('../api/admin-chat.js');
+    const calls = [];
+    const decisions = [
+        {
+            type: 'command',
+            commands: [{ callId: 'create-1', name: 'create_order', args: { customer_name: 'Wilson' } }],
+            assistantMessage: { role: 'assistant', content: null, tool_calls: [{ id: 'create-1', type: 'function', function: { name: 'create_order', arguments: '{}' } }] }
+        },
+        {
+            type: 'command',
+            commands: [
+                { callId: 'fob-1', name: 'set_order_fob', args: { order_ref: '$new_order', cost_fob: 23 } },
+                { callId: 'supplier-1', name: 'set_order_supplier', args: { order_ref: '$new_order', supplier_name: 'eBay' } },
+                { callId: 'url-1', name: 'set_order_supplier_url', args: { order_ref: '$new_order', supplier_url: 'https://www.ebay.com/itm/187641861711' } }
+            ],
+            assistantMessage: { role: 'assistant', content: null, tool_calls: [
+                { id: 'fob-1', type: 'function', function: { name: 'set_order_fob', arguments: '{}' } },
+                { id: 'supplier-1', type: 'function', function: { name: 'set_order_supplier', arguments: '{}' } },
+                { id: 'url-1', type: 'function', function: { name: 'set_order_supplier_url', arguments: '{}' } }
+            ] }
+        },
+        { type: 'message', message: 'Listo' }
+    ];
+    let round = 0;
+    const continuationSizes = [];
+    const result = await runAriaCommandLoop({
+        decide: async input => {
+            continuationSizes.push(input.continuationMessages.length);
+            return decisions[round++];
+        },
+        registry: {
+            execute: async (name, args) => {
+                calls.push({ name, args });
+                return {
+                    ok: true,
+                    message: `${name} OK`,
+                    data: name === 'create_order' ? { orderId: 'ORD-221' } : {}
+                };
+            }
+        },
+        context: {},
+        decisionInput: { message: 'Crea la orden completa' }
+    });
+
+    assert.equal(result.result.ok, true);
+    assert.deepEqual(calls.map(call => call.name), [
+        'create_order',
+        'set_order_fob',
+        'set_order_supplier',
+        'set_order_supplier_url'
+    ]);
+    assert.equal(calls[1].args.order_ref, 'ORD-221');
+    assert.equal(calls[2].args.order_ref, 'ORD-221');
+    assert.equal(calls[3].args.order_ref, 'ORD-221');
+    assert.deepEqual(continuationSizes, [0, 2, 6]);
+});
+
+test('create-order persists editable item dates with Ecuador current-date fallback', async () => {
+    const source = await readFile(new URL('../api/create-order.js', import.meta.url), 'utf8');
+    assert.match(source, /timeZone:\s*'America\/Guayaquil'/);
+    assert.match(source, /order_date:\s*item\.order_date\s*\|\|\s*currentEcuadorDate\(\)/);
+    assert.match(source, /estimated_arrival:\s*item\.estimated_arrival\s*\|\|\s*null/);
 });
 
 test('customer update command exposes WhatsApp as customer_phone', async () => {
