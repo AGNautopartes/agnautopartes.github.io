@@ -360,6 +360,15 @@ test('financial commands preserve FOB decimals and price before VAT', async () =
     assert.equal(priceResult.ok, true);
     assert.equal(order.order_items[0].fob_cost, 19.81);
     assert.equal(order.order_items[0].sale_price, 109);
+    assert.equal(order.order_items[0].margin_percent, null);
+});
+
+test('recalculates margin from FOB and price instead of preserving the 20 percent default', async () => {
+    const { calculateMarginFromCostAndPrice } =
+        await import('../api/update-order-full.js');
+    const margin = calculateMarginFromCostAndPrice(43, 120);
+
+    assert.equal(Number(margin.toFixed(2)), 64.17);
 });
 
 test('command sequence reuses the newly created order reference', async () => {

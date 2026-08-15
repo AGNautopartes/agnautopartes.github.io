@@ -6,7 +6,7 @@ const calculatePriceFromCostAndMargin = (cost, marginPercent) => {
   return cost / (1 - marginPercent / 100);
 };
 
-const calculateMarginFromCostAndPrice = (cost, price) => {
+export const calculateMarginFromCostAndPrice = (cost, price) => {
   if (cost <= 0) return 0; // Prevent division by zero
   return ((price - cost) / price) * 100;
 };
