@@ -35,46 +35,73 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Fetch orders with customer data
-        // Note: Financial fields (fob_cost, etc.) are in the 'financials' table, not 'orders'
-        // We fetch order_items separately below for detailed financial data
-        const { data: orders, error: ordersError } = await supabase
+        // Paginación con cursor (UUID) para evitar offsets costosos
+        const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+        const cursor = req.query.cursor || null;
+        const statusFilter = req.query.status || null;
+
+        let query = supabase
             .from('orders')
-.select(`
-id,
-readable_id,
-part_name,
-part_number,
-status,
-vin,
-vehicle_brand,
-vehicle_model,
-vehicle_year,
-supplier_url,
-tracking_number,
-estimated_delivery_client,
-notes,
-items_json,
-costo_fob,
-margen_markdown,
-precio_venta,
-comision_vendedor,
-created_at,
-updated_at,
-customers (
-full_name,
-phone,
-ruc,
-cedula
-)
-`)
-            .order('created_at', { ascending: false });
+            .select(`
+                id,
+                readable_id,
+                part_name,
+                part_number,
+                status,
+                vin,
+                vehicle_brand,
+                vehicle_model,
+                vehicle_year,
+                supplier_url,
+                tracking_number,
+                estimated_delivery_client,
+                notes,
+                items_json,
+                costo_fob,
+                margen_markdown,
+                precio_venta,
+                comision_vendedor,
+                created_at,
+                updated_at,
+                customers (
+                    full_name,
+                    phone,
+                    ruc,
+                    cedula
+                )
+            `)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .limit(limit);
+
+        // Cursor-based pagination: fetch orders created before cursor_id
+        if (cursor) {
+            const { data: cursorOrder } = await supabase
+                .from('orders')
+                .select('created_at, id')
+                .eq('id', cursor)
+                .maybeSingle();
+
+            if (cursorOrder) {
+                query = query.lt('created_at', cursorOrder.created_at);
+            } else {
+                return res.status(410).json({ message: 'Cursor expirado o inválido' });
+            }
+        }
+
+        if (statusFilter) {
+            query = query.eq('status', statusFilter);
+        }
+
+        const { data: orders, error: ordersError } = await query;
 
         if (ordersError) throw ordersError;
 
+        const hasMore = orders && orders.length === limit;
+        const nextCursor = hasMore ? orders[orders.length - 1].id : null;
+
         if (orders && orders.length > 0) {
             try {
-                // Fetch order items for these orders
                 const orderIds = orders.map(o => o.id);
                 const { data: allItems } = await supabase
                     .from('order_items')
@@ -95,11 +122,11 @@ cedula
                 console.error('Error fetching order_items:', itemsErr);
             }
 
-            // Fetch financial summary from our enhanced view
             try {
                 const { data: financialSummaries } = await supabase
                     .from('order_financial_summary')
-                    .select('*');
+                    .select('*')
+                    .in('order_id', orders.map(o => o.id));
 
                 if (financialSummaries) {
                     const financialMap = {};
@@ -112,11 +139,14 @@ cedula
                 }
             } catch (financialErr) {
                 console.error('Error fetching financial summary:', financialErr);
-                // Continue without financial summary rather than failing
             }
         }
 
-        return res.status(200).json(orders);
+        return res.status(200).json({
+            data: orders || [],
+            nextCursor,
+            hasMore: !!hasMore
+        });
 
     } catch (error) {
         console.error('Error al obtener pedidos:', error);
