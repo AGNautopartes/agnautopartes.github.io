@@ -1,23 +1,23 @@
 // api/index.js - Router único para todas las funciones serverless
 // Consolidación para evitar límite de 12 funciones en plan Hobby
 
-import adminChat from './handlers/admin-chat.js';
-import createOrder from './handlers/create-order.js';
-import updateOrderFull from './handlers/update-order-full.js';
-import getAllOrders from './handlers/get-all-orders.js';
-import addNote from './handlers/add-note.js';
-import deleteOrder from './handlers/delete-order.js';
-import getModels from './handlers/get-models.js';
-import authLogin from './handlers/auth-login.js';
-import generate from './handlers/generate.js';
-import getNotes from './handlers/get-notes.js';
-import getOrderStatus from './handlers/get-order-status.js';
-import saveQuotation from './handlers/save-quotation.js';
-import generateQuotation from './handlers/generate-quotation.js';
-import quotationsCrud from './handlers/quotations-crud.js';
-import quotationsExport from './handlers/quotations-export.js';
-import quotationsImport from './handlers/quotations-import.js';
-import createOrderFromQuotation from './handlers/create-order-from-quotation.js';
+import adminChat from '../lib/handlers/admin-chat.js';
+import createOrder from '../lib/handlers/create-order.js';
+import updateOrderFull from '../lib/handlers/update-order-full.js';
+import getAllOrders from '../lib/handlers/get-all-orders.js';
+import addNote from '../lib/handlers/add-note.js';
+import deleteOrder from '../lib/handlers/delete-order.js';
+import getModels from '../lib/handlers/get-models.js';
+import authLogin from '../lib/handlers/auth-login.js';
+import generate from '../lib/handlers/generate.js';
+import getNotes from '../lib/handlers/get-notes.js';
+import getOrderStatus from '../lib/handlers/get-order-status.js';
+import saveQuotation from '../lib/handlers/save-quotation.js';
+import generateQuotation from '../lib/handlers/generate-quotation.js';
+import quotationsCrud from '../lib/handlers/quotations-crud.js';
+import quotationsExport from '../lib/handlers/quotations-export.js';
+import quotationsImport from '../lib/handlers/quotations-import.js';
+import createOrderFromQuotation from '../lib/handlers/create-order-from-quotation.js';
 
 const routes = {
     'admin-chat': adminChat,
