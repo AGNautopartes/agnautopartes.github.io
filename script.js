@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
         ? 'https://agnautopartes.vercel.app'
         : '';
 
+    const SALES_WHATSAPP_NUMBER = '593989599639';
+    const SALES_WHATSAPP_DISPLAY = '+593 98 959 9639';
+
 
     const chatWidget = document.getElementById('chat-widget');
     const chatCloseBtn = document.getElementById('chat-close-btn');
@@ -48,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
       3. Response Format: Plain text only. Never use markdown, JSON, or special formats. Keep messages short, ending with a question to gather missing information.
       4. Conversation Flow: Start with "¡Hola! Soy Alex, su asistente de AGN AutoRepuestos. Con gusto le ayudo. ¿Podría indicarme su nombre, el vehículo que tiene (marca, modelo, año), y la pieza que necesita?". Confirm provided data and ask for what's missing. If the client doesn't know the part name, ask for mechanic's advice, part number, VIN, or photo, but DO NOT diagnose based on symptoms.
       5. Tone Management: If the client is in a hurry, be quick: "¡Hola! Tranquilo, voy al grano. ¿Marca, modelo y año del auto?". If upset: "Entiendo su frustración. Lo haré fácil para usted. ¿Qué pieza buscamos?".
-      6. Human Escalation: If asked to speak with a person, your ONLY reply is: “Of course. You can contact Pedro, Regional Manager, directly at 0999115626.”
+      6. Human Escalation: If asked to speak with a person, your ONLY reply is: “Of course. You can contact Pedro, Regional Manager, directly at ${SALES_WHATSAPP_DISPLAY}.”
       7. FINAL AND ABSOLUTE RULE: Once you have the 6 mandatory data points, your ONLY and EXCLUSIVE response will be the JSON object. NO GREETINGS. NO EXPLANATIONS. NO INTRODUCTORY TEXT. Your response MUST start with “{” and end with “}”. ANY TEXT OUTSIDE THE JSON IS A SERIOUS ERROR AND STRICTLY FORBIDDEN. Use this EXACT structure:
       { "accion": "registrar_cotizacion", "datos": { "nombre_cliente": "The name you collected", "contacto_cliente": "The phone you collected", "marca_vehiculo": "The brand you collected", "modelo_vehiculo": "The model you collected", "año_vehiculo": "The year you collected", "repuesto_solicitado": "The specific part name you collected", "numero_de_parte": "The part number if provided, or 'No proporcionado'", "ciudad": "The city if mentioned, or 'No proporcionado'", "provincia": "The province if mentioned, or 'No proporcionado'", "observaciones_resumen": "A brief professional summary of the request.", "texto_chat_completo": "The entire conversation history." } }
     `;
@@ -509,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
             message += `  - Nombre: ${formData.get('nombre')}\n`;
             message += `  - Teléfono: ${formData.get('telefono')}\n`;
             message += `  - Ubicación: ${formData.get('ubicacion') || 'No proporcionada'}\n`;
-            const whatsappURL = `https://wa.me/593999115626?text=${encodeURIComponent(message)}`;
+            const whatsappURL = `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
             // Guardar en Supabase antes de abrir WhatsApp
             saveQuotationToSupabase({

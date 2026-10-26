@@ -17,3 +17,17 @@ yarn-error.log*
 # Otros
 .DS_Store
 *.log
+
+# Copias y diagnósticos locales del ERP
+admin.html.*
+admin.old
+index.old
+script.old
+actual_*.html
+current_*.html
+deployed*.html
+main_*.html
+target*.html
+vercel_*.html
+vercel-deploy*.txt
+ver-*.txt

@@ -2,6 +2,32 @@
 
 Todos los cambios notables en este proyecto.
 
+## [Unreleased] - Estabilización P0
+
+### Corregido
+- El catálogo de Aria muestra todos los modelos de OpenRouter compatibles con funciones, sin restringirlo únicamente a modelos gratuitos.
+- El selector de Aria aplica una vez `OpenRouter: Free Models Router` como modelo predeterminado, incluso si existía una preferencia antigua.
+- Aria ejecuta `create_order`, `set_order_fob` y `set_order_price` en secuencia, reutiliza la orden recién creada y verifica los valores guardados.
+- El precio administrado por Aria es siempre antes de IVA; el ERP mantiene el cálculo automático del 15%.
+- Persistencia de alarmas conectada entre Admin, API y Supabase.
+- Aria procesa múltiples acciones, evita duplicar el mensaje actual e implementa `UPDATE_CUSTOMER`.
+- Eliminado el parser activo incompatible de acciones JSON en el frontend.
+- Reemplazo de `order_items` delegado a una función PostgreSQL transaccional.
+- Persistencia de `order_date` y `estimated_arrival` al sincronizar ítems.
+
+### Pruebas
+- Añadidas pruebas para secuencias de funciones, FOB decimal y precio antes de IVA.
+- Añadidas pruebas de contrato para historial y parsing de acciones de Aria.
+
+### Pendiente de despliegue
+- Aplicar `supabase/migrations/20260721_p0_stabilization.sql` antes de publicar el código.
+
+## [2026-07-14] - WhatsApp del landing
+
+### Cambiado
+- El flujo activo de Alex y el envío final del formulario ahora utilizan `+593 98 959 9639`.
+- El número comercial se centralizó en constantes del landing para evitar divergencias entre el prompt y el enlace `wa.me`.
+
 ## [2026-06-20] - Fix #3: Parsing de Nombres + Fix #2 Login + Fix #1 Refresh
 
 ### Agregado

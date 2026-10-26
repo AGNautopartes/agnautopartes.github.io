@@ -2,6 +2,13 @@
 // Crea una orden completa con cliente, vehículo y múltiples partes.
 import supabase from '../supabase-client.js';
 
+const currentEcuadorDate = () => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+}).format(new Date());
+
 // Financial calculation utilities
 const calculatePriceFromCostAndMargin = (cost, marginPercent) => {
   if (marginPercent >= 100) return 0; // Prevent division by zero or negative
@@ -212,6 +219,8 @@ const customer_cedula = body.customer_cedula || body.cedula || body.CEDULA || ''
 	vendor_name: item.vendor_name || '',
 	supplier_url: item.supplier_url || '',
 	tracking_number: item.tracking_number || '',
+	order_date: item.order_date || currentEcuadorDate(),
+	estimated_arrival: item.estimated_arrival || null,
 	image_data: item.image_data || ''
 	};
 	});

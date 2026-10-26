@@ -6,7 +6,7 @@ const calculatePriceFromCostAndMargin = (cost, marginPercent) => {
   return cost / (1 - marginPercent / 100);
 };
 
-const calculateMarginFromCostAndPrice = (cost, price) => {
+export const calculateMarginFromCostAndPrice = (cost, price) => {
   if (cost <= 0) return 0; // Prevent division by zero
   return ((price - cost) / price) * 100;
 };
@@ -58,6 +58,7 @@ const {
   part_name, supplier_url,
   vin, vehicle_brand, vehicle_model, vehicle_year,
   tracking_number, status,
+  alarm,
   costo_fob, margen_markdown, precio_venta,
   comision_vendedor,
   customer_name, customer_phone, customer_ruc, customer_cedula,
@@ -78,6 +79,7 @@ const {
         if (vehicle_year !== undefined) updateData.vehicle_year = vehicle_year;
         if (tracking_number !== undefined) updateData.tracking_number = tracking_number;
 if (status !== undefined) updateData.status = status;
+if (alarm !== undefined) updateData.alarm = Boolean(alarm);
 
 if (costo_fob !== undefined) updateData.costo_fob = parseFloat(costo_fob) || 0;
 if (margen_markdown !== undefined) updateData.margen_markdown = parseFloat(margen_markdown) || 0;
@@ -95,43 +97,38 @@ if (items_json !== undefined) updateData.items_json = items_json;
 
         if (orderErr) throw orderErr;
 
-// Update customer data if provided
+// Update customer data if provided. Never report success if this write fails.
 if (customer_name || customer_phone || customer_ruc || customer_cedula) {
-  try {
-    const { data: order } = await supabase
-      .from('orders')
-      .select('customer_id')
-      .eq('id', orderId)
-      .single();
+  const { data: order, error: orderLookupError } = await supabase
+    .from('orders')
+    .select('customer_id')
+    .eq('id', orderId)
+    .single();
 
-    if (order && order.customer_id) {
-      const customerUpdate = {};
-      if (customer_name) customerUpdate.full_name = customer_name;
-      if (customer_phone) customerUpdate.phone = customer_phone;
-      if (customer_ruc) customerUpdate.ruc = customer_ruc;
-      if (customer_cedula) customerUpdate.cedula = customer_cedula;
-
-      if (Object.keys(customerUpdate).length > 0) {
-        const { error: custErr } = await supabase
-          .from('customers')
-          .update(customerUpdate)
-          .eq('id', order.customer_id);
-        if (custErr) console.error('Error updating customer:', custErr);
-      }
-    }
-  } catch (custError) {
-    console.error('Customer update skipped:', custError.message);
+  if (orderLookupError) throw orderLookupError;
+  if (!order?.customer_id) {
+    throw new Error('La orden no tiene un cliente asociado');
   }
+
+  const customerUpdate = {};
+  if (customer_name) customerUpdate.full_name = customer_name;
+  if (customer_phone) customerUpdate.phone = customer_phone;
+  if (customer_ruc) customerUpdate.ruc = customer_ruc;
+  if (customer_cedula) customerUpdate.cedula = customer_cedula;
+
+  const { error: customerUpdateError } = await supabase
+    .from('customers')
+    .update(customerUpdate)
+    .eq('id', order.customer_id);
+
+  if (customerUpdateError) throw customerUpdateError;
 }
 
         // 🟢 Misión: Sincronización Atómica (Fase 5)
         // Guardar cada ítem como una fila real en order_items para reportes y visión de Aria
         if (items_json && Array.isArray(items_json)) {
             try {
-                // 1. Limpiar ítems previos para esta orden (Limpieza Atómica)
-                await supabase.from('order_items').delete().eq('order_id', orderId);
-
-                 // 2. Insertar la lista actualizada (Doble Escritura)
+	// PostgreSQL reemplaza la lista dentro de una sola transacción mediante RPC.
 	const rowsToInsert = items_json.map(it => {
 	const parsedFobCost = parseFloat(it.fob_cost) || parseFloat(it.cost_fob) || 0;
 	const parsedSupplierFreight = parseFloat(it.supplier_freight) || 0;
@@ -176,16 +173,23 @@ if (customer_name || customer_phone || customer_ruc || customer_cedula) {
 	vendor_name: it.vendor_name || '',
 	supplier_url: it.supplier_url || '',
 	tracking_number: it.tracking_number || '',
+	order_date: it.order_date || null,
+	estimated_arrival: it.estimated_arrival || null,
 	updated_at: new Date().toISOString()
 	};
 	});
 
-                if (rowsToInsert.length > 0) {
-                    const { error: itemsErr } = await supabase.from('order_items').insert(rowsToInsert);
-                    if (itemsErr) console.error('Error sincronizando order_items:', itemsErr);
-                }
+                const { error: itemsErr } = await supabase.rpc('replace_order_items', {
+                    p_order_id: orderId,
+                    p_items: rowsToInsert
+                });
+                if (itemsErr) throw itemsErr;
             } catch (itemsError) {
-                console.error(' order_items sync skipped:', itemsError.message);
+                console.error('Error sincronizando order_items:', itemsError.message);
+                return res.status(500).json({
+                    message: 'La orden no pudo sincronizar sus ítems',
+                    error: itemsError.message
+                });
             }
         }
 

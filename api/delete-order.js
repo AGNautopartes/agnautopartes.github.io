@@ -28,8 +28,12 @@ export default async function handler(req, res) {
     if (!orderId) return res.status(400).json({ message: 'orderId requerido' });
 
     try {
-        const { error } = await supabase.from('orders').delete().eq('id', orderId);
+        const { data: deleted, error } = await supabase.rpc(
+            'delete_order_with_relations',
+            { p_order_id: orderId }
+        );
         if (error) throw error;
+        if (!deleted) return res.status(404).json({ message: 'Orden no encontrada' });
         return res.status(200).json({ message: 'Orden eliminada' });
     } catch (error) {
         return res.status(500).json({ message: 'Error al eliminar', error: error.message });

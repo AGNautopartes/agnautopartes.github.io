@@ -481,10 +481,41 @@ border: 1px solid #BBF7D0;
 }
 
 .s-cancelado {
-background: #FEE2E2;
-color: #DC2626;
-border: 1px solid #FECACA;
-}
+        background: #FEE2E2;
+        color: #DC2626;
+        border: 1px solid #FECACA;
+    }
+
+    /* Quotation status badges */
+    .qs-borrador {
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #E2E8F0;
+    }
+
+    .qs-enviado {
+        background: #DBEAFE;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+    }
+
+    .qs-aceptado {
+        background: #DCFCE7;
+        color: #15803D;
+        border: 1px solid #BBF7D0;
+    }
+
+    .qs-vencido {
+        background: #FEE2E2;
+        color: #DC2626;
+        border: 1px solid #FECACA;
+    }
+
+    .qs-convertido {
+        background: #F3E8FF;
+        color: #7C3AED;
+        border: 1px solid #DDD6FE;
+    }
 
         /* ══ DETAIL PANEL ══ */
         .detail-panel {
@@ -1298,6 +1329,7 @@ border-color:var(--blue);color:var(--blue);
 
             <div class="nav-tabs">
                 <button class="tab-btn active" data-page="orders">📋 Orders</button>
+                <button class="tab-btn" data-page="quotations">💰 Cotizaciones</button>
                 <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
                 <button class="tab-btn" data-page="reports">📈 Reports</button>
             </div>
@@ -1442,10 +1474,68 @@ border-color:var(--blue);color:var(--blue);
 <tbody id="reports-tbody"></tbody>
 </table>
 </div>
-</div>
-</div>
+        </div>
+        </div>
 
-<!-- Persistent Aria AI Chat -->
+        <!-- ── QUOTATIONS PAGE ── -->
+        <div class="page" id="page-quotations">
+            <div class="orders-main">
+                <div class="stats-bar" id="quot-stats-bar">
+                    <div class="stat-item">
+                        <div class="n" id="qs-total">—</div>
+                        <div class="l">Total</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="n" style="color:var(--blue)" id="qs-borrador">—</div>
+                        <div class="l">Borrador</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="n" style="color:var(--yellow)" id="qs-enviado">—</div>
+                        <div class="l">Enviado</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="n" style="color:var(--green)" id="qs-aceptado">—</div>
+                        <div class="l">Aceptado</div>
+                    </div>
+                </div>
+                <div class="orders-toolbar">
+                    <input type="text" class="search-box" id="quot-search"
+                        placeholder="🔍 Buscar Q-ID, cliente, vehículo...">
+                    <select class="filter-select" id="quot-status-filter">
+                        <option value="">Todos los estados</option>
+                        <option value="borrador">Borrador</option>
+                        <option value="enviado">Enviado</option>
+                        <option value="aceptado">Aceptado</option>
+                        <option value="vencido">Vencido</option>
+                        <option value="convertido">Convertido</option>
+                    </select>
+                    <button class="btn-add" id="btn-quot-export"
+                        style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
+                        Export CSV</button>
+                    <button class="btn-add" id="btn-quot-import"
+                        style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
+                        Import CSV</button>
+                    <button class="btn-add" id="btn-new-quotation">+ Nueva Cotización</button>
+                </div>
+                <div class="orders-list" id="quot-list">
+                    <div class="empty-state">Cargando cotizaciones...</div>
+                </div>
+            </div>
+
+            <!-- Quotation Detail Panel -->
+            <div class="detail-panel empty" id="quot-detail-panel">
+                <button class="btn-toggle-detail" id="toggle-quot-detail" title="Expand/Collapse">↔</button>
+                <div id="quot-detail-content"
+                    style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
+                    <div
+                        style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)">
+                        <span>← Seleccione una cotización</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Persistent Aria AI Chat -->
 <div class="ai-sidebar">
                 <div class="ai-header">
 
@@ -1599,6 +1689,16 @@ if (sessionStorage.getItem('agn-admin-logged') === 'true') {
 
         // Cargar modelos dinamicamente con filtro por proveedor
         let allAriaModels = [];
+        const ARIA_MODEL_DEFAULT_VERSION = 'openrouter-free-20260725';
+
+        function applyCurrentAriaModelDefault() {
+            const appliedVersion = localStorage.getItem('agn-admin-model-default-version');
+            if (appliedVersion === ARIA_MODEL_DEFAULT_VERSION) return;
+
+            localStorage.removeItem('agn-admin-selected-model');
+            localStorage.setItem('agn-admin-selected-provider', 'all');
+            localStorage.setItem('agn-admin-model-default-version', ARIA_MODEL_DEFAULT_VERSION);
+        }
 
         function filterModelsByProvider(provider) {
             const select = document.getElementById('aria-model-select');
@@ -1607,19 +1707,33 @@ if (sessionStorage.getItem('agn-admin-logged') === 'true') {
             if (provider === 'google') filtered = allAriaModels.filter(m => m.id.startsWith('google/'));
             else if (provider === 'openrouter') filtered = allAriaModels.filter(m => !m.id.startsWith('google/'));
             const savedModel = localStorage.getItem('agn-admin-selected-model');
-            select.innerHTML = filtered.length
-                ? filtered.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
-                : '<option value="">No models for this provider</option>';
+            select.replaceChildren();
+            if (filtered.length) {
+                filtered.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    select.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No models for this provider';
+                select.appendChild(option);
+            }
 if (savedModel && filtered.some(m => m.id === savedModel)) {
 		select.value = savedModel;
 	} else {
-		const defaultModel = filtered.find(m => m.id === 'minimax/minimax-m2.5:free') || filtered[0];
+		const defaultModel = filtered.find(m => m.isDefault) ||
+			filtered.find(m => m.id === 'openrouter/free') ||
+			filtered[0];
 		if (defaultModel) select.value = defaultModel.id;
 	}
         }
 
         async function loadAriaModels() {
             try {
+                applyCurrentAriaModelDefault();
                 const res = await fetch(`${API}/api/get-models`);
                 if (!res.ok) return;
                 allAriaModels = await res.json();
@@ -1811,7 +1925,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                     <span class="order-date">${date}</span>
                 </div>
                 <label style="font-size:0.75rem; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:0.25rem;">
-                    <input type="checkbox" id="alarm-switch-${o.id}" ${o.alarm ? 'checked' : ''} onchange="toggleAlarm('${o.id}', this.checked)" style="width:16px; height:16px;">
+                    <input type="checkbox" id="alarm-switch-${o.id}" ${o.alarm ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleAlarm('${o.id}', this.checked)" style="width:16px; height:16px;">
                     🚨 Alarma
                 </label>
             </div>
@@ -1819,9 +1933,34 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
              }).join('');
          }
 
+		async function toggleAlarm(orderId, enabled) {
+			const order = allOrders.find(o => o.id === orderId);
+			if (!order) return;
+
+			const previousValue = Boolean(order.alarm);
+			order.alarm = enabled;
+			renderOrders(allOrders);
+
+			try {
+				const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+					body: JSON.stringify({ orderId, alarm: enabled }),
+					timeout: 10000
+				});
+
+				if (!res.ok) throw new Error('No se pudo guardar la alarma');
+				showToast(enabled ? '🚨 Alarma activada' : '✅ Alarma desactivada', 'success');
+			} catch (error) {
+				order.alarm = previousValue;
+				renderOrders(allOrders);
+				showToast('❌ La alarma no se guardó', 'error');
+			}
+		}
 
 
-        // ══ SELECT ORDER ══
+
+         // ══ SELECT ORDER ══
         async function selectOrder(orderId) {
             selectedOrder = allOrders.find(o => o.id === orderId);
             if (!selectedOrder) return;
@@ -2513,7 +2652,8 @@ async function loadHistory(orderId) {
         function addAiMsg(role, text) {
             const el = document.createElement('div');
             el.className = `ai-msg ${role}`;
-            el.innerHTML = text.replace(/\n/g, '<br>');
+            el.textContent = String(text || '');
+            el.style.whiteSpace = 'pre-wrap';
             aiMessages.appendChild(el);
             aiMessages.scrollTop = aiMessages.scrollHeight;
             return el;
@@ -2547,7 +2687,7 @@ async function loadHistory(orderId) {
                         message: msg,
                         conversationHistory: ariaHistory,
                         adminName,
-                        model: document.getElementById('aria-model-select')?.value || 'minimax/minimax-m2.5:free'
+                        model: document.getElementById('aria-model-select')?.value || 'openrouter/free'
                     }),
                     timeout: 45000 // 45s para IA
                 });
@@ -2577,45 +2717,17 @@ if (!res.ok) {
                     }
                 }
 
-                let responseText = data.response;
-                const actionRegex = /\[ACTION:.*?\]/g;
-                let actions = [];
-                let match;
-
-                while ((match = actionRegex.exec(responseText)) !== null) {
-                    try {
-                        let actionJson = match[0].substring(8, match[0].length - 1);
-                        let action = null;
-                        try {
-                            action = JSON.parse(actionJson);
-                        } catch (e1) {
-                            let openBraces = (actionJson.match(/\{/g) || []).length;
-                            let closeBraces = (actionJson.match(/\}/g) || []).length;
-                            let openBrackets = (actionJson.match(/\[/g) || []).length;
-                            let closeBrackets = (actionJson.match(/\]/g) || []).length;
-
-                            while (closeBrackets < openBrackets) { actionJson += ']'; closeBrackets++; }
-                            while (closeBraces < openBraces) { actionJson += '}'; closeBraces++; }
-                            action = JSON.parse(actionJson);
-                        }
-                        if (action) actions.push(action);
-                    } catch (e) {
-                        console.error('Error parsing action block:', e);
+                if (data.result?.openOrderId) {
+                    if (!allOrders.some(order => order.id === data.result.openOrderId)) {
+                        await loadData();
                     }
+                    await selectOrder(data.result.openOrderId);
                 }
 
-                let cleanResponseText = responseText.replace(/\[ACTION:.*?\]/g, '').trim();
-                if (!cleanResponseText && actions.length > 0) cleanResponseText = "De acuerdo, procedo.";
-
-                if (cleanResponseText) {
-                    addAiMsg('assistant', cleanResponseText);
-                    ariaHistory.push({ role: 'assistant', content: cleanResponseText });
-                    ariaSpeak(cleanResponseText);
-                }
-
-                for (const action of actions) {
-                    if (action && action.type) await executeAriaAction(action);
-                }
+                const responseText = data.response || 'No recibí una respuesta válida.';
+                addAiMsg('assistant', responseText);
+                ariaHistory.push({ role: 'assistant', content: responseText });
+                ariaSpeak(responseText);
             } catch (e) {
                 console.error('Aria Error:', e);
                 if (thinking && thinking.parentNode) thinking.remove();
@@ -2624,168 +2736,6 @@ if (!res.ok) {
                 ariaSend.disabled = false;
             }
         }
-
-        async function executeAriaAction(action) {
-            try {
-                if (action.type === 'DELETE_ORDER') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/delete-order`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            allOrders = allOrders.filter(o => o.id !== found.id);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `🗑️ [${found.readable_id}] Orden eliminada.`);
-                            if (selectedOrder?.id === found.id) {
-                                document.getElementById('detail-content').innerHTML = '<div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)"><span>← Selecciona una orden</span></div>';
-                                document.getElementById('detail-panel').classList.add('empty');
-                            }
-                            showToast(`🗑️ Orden #${found.readable_id} eliminada`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error al eliminar la orden [#${found.readable_id}].`);
-                        }
-                    } else {
-                        addAiMsg('system', `⚠️ No encontré la orden "${orderId}" para eliminar.`);
-                    }
-                } else if (action.type === 'UPDATE_STATUS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const newStatus = action.data.new_status;
-                        const res = await fetchWithTimeout(`${API}/api/update-order-status`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, newStatus }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            found.status = newStatus;
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder.status = newStatus;
-                                renderDetail(selectedOrder);
-                            }
-                            addAiMsg('system', `✅ [#${found.readable_id}] Estado: ${newStatus}`);
-                            showToast(`✅ Estado actualizado: ${newStatus}`, 'success');
-                        } else {
-                            addAiMsg('system', `❌ Error actualizando estado de [#${found.readable_id}].`);
-                        }
-                    }
-                } else if (action.type === 'ADD_NOTE') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const res = await fetchWithTimeout(`${API}/api/add-note`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify({ orderId: found.id, content: action.data.note, author: `Aria (via ${adminName})` }),
-                            timeout: 10000
-                        });
-                        if (res.ok) {
-                            addAiMsg('system', `📝 Nota agregada a [#${found.readable_id}]`);
-                            if (selectedOrder?.id === found.id) loadNotes(found.id);
-                            showToast(`📝 Nota agregada a #${found.readable_id}`, 'success');
-                        }
-                    }
-                } else if (action.type === 'UPDATE_FIELDS') {
-                    const orderId = action.data.order_id;
-                    const found = allOrders.find(o => o.readable_id === orderId || o.id === orderId);
-                    if (found) {
-                        const currentItems = Array.isArray(found.items_json) ? [...found.items_json] : [];
-                        const ariaItems = Array.isArray(action.data.fields.items_json) ? action.data.fields.items_json : [];
-
-                        ariaItems.forEach(newItem => {
-                            const itemObj = typeof newItem === 'string' ? { part_name: newItem } : newItem;
-                            const idx = currentItems.findIndex(i => i.part_name?.trim().toLowerCase() === itemObj.part_name?.trim().toLowerCase());
-                            if (idx !== -1) {
-                                currentItems[idx] = { ...currentItems[idx], ...itemObj };
-                            } else {
-                                currentItems.push(itemObj);
-                            }
-                        });
-
-                        const updateData = {
-                            orderId: found.id,
-                            ...action.data.fields,
-                            items_json: currentItems
-                        };
-
-                        const res = await fetchWithTimeout(`${API}/api/update-order-full`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                            body: JSON.stringify(updateData),
-                            timeout: 15000
-                        });
-                        if (res.ok) {
-                            Object.assign(found, updateData);
-                            renderOrders(allOrders);
-                            updateStats(allOrders);
-                            addAiMsg('system', `✅ [#${found.readable_id}] Campos actualizados.`);
-                            if (selectedOrder?.id === found.id) {
-                                selectedOrder = { ...found };
-                                renderDetail(selectedOrder);
-                            }
-                            showToast(`✅ Orden #${found.readable_id} actualizada`, 'success');
-                        }
-                    }
-                } else if (action.type === 'CREATE_ORDER') {
-                    // Handle different possible action structures
-                    let fields = {};
-
-
-
-                    const data = {
-                        customer_name: name,
-                        customer_phone: fields.customer_phone || fields.telefono || fields.phone || 'N/A',
-                        customer_email: fields.customer_email || fields.email || fields.correo || '',
-                        vehicle_brand: fields.vehicle_brand || fields.marca || fields.brand || 'N/A',
-                        vehicle_model: model,
-                        vehicle_year: fields.vehicle_year || fields.ano || fields.year || 'N/A',
-                        part_name: part,
-                        part_number: fields.part_number || fields.numero_pieza || '',
-                        cost_fob: parseFloat(fields.cost_fob || fields.costo || 0),
-                        sale_price: parseFloat(fields.sale_price || fields.precio || 0),
-                        vendor_name: fields.vendor_name || fields.vendedor || '',
-                        supplier_url: fields.supplier_url || fields.url || '',
-                        status: fields.status || 'Solicitado',
-                        tracking_number: fields.tracking_number || '',
-                        estimated_delivery_client: fields.estimated_delivery_client || '',
-                        notes: fields.notes || fields.notas || '',
-                        created_by: fields.created_by || adminName
-                    };
-
-                    const res = await fetch(`${API}/api/create-order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-                        body: JSON.stringify(data)
-                    });
-
-                    if (res.ok) {
-                        addAiMsg('system', `✅ [ACTION] Orden creada para ${name}`);
-                        const ordersRes = await fetch(`${API}/api/get-all-orders`, { headers: { 'x-admin-password': adminPass } });
-                        allOrders = await ordersRes.json();
-                        renderOrders(allOrders);
-                        updateStats(allOrders);
-                    } else {
-                        const errorData = await res.json();
-                        addAiMsg('system', `❌ [ACTION] Error al crear: ${errorData.error || 'Error desconocido'}`);
-                    }
-                }
-            } catch (e) {
-                console.error('Action Error:', e);
-                addAiMsg('system', `❌ Error procesando acción: ${e.message}`);
-            }
-        }
-
-
-
 
         // ══ VOICE (NATIVE CHROME API) ══
         let recognition;
@@ -3221,6 +3171,282 @@ function exportCSV() {
 	URL.revokeObjectURL(url);
 showToast('CSV descargado','success');
 }
+
+// ============================================================
+// COTIZACIONES PAGE LOGIC
+// ============================================================
+let allQuotations = [], selectedQuotation = null;
+let isLoadingQuotations = false;
+
+async function loadQuotations() {
+    if (!adminPass || isLoadingQuotations) return;
+    isLoadingQuotations = true;
+    try {
+        const res = await fetch(`${API}/api/get-all-orders`, {
+            headers: { 'x-admin-password': adminPass }
+        });
+        // Reutilizar endpoint que ya trae orders + quotation items (adaptar query params)
+        // Por ahora crear endpoint dedicado o usar query param ?type=quotations
+        const resQuot = await fetch(`${API}/api/quotations-crud`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+            body: JSON.stringify({ action: 'list', status: document.getElementById('quot-status-filter')?.value || '' })
+        });
+        if (resQuot.ok) {
+            const data = await resQuot.json();
+            allQuotations = data.data || [];
+            renderQuotations(allQuotations);
+            updateQuotationStats(allQuotations);
+        } else {
+            // Fallback: datos de prueba si no existe endpoint aún
+            console.warn('Endpoint quotations-crud no disponible, usando mock');
+            allQuotations = [];
+            renderQuotations(allQuotations);
+            updateQuotationStats(allQuotations);
+        }
+    } catch (e) {
+        console.error('Error loading quotations:', e);
+        allQuotations = [];
+        renderQuotations(allQuotations);
+        updateQuotationStats(allQuotations);
+    } finally {
+        isLoadingQuotations = false;
+    }
+}
+
+function updateQuotationStats(quotas) {
+    document.getElementById('qs-total').textContent = quotas.length;
+    document.getElementById('qs-borrador').textContent = quotas.filter(q => q.status === 'borrador').length;
+    document.getElementById('qs-enviado').textContent = quotas.filter(q => q.status === 'enviado').length;
+    document.getElementById('qs-aceptado').textContent = quotas.filter(q => q.status === 'aceptado').length;
+}
+
+function renderQuotations(quotas) {
+    const list = document.getElementById('quot-list');
+    if (!list) return;
+    if (!quotas.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:3rem;text-align:center;color:var(--text2)">Sin cotizaciones. <br><small>Usa "Nueva Cotización" o pídele a Aria</small></div>';
+        return;
+    }
+    list.innerHTML = quotas.map(q => {
+        const itemsCount = q.quotation_items?.length || 0;
+        const statusClass = 'qs-' + (q.status || 'borrador');
+        const total = fmt(q.total_vat_usd || q.total_usd || 0);
+        return `
+        <div class="order-card" data-id="${q.id}" style="cursor:pointer">
+            <div>
+                <div class="order-client">${q.readable_id || q.id.slice(0,8)}</div>
+                <div class="order-part">${q.customer_name || 'Sin cliente'} • ${q.vehicle_brand || ''} ${q.vehicle_model || ''} ${q.vehicle_year || ''}</div>
+                <div class="order-vehicle">${itemsCount} items • ${total}</div>
+            </div>
+            <div class="order-meta">
+                <span class="sbadge ${statusClass}">${q.status || 'borrador'}</span>
+                <div class="order-date">${q.created_at ? new Date(q.created_at).toLocaleDateString('es-EC') : ''}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Click handler
+    list.querySelectorAll('.order-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            selectQuotation(id);
+        });
+    });
+}
+
+async function selectQuotation(id) {
+    const q = allQuotations.find(x => x.id === id);
+    if (!q) return;
+
+    selectedQuotation = q;
+    document.querySelectorAll('#quot-list .order-card').forEach(c => c.classList.remove('selected'));
+    const card = document.querySelector(`#quot-list .order-card[data-id="${id}"]`);
+    if (card) card.classList.add('selected');
+
+    const panel = document.getElementById('quot-detail-panel');
+    if (panel) panel.classList.remove('empty');
+
+    const content = document.getElementById('quot-detail-content');
+    if (!content) return;
+
+    const items = q.quotation_items || [];
+    const statusClass = 'qs-' + (q.status || 'borrador');
+
+    content.innerHTML = `
+        <div class="detail-header">
+            <h3>${q.readable_id || q.id.slice(0,8)}</h3>
+            <div class="detail-sub">
+                <span class="sbadge ${statusClass}">${q.status || 'borrador'}</span>
+                <span style="margin-left:8px">${q.created_at ? new Date(q.created_at).toLocaleString('es-EC') : ''}</span>
+            </div>
+        </div>
+        <div class="detail-body">
+            <div class="detail-section">
+                <h4>👤 Cliente</h4>
+                <div class="info-grid">
+                    <div class="info-item"><div class="il">Nombre</div><div class="iv">${q.customer_name || '—'}</div></div>
+                    <div class="info-item"><div class="il">WhatsApp</div><div class="iv"><a href="${q.whatsapp_link || '#'}" target="_blank">${q.whatsapp_phone || '—'}</a></div></div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <h4>🚗 Vehículo</h4>
+                <div class="info-grid">
+                    <div class="info-item"><div class="il">Marca</div><div class="iv">${q.vehicle_brand || '—'}</div></div>
+                    <div class="info-item"><div class="il">Modelo</div><div class="iv">${q.vehicle_model || '—'}</div></div>
+                    <div class="info-item"><div class="il">Año</div><div class="iv">${q.vehicle_year || '—'}</div></div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <h4>📦 Items (${items.length})</h4>
+                ${items.map((it, idx) => `
+                    <div style="border:1px solid var(--border); border-radius:8px; padding:0.75rem; margin-bottom:0.5rem; background:var(--surface)">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+                            <strong>${it.part_name || 'Sin nombre'}</strong>
+                            <span class="sbadge qs-${q.status}">#${idx+1}</span>
+                        </div>
+                        <div class="info-grid">
+                            <div class="info-item"><div class="il">Precio</div><div class="iv">${fmt(it.final_price_usd || 0)}</div></div>
+                            <div class="info-item"><div class="il">Peso</div><div class="iv">${it.weight_kg || 0} kg</div></div>
+                            <div class="info-item"><div class="il">Margen</div><div class="iv">${it.margin_pct || 0}%</div></div>
+                            <div class="info-item"><div class="il">Link</div><div class="iv"><a href="${it.supplier_url || '#'}" target="_blank" style="font-size:0.7rem">${it.supplier_url ? 'Ver' : '—'}</a></div></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="detail-section">
+                <h4>💰 Totales</h4>
+                <div class="financial-grid">
+                    <div class="fin-item"><div class="fl">Subtotal</div><div class="fv">${fmt(q.total_usd || 0)}</div></div>
+                    <div class="fin-item"><div class="fl">IVA 15%</div><div class="fv">${fmt((q.total_vat_usd || 0) - (q.total_usd || 0))}</div></div>
+                    <div class="fin-item profit"><div class="fl">Total + IVA</div><div class="fv">${fmt(q.total_vat_usd || 0)}</div></div>
+                </div>
+            </div>
+            <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap">
+                ${q.pdf_url ? `<a href="${q.pdf_url}" target="_blank" class="btn-action btn-blue">📄 Ver PDF</a>` : ''}
+                ${q.whatsapp_link ? `<a href="${q.whatsapp_link}" target="_blank" class="btn-action btn-green">📱 WhatsApp</a>` : ''}
+                <button class="btn-action" onclick="convertQuotationToOrder('${q.id}')">➡️ Crear Orden</button>
+                <button class="btn-action btn-danger" onclick="deleteQuotation('${q.id}')">🗑️ Eliminar</button>
+            </div>
+        </div>`;
+}
+
+async function convertQuotationToOrder(quotationId) {
+    if (!confirm('¿Crear orden desde esta cotización? Se usarán todos los items.')) return;
+    try {
+        const res = await fetch(`${API}/api/create-order-from-quotation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+            body: JSON.stringify({ quotation_id: quotationId })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            showToast(`✅ Orden ${data.order.readable_id} creada desde cotización`, 'success');
+            await loadQuotations();
+            // Switch to orders tab
+            document.querySelector('[data-page="orders"]').click();
+        } else {
+            showToast('❌ Error al crear orden', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('❌ Error de conexión', 'error');
+    }
+}
+
+async function deleteQuotation(id) {
+    if (!confirm('¿Eliminar esta cotización?')) return;
+    try {
+        const res = await fetch(`${API}/api/quotations-crud`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+            body: JSON.stringify({ action: 'delete', id })
+        });
+        if (res.ok) {
+            showToast('🗑️ Cotización eliminada', 'success');
+            loadQuotations();
+        } else {
+            showToast('❌ Error al eliminar', 'error');
+        }
+    } catch (e) {
+        showToast('❌ Error de conexión', 'error');
+    }
+}
+
+// Tab switching: agregar 'quotations' al listener existente
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const page = btn.dataset.page;
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + page)?.classList.add('active');
+        if (page === 'quotations') loadQuotations();
+    });
+});
+
+// Botones de la toolbar de cotizaciones
+document.getElementById('btn-new-quotation')?.addEventListener('click', () => {
+    // Abrir modal o usar Aria para crear
+    showToast('Usa Aria: "Crea cotización para Juan +593987654321 Toyota Hilux 2019 radiador $85 3kg margen 30%"', 'info');
+});
+
+document.getElementById('btn-quot-export')?.addEventListener('click', async () => {
+    // Exportar CSV
+    if (!allQuotations.length) { showToast('Sin datos','warning'); return; }
+    const headers = ['readable_id','fecha','cliente','telefono','vehiculo','items','total_usd','total_vat','estado','pdf_url','whatsapp_link'];
+    const rows = allQuotations.map(q => [
+        q.readable_id, q.created_at?.split('T')[0] || '', q.customer_name || '', q.whatsapp_phone || '',
+        `${q.vehicle_brand||''} ${q.vehicle_model||''} ${q.vehicle_year||''}`.trim(),
+        q.quotation_items?.length || 0, q.total_usd || 0, q.total_vat_usd || 0, q.status || '',
+        q.pdf_url || '', q.whatsapp_link || ''
+    ]);
+    const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `cotizaciones_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV descargado','success');
+});
+
+document.getElementById('btn-quot-import')?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        const res = await fetch(`${API}/api/quotations-import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+            body: JSON.stringify({ csv_text: text })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            showToast(`Importado: ${data.created} creadas, ${data.errors} errores`, 'success');
+            loadQuotations();
+        } else {
+            showToast('❌ Error en importación', 'error');
+        }
+    };
+    input.click();
+});
+
+document.getElementById('quot-search')?.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = allQuotations.filter(q =>
+        (q.readable_id || '').toLowerCase().includes(term) ||
+        (q.customer_name || '').toLowerCase().includes(term) ||
+        `${q.vehicle_brand||''} ${q.vehicle_model||''}`.toLowerCase().includes(term)
+    );
+    renderQuotations(filtered);
+});
+
+document.getElementById('quot-status-filter')?.addEventListener('change', () => {
+    loadQuotations();
+});
 </script>
 </body>
 
