@@ -3133,6 +3133,8 @@ document.getElementById('storage-select-all')?.addEventListener('change', (e) =>
     renderStorageFiles();
     updateStorageSelectionUI();
 });
+
+async function sendToAria() {
             const msg = ariaInput.value.trim();
             if (!msg || ariaSend.disabled) return;
             ariaInput.value = '';
