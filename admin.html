@@ -1541,16 +1541,11 @@ border-color:var(--blue);color:var(--blue);
             <div class="orders-main">
                 <div class="storage-header" style="padding:1rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0;">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                        <h3 style="font-size:1.1rem; font-weight:800">🗄️ Gestión de Storage</h3>
+                        <h3 style="font-size:1.1rem; font-weight:800">🖼️ Gestión de Imágenes</h3>
                         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-                            <select id="storage-bucket-filter" class="filter-select" style="width:auto;">
-                                <option value="all">Todos los buckets</option>
-                                <option value="quotation-pdfs">PDFs</option>
-                                <option value="quotation-images">Imágenes</option>
-                            </select>
                             <input type="date" id="storage-date-from" class="filter-select" style="width:auto;" placeholder="Desde">
                             <input type="date" id="storage-date-to" class="filter-select" style="width:auto;" placeholder="Hasta">
-                            <input type="text" id="storage-search" class="search-box" placeholder="🔍 Buscar archivo..." style="width:200px;">
+                            <input type="text" id="storage-search" class="search-box" placeholder="🔍 Buscar imagen..." style="width:200px;">
                             <button class="btn-add" id="btn-storage-refresh" style="background:var(--surface2); color:var(--text); border:1px solid var(--border);">🔄 Actualizar</button>
                             <button class="btn-add btn-danger" id="btn-storage-delete-selected" style="display:none;">🗑️ Eliminar seleccionados</button>
                         </div>
@@ -1560,7 +1555,7 @@ border-color:var(--blue);color:var(--blue);
                     <div id="storage-usage-bar" style="margin-top:1rem; display:none;">
                         <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; font-size:0.85rem;">
                             <div style="flex:1; min-width:200px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
-                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Total Space (Free Tier)</div>
+                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Total Imágenes (Free Tier 1GB)</div>
                                 <div style="font-size:1.2rem; font-weight:800; color:var(--text)" id="storage-total">—</div>
                             </div>
                             <div style="flex:1; min-width:200px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
@@ -2905,7 +2900,7 @@ async function loadHistory(orderId) {
 
 // ============ STORAGE MANAGEMENT ============
 const STORAGE_CONFIG = {
-    buckets: ['quotation-pdfs', 'quotation-images'],
+    buckets: ['quotation-images'], // Solo imágenes, PDFs se generan on-demand
     supabaseUrl: 'https://apwehwrauctixfvzngtb.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Vod3JhdWN0aXhmdnpuZ3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTc0MjcsImV4cCI6MjA4NzM5MzQyN30.am3tR8PI7k5V4s-PBQFlriyckyHAFNoNKWfCkXKvp0k',
     maxTotalBytes: 1024 * 1024 * 1024 // 1 GB free tier
@@ -2919,7 +2914,8 @@ async function loadStorageFiles() {
     const dateTo = document.getElementById('storage-date-to')?.value;
     const search = document.getElementById('storage-search')?.value?.toLowerCase() || '';
     
-    const buckets = bucketFilter === 'all' ? STORAGE_CONFIG.buckets : [bucketFilter];
+    // Solo un bucket: quotation-images
+    const buckets = STORAGE_CONFIG.buckets;
     let allFiles = [];
     
     for (const bucket of buckets) {
@@ -3118,7 +3114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab listener will trigger loadStorageFiles
 });
 
-document.getElementById('storage-bucket-filter')?.addEventListener('change', loadStorageFiles);
 document.getElementById('storage-date-from')?.addEventListener('change', loadStorageFiles);
 document.getElementById('storage-date-to')?.addEventListener('change', loadStorageFiles);
 document.getElementById('storage-search')?.addEventListener('input', loadStorageFiles);
