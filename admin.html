@@ -1950,15 +1950,22 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 
                 const data = await res.json();
 
-                // Si la respuesta no es un array (ej. un objeto de error 500 que pasó el res.ok anterior)
-                if (!Array.isArray(data)) {
+                // Manejar ambos formatos de respuesta: array directo o { data: [...], nextCursor, hasMore }
+                let ordersArray = null;
+                if (Array.isArray(data)) {
+                    ordersArray = data; // Formato legacy: array directo
+                } else if (data?.data && Array.isArray(data.data)) {
+                    ordersArray = data.data; // Formato nuevo: { data: [...], nextCursor, hasMore }
+                }
+
+                if (!ordersArray) {
                     err.textContent = 'Respuesta inesperada del servidor.';
                     btn.textContent = 'Ingresar'; btn.disabled = false;
                     return;
                 }
 
                 adminPass = pwd; adminName = name;
-                allOrders = data;
+                allOrders = ordersArray;
 
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
@@ -1985,7 +1992,9 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                     headers: { 'x-admin-password': adminPass }
                 });
                 if (res.ok) {
-                    allOrders = await res.json();
+                    const responseData = await res.json();
+                    // Manejar ambos formatos: array directo o { data: [...], nextCursor, hasMore }
+                    allOrders = (responseData.data && Array.isArray(responseData.data)) ? responseData.data : responseData;
                     renderOrders(allOrders);
                     updateStats(allOrders);
                 } else {
