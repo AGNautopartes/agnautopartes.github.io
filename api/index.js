@@ -1,23 +1,23 @@
 // api/index.js - Router único para todas las funciones serverless
 // Consolidación para evitar límite de 12 funciones en plan Hobby
 
-import adminChat from './admin-chat.js';
-import createOrder from './create-order.js';
-import updateOrderFull from './update-order-full.js';
-import getAllOrders from './get-all-orders.js';
-import addNote from './add-note.js';
-import deleteOrder from './delete-order.js';
-import getModels from './get-models.js';
-import authLogin from './auth-login.js';
-import generate from './generate.js';
-import getNotes from './get-notes.js';
-import getOrderStatus from './get-order-status.js';
-import saveQuotation from './save-quotation.js';
-import generateQuotation from './generate-quotation.js';
-import quotationsCrud from './quotations-crud.js';
-import quotationsExport from './quotations-export.js';
-import quotationsImport from './quotations-import.js';
-import createOrderFromQuotation from './create-order-from-quotation.js';
+import adminChat from './handlers/admin-chat.js';
+import createOrder from './handlers/create-order.js';
+import updateOrderFull from './handlers/update-order-full.js';
+import getAllOrders from './handlers/get-all-orders.js';
+import addNote from './handlers/add-note.js';
+import deleteOrder from './handlers/delete-order.js';
+import getModels from './handlers/get-models.js';
+import authLogin from './handlers/auth-login.js';
+import generate from './handlers/generate.js';
+import getNotes from './handlers/get-notes.js';
+import getOrderStatus from './handlers/get-order-status.js';
+import saveQuotation from './handlers/save-quotation.js';
+import generateQuotation from './handlers/generate-quotation.js';
+import quotationsCrud from './handlers/quotations-crud.js';
+import quotationsExport from './handlers/quotations-export.js';
+import quotationsImport from './handlers/quotations-import.js';
+import createOrderFromQuotation from './handlers/create-order-from-quotation.js';
 
 const routes = {
     'admin-chat': adminChat,
