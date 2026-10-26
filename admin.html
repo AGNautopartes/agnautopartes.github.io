@@ -1330,6 +1330,7 @@ border-color:var(--blue);color:var(--blue);
             <div class="nav-tabs">
                 <button class="tab-btn active" data-page="orders">📋 Orders</button>
                 <button class="tab-btn" data-page="quotations">💰 Cotizaciones</button>
+                <button class="tab-btn" data-page="storage">🗄️ Storage</button>
                 <button class="tab-btn" data-page="dashboard">📊 Dashboard</button>
                 <button class="tab-btn" data-page="reports">📈 Reports</button>
             </div>
@@ -1531,6 +1532,63 @@ border-color:var(--blue);color:var(--blue);
                         style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text2)">
                         <span>← Seleccione una cotización</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STORAGE PAGE ── -->
+        <div class="page" id="page-storage">
+            <div class="orders-main">
+                <div class="storage-header" style="padding:1rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                        <h3 style="font-size:1.1rem; font-weight:800">🗄️ Gestión de Storage</h3>
+                        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                            <select id="storage-bucket-filter" class="filter-select" style="width:auto;">
+                                <option value="all">Todos los buckets</option>
+                                <option value="quotation-pdfs">PDFs</option>
+                                <option value="quotation-images">Imágenes</option>
+                            </select>
+                            <input type="date" id="storage-date-from" class="filter-select" style="width:auto;" placeholder="Desde">
+                            <input type="date" id="storage-date-to" class="filter-select" style="width:auto;" placeholder="Hasta">
+                            <input type="text" id="storage-search" class="search-box" placeholder="🔍 Buscar archivo..." style="width:200px;">
+                            <button class="btn-add" id="btn-storage-refresh" style="background:var(--surface2); color:var(--text); border:1px solid var(--border);">🔄 Actualizar</button>
+                            <button class="btn-add btn-danger" id="btn-storage-delete-selected" style="display:none;">🗑️ Eliminar seleccionados</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Space usage bar -->
+                    <div id="storage-usage-bar" style="margin-top:1rem; display:none;">
+                        <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; font-size:0.85rem;">
+                            <div style="flex:1; min-width:200px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
+                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Total Space (Free Tier)</div>
+                                <div style="font-size:1.2rem; font-weight:800; color:var(--text)" id="storage-total">—</div>
+                            </div>
+                            <div style="flex:1; min-width:200px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
+                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Usado</div>
+                                <div style="font-size:1.2rem; font-weight:800; color:var(--yellow)" id="storage-used">—</div>
+                            </div>
+                            <div style="flex:1; min-width:200px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
+                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Libre</div>
+                                <div style="font-size:1.2rem; font-weight:800; color:var(--green)" id="storage-free">—</div>
+                            </div>
+                            <div style="flex:1; min-width:150px; background:var(--surface2); border-radius:8px; padding:0.75rem; border:1px solid var(--border);">
+                                <div style="font-size:0.7rem; color:var(--text2); text-transform:uppercase; margin-bottom:0.25rem">Uso %</div>
+                                <div style="font-size:1.2rem; font-weight:800; color:var(--blue)" id="storage-pct">—</div>
+                            </div>
+                            <div style="width:100%; height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; margin-top:0.5rem;">
+                                <div id="storage-pct-bar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--green), var(--yellow), var(--accent)); transition:width 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="orders-toolbar" style="padding:0.75rem 1.5rem; border-bottom:1px solid var(--border);">
+                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:var(--text2); cursor:pointer;">
+                        <input type="checkbox" id="storage-select-all" style="width:16px; height:16px;"> Seleccionar todo visible
+                    </label>
+                    <span style="margin-left:auto; font-size:0.75rem; color:var(--text2)" id="storage-selected-count">0 seleccionados</span>
+                </div>
+                <div class="orders-list" id="storage-list" style="flex:1; overflow-y:auto; padding:1rem 1.5rem;">
+                    <div class="empty-state">Cargando archivos...</div>
                 </div>
             </div>
         </div>
@@ -1968,6 +2026,10 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                 document.getElementById(pageId).classList.add('active');
                 if (btn.dataset.page === 'dashboard') updateDashboard();
                 if (btn.dataset.page === 'reports') renderReports();
+                if (btn.dataset.page === 'storage') {
+                    loadStorageFiles();
+                    updateStorageStats();
+                }
             });
         });
 
@@ -2841,7 +2903,232 @@ async function loadHistory(orderId) {
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
 }
 
-        async function sendToAria() {
+// ============ STORAGE MANAGEMENT ============
+const STORAGE_CONFIG = {
+    buckets: ['quotation-pdfs', 'quotation-images'],
+    supabaseUrl: 'https://apwehwrauctixfvzngtb.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Vod3JhdWN0aXhmdnpuZ3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTc0MjcsImV4cCI6MjA4NzM5MzQyN30.am3tR8PI7k5V4s-PBQFlriyckyHAFNoNKWfCkXKvp0k',
+    maxTotalBytes: 1024 * 1024 * 1024 // 1 GB free tier
+};
+
+let storageFiles = [];
+
+async function loadStorageFiles() {
+    const bucketFilter = document.getElementById('storage-bucket-filter')?.value || 'all';
+    const dateFrom = document.getElementById('storage-date-from')?.value;
+    const dateTo = document.getElementById('storage-date-to')?.value;
+    const search = document.getElementById('storage-search')?.value?.toLowerCase() || '';
+    
+    const buckets = bucketFilter === 'all' ? STORAGE_CONFIG.buckets : [bucketFilter];
+    let allFiles = [];
+    
+    for (const bucket of buckets) {
+        try {
+            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/list/${bucket}`, {
+                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
+            });
+            if (!res.ok) continue;
+            const files = await res.json();
+            
+            for (const f of files) {
+                if (f.name === '.emptyFolderPlaceholder') continue;
+                
+                const createdAt = f.created_at ? new Date(f.created_at) : null;
+                
+                // Date filter
+                if (dateFrom && createdAt && createdAt < new Date(dateFrom)) continue;
+                if (dateTo && createdAt && createdAt > new Date(dateTo + 'T23:59:59')) continue;
+                
+                // Search filter
+                if (search && !f.name.toLowerCase().includes(search)) continue;
+                
+                allFiles.push({
+                    ...f,
+                    bucket,
+                    sizeBytes: f.metadata?.size || 0,
+                    createdAt,
+                    checked: false
+                });
+            }
+        } catch (e) {
+            console.error(`Error loading bucket ${bucket}:`, e);
+        }
+    }
+    
+    // Sort by date desc
+    allFiles.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    storageFiles = allFiles;
+    renderStorageFiles();
+    updateStorageStats();
+}
+
+function renderStorageFiles() {
+    const list = document.getElementById('storage-list');
+    if (!list) return;
+    
+    if (!storageFiles.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:3rem;text-align:center;color:var(--text2)">Sin archivos. Ajusta filtros o sube archivos.</div>';
+        return;
+    }
+    
+    list.innerHTML = storageFiles.map((f, idx) => `
+        <div class="storage-file-row" style="display:flex; align-items:center; gap:1rem; padding:0.75rem; border:1px solid var(--border); border-radius:8px; margin-bottom:0.5rem; background:var(--surface); transition:background 0.15s;"
+             data-idx="${idx}">
+            <input type="checkbox" class="storage-file-check" data-idx="${idx}" style="width:18px; height:18px; cursor:pointer;"
+                onchange="toggleStorageFile(${idx})">
+            <div style="width:32px; height:32px; border-radius:4px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:var(--text2); flex-shrink:0;">
+                ${f.bucket === 'quotation-images' ? '🖼️' : '📄'}
+            </div>
+            <div style="flex:1; min-width:0; overflow:hidden;">
+                <div style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name}</div>
+                <div style="font-size:0.7rem; color:var(--text2); display:flex; gap:1rem; margin-top:2px;">
+                    <span>${f.bucket === 'quotation-images' ? '🖼️' : '📄'} ${f.bucket}</span>
+                    <span>${fmtBytes(f.sizeBytes)}</span>
+                    <span>${f.createdAt ? f.createdAt.toLocaleDateString('es-EC') + ' ' + f.createdAt.toLocaleTimeString('es-EC', {hour:'2-digit',minute:'2-digit'}) : '—'}</span>
+                </div>
+            </div>
+            <button class="btn-action btn-sm btn-danger" onclick="deleteStorageFile(${idx})" title="Eliminar" style="padding:0.35rem 0.6rem;">🗑️</button>
+        </div>
+    `).join('');
+    
+    // Add checkbox listeners
+    list.querySelectorAll('.storage-file-check').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            toggleStorageFile(idx);
+        });
+    });
+}
+
+function toggleStorageFile(idx) {
+    if (idx < 0 || idx >= storageFiles.length) return;
+    storageFiles[idx].checked = !storageFiles[idx].checked;
+    updateStorageSelectionUI();
+}
+
+function updateStorageSelectionUI() {
+    const count = storageFiles.filter(f => f.checked).length;
+    const selectAll = document.getElementById('storage-select-all');
+    const deleteBtn = document.getElementById('btn-storage-delete-selected');
+    const countEl = document.getElementById('storage-selected-count');
+    
+    if (selectAll) selectAll.checked = count === storageFiles.length && storageFiles.length > 0;
+    selectAll.indeterminate = count > 0 && count < storageFiles.length;
+    
+    if (deleteBtn) deleteBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+    if (countEl) countEl.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
+}
+
+async function deleteStorageFile(idx) {
+    if (idx < 0 || idx >= storageFiles.length) return;
+    const f = storageFiles[idx];
+    
+    if (!confirm(`¿Eliminar "${f.name}" de ${f.bucket}?`)) return;
+    
+    try {
+        const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/${f.bucket}/${f.name}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
+        });
+        
+        if (res.ok) {
+            showToast(`🗑️ Eliminado: ${f.name}`, 'success');
+            storageFiles.splice(idx, 1);
+            renderStorageFiles();
+            updateStorageStats();
+        } else {
+            const err = await res.text();
+            throw new Error(err);
+        }
+    } catch (e) {
+        console.error('Delete failed:', e);
+        showToast('❌ Error eliminando: ' + e.message, 'error');
+    }
+}
+
+async function deleteSelectedStorageFiles() {
+    const selected = storageFiles.filter(f => f.checked);
+    if (!selected.length) return;
+    
+    if (!confirm(`¿Eliminar ${selected.length} archivos?`)) return;
+    
+    let deleted = 0;
+    for (const f of selected) {
+        try {
+            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/${f.bucket}/${f.name}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
+            });
+            if (res.ok) deleted++;
+        } catch (e) { console.error(e); }
+    }
+    
+    showToast(`🗑️ Eliminados ${deleted}/${selected.length} archivos`, deleted ? 'success' : 'error');
+    await loadStorageFiles();
+}
+
+async function updateStorageStats() {
+    let totalBytes = 0;
+    for (const bucket of STORAGE_CONFIG.buckets) {
+        try {
+            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/list/${bucket}`, {
+                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
+            });
+            if (!res.ok) continue;
+            const files = await res.json();
+            for (const f of files) {
+                if (f.metadata?.size) totalBytes += f.metadata.size;
+            }
+        } catch (e) { console.error(e); }
+    }
+    
+    const maxBytes = STORAGE_CONFIG.maxTotalBytes;
+    const used = totalBytes;
+    const free = Math.max(0, maxBytes - used);
+    const pct = maxBytes > 0 ? (used / maxBytes) * 100 : 0;
+    
+    const totalEl = document.getElementById('storage-total');
+    const usedEl = document.getElementById('storage-used');
+    const freeEl = document.getElementById('storage-free');
+    const pctEl = document.getElementById('storage-pct');
+    const barEl = document.getElementById('storage-pct-bar');
+    const usageBar = document.getElementById('storage-usage-bar');
+    
+    if (totalEl) totalEl.textContent = fmtBytes(maxBytes);
+    if (usedEl) usedEl.textContent = fmtBytes(used);
+    if (freeEl) freeEl.textContent = fmtBytes(free);
+    if (pctEl) pctEl.textContent = pct.toFixed(1) + '%';
+    if (barEl) barEl.style.width = Math.min(100, pct) + '%';
+    if (usageBar) usageBar.style.display = 'block';
+}
+
+function fmtBytes(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Event listeners for storage page
+document.addEventListener('DOMContentLoaded', () => {
+    const page = document.getElementById('page-storage');
+    if (!page) return;
+    
+    // Tab listener will trigger loadStorageFiles
+});
+
+document.getElementById('storage-bucket-filter')?.addEventListener('change', loadStorageFiles);
+document.getElementById('storage-date-from')?.addEventListener('change', loadStorageFiles);
+document.getElementById('storage-date-to')?.addEventListener('change', loadStorageFiles);
+document.getElementById('storage-search')?.addEventListener('input', loadStorageFiles);
+document.getElementById('btn-storage-refresh')?.addEventListener('click', loadStorageFiles);
+document.getElementById('btn-storage-delete-selected')?.addEventListener('click', deleteSelectedStorageFiles);
+document.getElementById('storage-select-all')?.addEventListener('change', (e) => {
+    storageFiles.forEach(f => f.checked = e.target.checked);
+    renderStorageFiles();
+    updateStorageSelectionUI();
+});
             const msg = ariaInput.value.trim();
             if (!msg || ariaSend.disabled) return;
             ariaInput.value = '';
