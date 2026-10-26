@@ -1589,9 +1589,17 @@ border-color:var(--blue);color:var(--blue);
                     <div class="vis-bar"></div>
                 </div>
                 <div class="ai-input-area">
+                    <!-- Image attachment -->
+                    <div id="aria-image-preview" style="display:none; gap:4px; margin-bottom:8px; flex-wrap:wrap;"></div>
+                    <input type="file" id="aria-image-input" accept="image/*" multiple style="display:none;" />
                     <div class="ai-input-wrapper">
                         <textarea class="ai-input" id="aria-input" placeholder="Escribe o pulsa el micro..."
                             rows="1"></textarea>
+                        <button id="aria-attach" class="mic-btn" title="Adjuntar imagen" style="background:var(--surface2); color:var(--text); border:1px solid var(--border)">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10c-.55 0-1-.45-1-1s.45-1 1-1h11c.55 0 1 .45 1 1s-.45 1-1 1h-2.5v8.5c0 .83-.67 1.5-1.5 1.5S14 16.83 14 16H5c-.83 0-1.5-.67-1.5-1.5S4.17 14 5 14h11v-8.5c0-.55.45-1 1-1s1 .45 1 1V16h1c.83 0 1.5.67 1.5 1.5S18.83 19 18 19H5c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h11c2.21 0 4 1.79 4 4z"/>
+                            </svg>
+                        </button>
                         <button id="aria-mic" class="mic-btn" title="Dictar con voz">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                                 <path
@@ -1639,9 +1647,106 @@ border-color:var(--blue);color:var(--blue);
         const API = window.location.origin;
 
         let adminPass = '', adminName = 'Admin';
-let isCreatingOrder = false; // global flag to prevent duplicate order creation
+let isCreatingOrder = false;
 let allOrders = [], selectedOrder = null;
 let ariaHistory = [];
+
+// ============ COMPRESIÓN DE IMÁGENES (125KB, aspect ratio, lazy load) ============
+const IMAGE_CONFIG = {
+    MAX_SIZE: 125 * 1024,    // 125 KB hard limit
+    MAX_DIMENSION: 1200,      // max side (px)
+    QUALITY: 0.75,            // WebP quality
+    FALLBACK_QUALITY: 0.7,    // JPEG fallback quality
+    ACCEPT_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
+};
+
+async function compressImage(file) {
+    if (!file) return null;
+    
+    if (!IMAGE_CONFIG.ACCEPT_TYPES.includes(file.type)) {
+        showToast(`Tipo de imagen no soportado: ${file.type}`, 'error');
+        return null;
+    }
+    
+    if (file.size > 20 * 1024 * 1024) {
+        showToast('Imagen demasiado grande (máx 20MB)', 'error');
+        return null;
+    }
+    
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = function() {
+            URL.revokeObjectURL(url);
+            
+            let w = img.width, h = img.height;
+            const ratio = w / h;
+            
+            if (w > IMAGE_CONFIG.MAX_DIMENSION || h > IMAGE_CONFIG.MAX_DIMENSION) {
+                if (w > h) {
+                    w = IMAGE_CONFIG.MAX_DIMENSION;
+                    h = Math.round(w / ratio);
+                } else {
+                    h = IMAGE_CONFIG.MAX_DIMENSION;
+                    w = Math.round(h * ratio);
+                }
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            
+            const tryCompress = (format, quality) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Canvas no soportado'));
+                        return;
+                    }
+                    
+                    if (blob.size <= IMAGE_CONFIG.MAX_SIZE) {
+                        const finalFile = new File(
+                            [blob],
+                            file.name.replace(/\.[^.]+$/, format === 'image/webp' ? '.webp' : '.jpg'),
+                            { type: format, lastModified: Date.now() }
+                        );
+                        resolve(finalFile);
+                    } else {
+                        const newQuality = Math.max(0.3, quality - 0.15);
+                        if (newQuality < 0.3) {
+                            tryCompress('image/jpeg', 0.6);
+                        } else {
+                            tryCompress(format, newQuality);
+                        }
+                    }
+                }, format, quality);
+            };
+            
+            tryCompress('image/webp', IMAGE_CONFIG.QUALITY);
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Error al cargar imagen'));
+        };
+        
+        img.src = url;
+    });
+}
+
+function lazyLoadImage(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Lazy load failed: ${url}`));
+        img.src = url;
+    });
+}
 
 // Check if user is already logged in (session persists while browser is open)
 if (sessionStorage.getItem('agn-admin-logged') === 'true') {
@@ -2645,9 +2750,52 @@ async function loadHistory(orderId) {
         const ariaInput = document.getElementById('aria-input');
         const ariaSend = document.getElementById('aria-send');
         const aiMessages = document.getElementById('ai-messages');
+        const ariaAttach = document.getElementById('aria-attach');
+        const ariaImageInput = document.getElementById('aria-image-input');
+        const ariaImagePreview = document.getElementById('aria-image-preview');
+        let pendingImages = [];
 
         ariaSend.addEventListener('click', sendToAria);
         ariaInput.addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAria(); } });
+        
+        // Image attachment handler
+        ariaAttach?.addEventListener('click', () => ariaImageInput?.click());
+        ariaImageInput?.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+            
+            ariaImagePreview.style.display = 'flex';
+            
+            for (const file of files) {
+                try {
+                    showToast(`Comprimiendo ${file.name}...`, 'info');
+                    const compressed = await compressImage(file);
+                    if (!compressed) continue;
+                    
+                    // Upload to Supabase Storage
+                    const uploadUrl = await uploadImageToStorage(compressed);
+                    if (!uploadUrl) continue;
+                    
+                    // Create preview
+                    const previewUrl = URL.createObjectURL(compressed);
+                    const preview = document.createElement('div');
+                    preview.style.cssText = 'position:relative; width:60px; height:60px; border-radius:6px; overflow:hidden; border:1px solid var(--border)';
+                    preview.innerHTML = `
+                        <img src="${previewUrl}" style="width:100%; height:100%; object-fit:cover;">
+                        <button onclick="this.parentElement.remove(); pendingImages = pendingImages.filter(i => i.url!=='${uploadUrl}'); if(!pendingImages.length) ariaImagePreview.style.display='none';" 
+                                style="position:absolute; top:2px; right:2px; background:red; color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; cursor:pointer">×</button>
+                    `;
+                    ariaImagePreview.appendChild(preview);
+                    
+                    pendingImages.push({ file: compressed, url: uploadUrl, name: file.name });
+                    showToast(`Imagen lista: ${file.name} (${(compressed.size/1024).toFixed(1)}KB)`, 'success');
+                } catch (err) {
+                    console.error('Error con imagen:', err);
+                    showToast(`Error con ${file.name}: ${err.message}`, 'error');
+                }
+            }
+            e.target.value = '';
+        });
 
         function addAiMsg(role, text) {
             const el = document.createElement('div');
@@ -2668,6 +2816,31 @@ async function loadHistory(orderId) {
             return response;
         }
 
+        async function uploadImageToStorage(file) {
+    const supabaseUrl = 'https://apwehwrauctixfvzngtb.supabase.co';
+    const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Vod3JhdWN0aXhmdnpuZ3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTc0MjcsImV4cCI6MjA4NzM5MzQyN30.am3tR8PI7k5V4s-PBQFlriyckyHAFNoNKWfCkXKvp0k';
+    const bucket = 'quotation-images';
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name.replace(/\s+/g, '_')}`;
+    
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${anonKey}`,
+            'Content-Type': file.type
+        },
+        body: file
+    });
+    
+    if (!res.ok) {
+        const err = await res.text();
+        console.error('Upload failed:', err);
+        showToast('Error subiendo imagen', 'error');
+        return null;
+    }
+    
+    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+}
+
         async function sendToAria() {
             const msg = ariaInput.value.trim();
             if (!msg || ariaSend.disabled) return;
@@ -2687,7 +2860,8 @@ async function loadHistory(orderId) {
                         message: msg,
                         conversationHistory: ariaHistory,
                         adminName,
-                        model: document.getElementById('aria-model-select')?.value || 'openrouter/free'
+                        model: document.getElementById('aria-model-select')?.value || 'openrouter/free',
+                        images: pendingImages.map(i => i.url)
                     }),
                     timeout: 45000 // 45s para IA
                 });
@@ -2728,6 +2902,11 @@ if (!res.ok) {
                 addAiMsg('assistant', responseText);
                 ariaHistory.push({ role: 'assistant', content: responseText });
                 ariaSpeak(responseText);
+                
+                // Clear pending images
+                pendingImages = [];
+                ariaImagePreview.style.display = 'none';
+                ariaImagePreview.innerHTML = '';
             } catch (e) {
                 console.error('Aria Error:', e);
                 if (thinking && thinking.parentNode) thinking.remove();

@@ -8,8 +8,13 @@ import PDFDocument from 'pdfkit';
 
 // Configuración
 const PDF_MARGIN = 40;
-const MAX_LINK_FETCH = 2; // cuántos links scrapear por defecto
-const FETCH_TIMEOUT = 8000; // ms por link
+const MAX_LINK_FETCH = 2;
+const FETCH_TIMEOUT = 8000;
+
+// Configuración de imágenes
+const MAX_IMAGE_SIZE = 125 * 1024; // 125 KB máximo por imagen
+const MAX_IMAGE_DIMENSION = 1200;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 // ============ 1. PARSEO INTELIGENTE DEL RAW_INPUT ============
 function parseRawInput(raw) {
@@ -68,15 +73,48 @@ function parseRawInput(raw) {
     if (simpleItems.length > 0) items.push(...simpleItems);
   }
 
-  return {
+return {
     raw_input: text,
-    customer_name: '', // se llenará después o se extrae del texto
+    customer_name: '',
     vehicle_brand,
     vehicle_model,
     vehicle_year,
     phone,
-    items: items.slice(0, 20) // límite 20 ítems
+    items: items.slice(0, 20)
   };
+}
+
+// ============ VALIDACIÓN DE IMÁGENES ============
+function validateImageBuffer(buffer, mimeType) {
+  if (!ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    return { ok: false, error: `Tipo no permitido: ${mimeType}. Use JPEG, PNG o WebP` };
+  }
+  if (buffer.length > MAX_IMAGE_SIZE) {
+    return { ok: false, error: `Imagen demasiado grande: ${(buffer.length/1024).toFixed(1)} KB. Máximo: ${MAX_IMAGE_SIZE/1024} KB` };
+  }
+  return { ok: true };
+}
+
+async function validateImageUrl(url) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    const contentType = res.headers.get('content-type');
+    const contentLength = res.headers.get('content-length');
+    
+    if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+      return { ok: false, error: `Tipo no permitido: ${contentType}` };
+    }
+    if (contentLength && parseInt(contentLength) > MAX_IMAGE_SIZE) {
+      return { ok: false, error: `Imagen remota demasiado grande: ${(contentLength/1024).toFixed(1)} KB` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: `No se pudo validar imagen: ${e.message}` };
+  }
 }
 
 // ============ 2. FETCH PARALELO A PROVEEDORES ============
