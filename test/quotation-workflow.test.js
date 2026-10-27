@@ -294,3 +294,44 @@ test('una copia CSV recupera imágenes pegadas y enlaces sin aceptar protocolos 
     assert.equal(context.read('data:image/png;base64,AAAA'),'data:image/png;base64,AAAA');
     assert.equal(context.read('javascript:alert(1)'),null);
 });
+
+test('cargar CSV no pregunta en una cotización vacía y permite conservar los cambios', async () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const source=html.slice(html.indexOf('    async function confirmSaveIfDirty()'),html.indexOf('    async function ensureCSVList()'));
+    let editor={},promptCount=0;
+    const fields={inAdvisor:{value:'Pedro Cordero'},inDeliveryTime:{value:'9-12 días lab.'},inMarg:{value:'30'}};
+    const context=vm.createContext({document:{getElementById:id=>fields[id]},getData:()=>editor,recomputeDirty:()=>true,confirm:()=>{promptCount++;return false}});
+    vm.runInContext(`let lastLoadedCSVText=null,items=[]; ${source}\nglobalThis.check=confirmSaveIfDirty;`,context);
+    assert.equal(await context.check(),true);
+    assert.equal(promptCount,0);
+    editor={c:'99'};
+    assert.equal(await context.check(),false);
+    assert.equal(promptCount,1);
+});
+
+test('un archivo CSV inválido se rechaza antes de borrar el borrador abierto', () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const source=html.slice(html.indexOf('    function parseCSVContent('),html.indexOf('    async function importCSV('));
+    const context=vm.createContext({});
+    vm.runInContext(`let items=[{tit:'Sin perder'}]; ${source}\nglobalThis.parse=parseCSVContent;globalThis.current=()=>items;`,context);
+    assert.throws(()=>context.parse('archivo inválido','incorrecto.csv'),/CSV válida/);
+    assert.equal(context.current()[0].tit,'Sin perder');
+});
+
+test('exportar CSV incorpora imágenes externas y no entrega un archivo incompleto si fallan', async () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const source=html.slice(html.indexOf('    async function embedCSVImages('),html.indexOf('    // FUNCIÓN MODIFICADA: exportCSV ahora guarda'));
+    let calls=0;
+    class FakeFile { constructor(parts,name,options){this.type=options.type} }
+    class FakeReader { readAsDataURL(){this.result='data:image/jpeg;base64,/9j/2Q==';this.onload()} }
+    const parent={fetchQuotationPhotoBlob:async()=>{calls++;return {type:'image/png'}},compressImage:async()=>({type:'image/jpeg'})};
+    const context=vm.createContext({window:{parent},File:FakeFile,FileReader:FakeReader});
+    vm.runInContext(`${source}\nglobalThis.embed=embedCSVImages`,context);
+    const csv='Titulo|Imagen|Imagen2|Imagen3\nA|https://example.test/a.png|data:image/png;base64,AAAA|\nB|https://example.test/a.png||\n';
+    const result=await context.embed(csv);
+    assert.equal(calls,1);
+    assert.doesNotMatch(result,/https:\/\//);
+    assert.match(result,/data:image\/jpeg;base64/);
+    parent.fetchQuotationPhotoBlob=async()=>{throw new Error('No disponible')};
+    await assert.rejects(context.embed(csv),/No se pudo incorporar una foto/);
+});

@@ -1545,10 +1545,10 @@ border-color:var(--blue);color:var(--blue);
                     </select>
                     <button class="btn-add" id="btn-quot-export"
                         style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
-                        Export CSV</button>
+                        Exportar lista CSV</button>
                     <button class="btn-add" id="btn-quot-import"
                         style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
-                        Import CSV</button>
+                        Cargar cotización CSV</button>
                     <button class="btn-add" id="btn-new-quotation">+ Nueva Cotización</button>
                     <button class="btn-add" id="btn-save-original-quotation">Guardar en ERP</button>
                     <div id="quotation-save-status" role="status" aria-live="polite" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
@@ -4002,6 +4002,14 @@ function openNewQuotationDraft() {
     updateAriaContextUI();
 }
 
+// Al importar un CSV se crea un borrador nuevo sin sobrescribir la cotización seleccionada.
+window.agnQuotationCSVLoaded = () => {
+    clearPendingImages();
+    selectedQuotation = { id:`draft-${crypto.randomUUID()}`, status:'borrador', quotation_items:[] };
+    setQuotationSaveStatus('');
+    updateAriaContextUI();
+};
+
 document.getElementById('btn-new-quotation')?.addEventListener('click', openNewQuotationDraft);
 
 document.getElementById('btn-quot-export')?.addEventListener('click', async () => {
@@ -4024,7 +4032,9 @@ document.getElementById('btn-quot-export')?.addEventListener('click', async () =
 });
 
 document.getElementById('btn-quot-import')?.addEventListener('click', () => {
-    showToast('La importación CSV todavía no está habilitada para evitar crear cotizaciones incompletas.', 'warning');
+    const input = document.getElementById('quotation-original-frame')?.contentDocument?.getElementById('csvFileInput');
+    if (!input) { showToast('El cotizador todavía se está cargando.', 'warning'); return; }
+    input.click();
 });
 
 document.getElementById('quot-search')?.addEventListener('input', (e) => {

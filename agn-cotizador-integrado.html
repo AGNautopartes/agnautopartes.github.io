@@ -675,7 +675,7 @@
     </div>
     
     <div class="btn-row" style="margin-top:10px; flex-wrap: wrap;">
-        <button class="btn" style="background:#6c757d; min-width:120px;" onclick="exportCSV()">💾 Exportar CSV</button>
+        <button class="btn" id="btnExportCSV" style="background:#6c757d; min-width:120px;" onclick="exportCSV()">💾 Exportar CSV</button>
         <button class="btn" id="btnLoadCSV" style="background:#6c757d; min-width:120px;" onclick="document.getElementById('csvFileInput').click()">📂 Cargar CSV</button>
         <input type="file" id="csvFileInput" accept=".csv" hidden onchange="importCSV(this)">
     </div>
@@ -893,7 +893,7 @@
         return (value || '').replace(/\\n/g, '\n');
     }
 
-    function buildCSVString(){
+    function buildCSVString(sourceItems = items){
         const cliente = document.getElementById('inClient').value || 'SinCliente';
         const vehiculo = document.getElementById('inCar').value || 'SinVehiculo';
         const tiempoEntrega = document.getElementById('inDeliveryTime').value || '9-12 días lab.';
@@ -907,7 +907,7 @@
 
         const whatsapp = (document.getElementById('inWhatsApp')?.value || '').replace(/\|/g, ';');
         let csv = 'Cliente|Vehiculo|TiempoEntrega|NumeroCotizacion|FechaCotizacion|Asesor|Direccion|Observaciones|DescuentoActivo|DescuentoPorcentaje|Titulo|Marca|Opcion|Descripcion|RefInterna|Costo|Flete|Margen|Precio|Garantia|Imagen|Imagen2|Imagen3|FotoScale|ItemNumero|WhatsApp\n';
-        items.forEach(item => {
+        sourceItems.forEach(item => {
             csv += `${cliente}|${vehiculo}|${tiempoEntrega}|${quoteNo}|${createdAt}|${asesor.replace(/\|/g, ';')}|${direccion.replace(/\|/g, ';')}|${observaciones}|${descActivo}|${descPct}|${item.tit}|${item.brand}|${item.opt}|${encodeCSVText(item.desc)}|${(item.refInt || '').replace(/\|/g, ';')}|${item.c}|${item.s}|${item.m}|${item.p}|${item.war}|${item.img || ''}|${item.img2 || ''}|${item.img3 || ''}|${item.photoScale || 100}|${item.itemNo || ''}|${whatsapp}\n`;
         });
         return csv;
@@ -955,13 +955,17 @@
     });
 
     async function confirmSaveIfDirty(){
-        if(!recomputeDirty()) return true;
-
-        const wantsSave = confirm('Tienes cambios sin guardar. ¿Deseas exportar/guardar antes de cambiar de archivo?');
-        if(!wantsSave) return true;
-
-        const saved = await exportCSV({ forcePicker: true });
-        return saved;
+        const editor = getData();
+        const hasEditorContent = ['tit','desc','refInt','c','s'].some(key => String(editor[key] ?? '').trim()) || !!(editor.img || editor.img2 || editor.img3) ||
+            [['brand','Genérico/Compatible'],['opt','1: Alterno'],['war','3 meses'],['m','30'],['photoScale','100']].some(([key, fallback]) => String(editor[key] ?? fallback) !== fallback);
+        const hasHeaderContent = ['inClient','inCar','inAddress','inWhatsApp','inObservations'].some(id => String(document.getElementById(id)?.value || '').trim());
+        const hasOtherChanges = (document.getElementById('inAdvisor')?.value || 'Pedro Cordero') !== 'Pedro Cordero' ||
+            (document.getElementById('inDeliveryTime')?.value || '9-12 días lab.') !== '9-12 días lab.' ||
+            (document.getElementById('inMarg')?.value || '30') !== '30' ||
+            ['chkShowTotal','chkDiscount','chkAGN'].some(id => !!document.getElementById(id)?.checked);
+        if (!lastLoadedCSVText && !items.length && !hasEditorContent && !hasHeaderContent && !hasOtherChanges) return true;
+        if (!recomputeDirty() && !hasEditorContent) return true;
+        return confirm('Hay cambios en la cotización actual. ¿Deseas reemplazarla por el CSV seleccionado?\n\nAceptar: cargar el archivo y descartar los cambios actuales.\nCancelar: conservar la cotización actual. Para guardarla antes, usa Exportar CSV.');
     }
 
     async function ensureCSVList(){
@@ -1524,11 +1528,62 @@ async function navCSV(delta){
         })
     }
 
+    async function embedCSVImages(csv) {
+        const lines = csv.split('\n');
+        const columns = lines[0].split('|');
+        const indexes = ['Imagen','Imagen2','Imagen3'].map(name => columns.indexOf(name)).filter(index => index >= 0);
+        const cache = new Map();
+        const fetchPhoto = window.parent?.fetchQuotationPhotoBlob;
+        const compress = window.parent?.compressImage;
+        for (let row = 1; row < lines.length; row++) {
+            if (!lines[row].trim()) continue;
+            const values = lines[row].split('|');
+            for (const index of indexes) {
+                const source = (values[index] || '').trim();
+                if (!source || /^data:image\/[a-z0-9.+-]+;base64,/i.test(source)) continue;
+                if (!/^(?:https?:|blob:)/i.test(source) || typeof fetchPhoto !== 'function' || typeof compress !== 'function') {
+                    throw new Error(`No se puede incorporar una foto del ítem ${row}. Pégala o cárgala en el cotizador.`);
+                }
+                if (!cache.has(source)) {
+                    try {
+                        const blob = await fetchPhoto(source);
+                        const jpeg = await compress(new File([blob], 'foto.jpg', { type:blob.type }));
+                        if (!jpeg) throw new Error('Formato no compatible');
+                        const data = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+                            reader.readAsDataURL(jpeg);
+                        });
+                        cache.set(source, data);
+                    } catch {
+                        throw new Error(`No se pudo incorporar una foto del ítem ${row}. Descárgala y pégala en el cotizador.`);
+                    }
+                }
+                values[index] = cache.get(source);
+            }
+            lines[row] = values.join('|');
+        }
+        return lines.join('\n');
+    }
+
     // FUNCIÓN MODIFICADA: exportCSV ahora guarda el tiempo de entrega como dato global
     // + Formato de nombre requerido: YYYY-MM-DD-HHMM_ID_VEHICULO_CLIENTE.csv (por defecto)
     async function exportCSV(options) {
         options = options || {};
-        const csv = buildCSVString();
+        const button = document.getElementById('btnExportCSV');
+        if (button?.disabled) return false;
+        const previousButtonText = button?.textContent;
+        if (button) { button.disabled = true; button.textContent = 'Preparando fotos…'; }
+        try {
+        const sourceItems = items.slice();
+        const current = getData();
+        const hasCurrent = ['tit','desc','refInt','c','s'].some(key => String(current[key] ?? '').trim()) || !!(current.img || current.img2 || current.img3);
+        if (editIdx >= 0) sourceItems[editIdx] = current;
+        else if (hasCurrent) sourceItems.push(current);
+        let csv;
+        try { csv = await embedCSVImages(buildCSVString(sourceItems)); }
+        catch (error) { alert(error.message || 'No se pudieron incorporar las fotos al CSV.'); return false; }
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const suggestedName = options.suggestedName || getDefaultCSVFilename();
 
@@ -1545,7 +1600,7 @@ async function navCSV(delta){
                 await writable.close();
 
                 // Snapshot post-guardado
-                lastLoadedCSVText = csv;
+                lastLoadedCSVText = buildCSVString();
                 setDirty(false);
 
                 // actualizar nombre actual si aplica
@@ -1554,8 +1609,9 @@ async function navCSV(delta){
 
                 return true;
             }catch(e){
-                // AbortError => usuario canceló
-                return false;
+                if (e.name === 'AbortError') return false;
+                // Algunos navegadores bloquean el selector dentro del ERP.
+                // En ese caso se usa la descarga normal.
             }
         }
 
@@ -1566,9 +1622,12 @@ async function navCSV(delta){
         link.click();
 
         // Snapshot post-guardado (considerar guardado exitoso)
-        lastLoadedCSVText = csv;
+        lastLoadedCSVText = buildCSVString();
         setDirty(false);
         return true;
+        } finally {
+            if (button) { button.disabled = false; button.textContent = previousButtonText; }
+        }
     }
 
     function readCSVImage(value) {
@@ -1580,10 +1639,14 @@ async function navCSV(delta){
 
     // FUNCIÓN CON RETROCOMPATIBILIDAD: importCSV detecta formato antiguo vs nuevo
     function parseCSVContent(csvText, fileName){
-        isLoadingCSV = true;
         const allLines = (csvText || '').split('\n');
         const header = allLines[0] || '';
         const lines = allLines.slice(1);
+        if (!header.includes('|') || !lines.some(line => line.trim() && line.split('|').length >= 10)) {
+            throw new Error('El archivo no contiene una cotización CSV válida.');
+        }
+        isLoadingCSV = true;
+        cancelEdit();
         items = [];
         nextItemNumber = 1;
         const csvColumns = header.split('|').map(column => column.trim());
@@ -1752,6 +1815,7 @@ async function navCSV(delta){
             const idx = csvFiles.indexOf(currentCSVName);
             if(idx >= 0) csvIndex = idx;
         }
+        if (window.parent !== window && typeof window.parent.agnQuotationCSVLoaded === 'function') window.parent.agnQuotationCSVLoaded();
     }
 
     // FUNCIÓN CON RETROCOMPATIBILIDAD: importCSV detecta formato antiguo vs nuevo
@@ -1764,9 +1828,11 @@ async function navCSV(delta){
         const f = input.files[0];
         const reader = new FileReader();
         reader.onload = e => {
-            parseCSVContent(e.target.result, f.name);
-            input.value = '';
+            try { parseCSVContent(e.target.result, f.name); }
+            catch (error) { alert(error.message || 'No se pudo abrir el archivo CSV.'); }
+            finally { input.value = ''; }
         };
+        reader.onerror = () => { alert('No se pudo leer el archivo CSV.'); input.value = ''; };
         reader.readAsText(f);
     }
 </script>
