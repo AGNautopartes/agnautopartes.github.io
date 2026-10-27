@@ -791,7 +791,7 @@
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-    let items = [], editIdx = -1, currentImg = null;
+    let items = [], editIdx = -1, currentImg = null, nextItemNumber = 1;
     let currentImg2 = null; // segunda foto
     let currentImg3 = null; // tercera foto
     let showTotal = false; // Variable que controla si se muestra/suma el total
@@ -1250,7 +1250,7 @@ async function navCSV(delta){
     function addItem() {
         if(!document.getElementById('inTitle').value) return alert('Ingrese un título');
         ensureQuoteNumber();
-        items.push(getData()); resetForm(); render();
+        items.push(getData()); nextItemNumber++; resetForm(); render();
         setDirty(true);
     }
     function updateItem() {
@@ -1258,6 +1258,8 @@ async function navCSV(delta){
     }
     function getData() {
         return {
+            itemNo: editIdx >= 0 ? items[editIdx].itemNo : nextItemNumber,
+            erpMeta: editIdx >= 0 ? items[editIdx].erpMeta : undefined,
             tit: document.getElementById('inTitle').value,
             desc: document.getElementById('inDesc').value,
             refInt: document.getElementById('inRefInt').value,
@@ -1314,7 +1316,7 @@ async function navCSV(delta){
         }
         updatePasteZoneStatus();
         calcPrice();
-        document.getElementById('editStatus').innerText = "EDITANDO ITEM #" + (i+1);
+        document.getElementById('editStatus').innerText = "EDITANDO ITEM #" + o.itemNo;
         document.getElementById('btnAdd').classList.add('hidden');
         document.getElementById('btnUpd').classList.remove('hidden');
         document.getElementById('btnCan').classList.remove('hidden');
@@ -1370,12 +1372,14 @@ async function navCSV(delta){
     
     // FUNCIÓN MODIFICADA: render() ahora respeta el checkbox de mostrar total
     function render() {
+        items.forEach(item => { if (!Number.isInteger(item.itemNo) || item.itemNo < 1) item.itemNo = nextItemNumber++; });
         const agnOn = document.getElementById('chkAGN') && document.getElementById('chkAGN').checked;
         const l = document.getElementById('listContainer');
         l.innerHTML = items.map((x,i) => `
             <div class="saved-item" style="${i===editIdx?'border-left:4px solid #ffc107':''}">
+                <strong title="Número de ítem">#${x.itemNo}</strong>
                 <img src="${x.img||''}">
-                <div><strong>${x.tit}</strong><br>$${((parseFloat(x.p)||0)).toFixed(2)}</div>
+                <div><strong>${escapeHTML(x.tit || '')}</strong><br>$${((parseFloat(x.p)||0)).toFixed(2)}</div>
                 <div class="item-actions">
                     <div class="item-order">
                         <button onclick="moveItem(${i}, -1)" ${i===0?'disabled':''} title="Subir">▲</button>

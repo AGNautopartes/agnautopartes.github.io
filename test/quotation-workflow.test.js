@@ -72,7 +72,7 @@ test('el adaptador conserva tres fotos, datos y opciones al reabrir la cotizaci�
     values.inClient.parentElement = { parentElement:{ after() {} } };
     const document = { getElementById:id => values[id], createElement:()=>({className:'',innerHTML:''}) };
     const context = vm.createContext({ document, window:{} });
-    vm.runInContext("let items=[],editIdx=-1,showTotal=false,discountEnabled=false,discountPercent=0,quoteNumber='',quoteCreatedAt=''; function resetForm(){} function updateAll(){} function render(){} function getData(){return {}}",context);
+    vm.runInContext("let items=[],editIdx=-1,nextItemNumber=1,showTotal=false,discountEnabled=false,discountPercent=0,quoteNumber='',quoteCreatedAt=''; function resetForm(){} function updateAll(){} function render(){} function getData(){return {}}",context);
     vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js', import.meta.url),'utf8'),context);
     const quote={customer_name:'Cliente de prueba',vehicle_brand:'Toyota',vehicle_model:'RAV4',vehicle_year:'1998',delivery_time:'9-12 días',editor_state:{advisor:'Pedro',show_total:true,discount_enabled:true,discount_percent:5},quotation_items:[{part_name:'Manifold',price_usd:145,shipping_usd:50,margin_pct:30,photos:['https://example.test/1.jpg','https://example.test/2.jpg','https://example.test/3.jpg'],photo_scale:125}]};
     context.window.agnErpBridge.setQuote(quote);
@@ -168,4 +168,43 @@ test('si falla una imagen, guardar muestra el error y no envía la cotización',
     assert.match(progress.at(-1).text,/No se pudo preparar una imagen del ítem 1/);
     assert.equal(progress.at(-1).type,'error');
     assert.equal(button.disabled,false);
+});
+
+
+test('cada repuesto conserva su número, enlace y fotos al moverlo y volver a abrirlo', () => {
+    const values = Object.fromEntries(['inClient','inWhatsApp','inCar','inAdvisor','inAddress','inDeliveryTime','inObservations','inDiscountPct','inTitle','chkShowTotal','chkDiscount','chkAGN'].map(id => [id,{value:'',checked:false}]));
+    values.inClient.parentElement = { parentElement:{ after() {} } };
+    const document = { getElementById:id => values[id], createElement:()=>({}) };
+    const context = vm.createContext({ document, window:{} });
+    vm.runInContext("let items=[],editIdx=-1,nextItemNumber=1,showTotal=false,discountEnabled=false,discountPercent=0,quoteNumber='',quoteCreatedAt=''; function resetForm(){} function updateAll(){} function render(){} function getData(){return {}}",context);
+    vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js', import.meta.url),'utf8'),context);
+    const quote={editor_state:{next_item_number:4},quotation_items:[
+        {item_number:1,part_name:'A',part_number:'A-1',supplier_url:'https://example.test/a',photos:['https://example.test/a1.jpg','https://example.test/a2.jpg']},
+        {item_number:3,part_name:'B',part_number:'B-3',supplier_url:'https://example.test/b',photos:['https://example.test/b.jpg']}
+    ]};
+    context.window.agnErpBridge.setQuote(quote);
+    vm.runInContext('items.reverse(); [items[1].img,items[1].img2]=[items[1].img2,items[1].img]',context);
+    const changed=context.window.agnErpBridge.getQuote(quote);
+    assert.deepEqual(Array.from(changed.quotation_items, x => [x.item_number,x.part_name,x.part_number,x.supplier_url]),[[3,'B','B-3','https://example.test/b'],[1,'A','A-1','https://example.test/a']]);
+    assert.deepEqual(Array.from(changed.quotation_items[1].photos),['https://example.test/a2.jpg','https://example.test/a1.jpg']);
+    context.window.agnErpBridge.setQuote(changed);
+    vm.runInContext('items.splice(0,1)',context);
+    const reopened=context.window.agnErpBridge.getQuote(changed);
+    assert.equal(reopened.quotation_items[0].item_number,1);
+    assert.equal(reopened.quotation_items[0].part_number,'A-1');
+    assert.equal(reopened.editor_state.next_item_number,4);
+});
+
+test('Aria identifica el repuesto por número fijo después de cambiar su posición', () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const calculation=html.slice(html.indexOf('const quotationMoney ='),html.indexOf('async function stageQuotationImage'));
+    const application=html.slice(html.indexOf('function applyQuotationOperation('),html.indexOf('function renderQuotationEditor('));
+    const context=vm.createContext({document:{getElementById:()=>null}});
+    vm.runInContext(`${calculation}\n${application}\nglobalThis.apply=applyQuotationOperation;`,context);
+    const quote={editor_state:{next_item_number:4},quotation_items:[{item_number:3,part_name:'B'},{item_number:1,part_name:'A'}]};
+    const ops=sanitizeOperations([{type:'update_item',item_number:1,fields:{shipping_usd:56}},{type:'update_item',index:0,fields:{shipping_usd:99}},{type:'add_item',fields:{part_name:'C'}}],2,true);
+    ops.forEach(op=>context.apply(quote,op));
+    assert.equal(quote.quotation_items[1].shipping_usd,56);
+    assert.equal(quote.quotation_items[0].shipping_usd,undefined);
+    assert.equal(quote.quotation_items[2].item_number,4);
 });

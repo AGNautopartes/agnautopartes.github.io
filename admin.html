@@ -2992,10 +2992,8 @@ async function loadHistory(orderId) {
     });
     
     if (!res.ok) {
-        const err = await res.text();
-        console.error('Upload failed:', err);
-        showToast('Error subiendo imagen', 'error');
-        return null;
+        console.error('Upload failed:', res.status);
+        throw new Error(`No se pudo subir la imagen (código ${res.status}).`);
     }
     
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
@@ -4060,7 +4058,7 @@ function setQuotationSaveStatus(message, type = 'info') {
 }
 
 document.getElementById('btn-save-original-quotation')?.addEventListener('click', async () => {
-    if (!selectedQuotation) openNewQuotationDraft();
+    if (!selectedQuotation) selectedQuotation = { id:`draft-${crypto.randomUUID()}`, status:'borrador', quotation_items:[] };
     try { syncQuotationFromOriginal(selectedQuotation); await saveQuotationDraft(selectedQuotation); }
     catch (error) { setQuotationSaveStatus(error.message, 'error'); showToast(error.message, 'error'); }
 });
@@ -4090,24 +4088,25 @@ async function stageQuotationImage(quote, index, file) {
     saveQuotationSession(quote);
 }
 
-function itemIndexFromMessage(message, itemCount) {
+function itemIndexFromMessage(message, quote) {
     const match = String(message || '').match(/(?:ítem|item)\s*#?\s*(\d+)/i);
     if (!match) return -1;
-    const index = Number(match[1]) - 1;
-    return index >= 0 && index < itemCount ? index : -1;
+    const index = quote.quotation_items.findIndex(item => Number(item.item_number) === Number(match[1]));
+    if (index < 0) throw new Error(`No existe el ítem ${match[1]} en esta cotización.`);
+    return index;
 }
 
 function attachPendingImagesToQuotation(quote, message) {
     const images = pendingImages.filter(image => image.scope === 'quotation');
     if (!images.length) return;
-    const mentionedIndex = itemIndexFromMessage(message, quote.quotation_items.length);
-    images.forEach((image, offset) => {
+    const mentionedIndex = itemIndexFromMessage(message, quote);
+    images.forEach(image => {
         const firstEmpty = quote.quotation_items.findIndex(item => !item._imageFile && !item.image_url);
-        const index = mentionedIndex >= 0 ? Math.min(mentionedIndex + offset, quote.quotation_items.length - 1) : (firstEmpty >= 0 ? firstEmpty : 0);
+        const index = mentionedIndex >= 0 ? mentionedIndex : (firstEmpty >= 0 ? firstEmpty : 0);
         const item = quote.quotation_items[index];
         if (item.image_preview) URL.revokeObjectURL(item.image_preview);
         const photos = [...(item.photos || [item.image_url].filter(Boolean))];
-        if (photos.length >= 3) throw new Error(`El ítem ${index + 1} ya tiene tres fotos`);
+        if (photos.length >= 3) throw new Error(`El ítem ${item.item_number || index + 1} ya tiene tres fotos`);
         photos.push(URL.createObjectURL(image.file));
         item.photos = photos;
         item.image_url = photos[0];
@@ -4116,7 +4115,7 @@ function attachPendingImagesToQuotation(quote, message) {
 }
 
 function quotationItemForMessage(quote, message) {
-    const mentioned = itemIndexFromMessage(message, quote.quotation_items.length);
+    const mentioned = itemIndexFromMessage(message, quote);
     if (mentioned >= 0) return quote.quotation_items[mentioned];
     return quote.quotation_items.find(item => !item.supplier_url && !item.part_name) || quote.quotation_items[0];
 }
@@ -4152,6 +4151,10 @@ async function enrichQuotationFromLink(quote, message) {
 }
 
 function applyQuotationOperation(quote, operation) {
+    if (operation.type === 'update_item' && Number.isInteger(operation.item_number)) {
+        operation = { ...operation, index:quote.quotation_items.findIndex(item => Number(item.item_number) === operation.item_number) };
+        if (operation.index < 0) throw new Error(`No existe el ítem ${operation.item_number} en esta cotización.`);
+    }
     if (operation.type === 'update_header') {
         Object.entries(operation.fields || {}).forEach(([key, value]) => {
             if (quotationHeaderFields.has(key)) quote[key] = value;
@@ -4167,7 +4170,11 @@ function applyQuotationOperation(quote, operation) {
         Object.entries(operation.fields || {}).forEach(([key, value]) => {
             if (quotationItemFields.has(key)) fields[key] = value;
         });
-        if (Object.keys(fields).length) quote.quotation_items.push({ part_name: '', part_number: '', part_brand: 'Genérico/Compatible', option_name: '1: Alterno', warranty: '3 meses', description: '', supplier_url: '', image_url: '', price_usd: 0, shipping_usd: 0, margin_pct: 30, ...fields });
+        if (Object.keys(fields).length) {
+            const next = Math.max(Number(quote.editor_state?.next_item_number) || 1, ...quote.quotation_items.map(item => (Number(item.item_number) || 0) + 1));
+            quote.editor_state = { ...quote.editor_state, next_item_number:next + 1 };
+            quote.quotation_items.push({ item_number:next, part_name: '', part_number: '', part_brand: 'Genérico/Compatible', option_name: '1: Alterno', warranty: '3 meses', description: '', supplier_url: '', image_url: '', price_usd: 0, shipping_usd: 0, margin_pct: 30, ...fields });
+        }
     }
     if (operation.type === 'update_item' || operation.type === 'add_item') {
         const item = operation.type === 'add_item' ? quote.quotation_items.at(-1) : quote.quotation_items[operation.index];
@@ -4264,7 +4271,7 @@ async function saveQuotationDraft(quote) {
             item.photos = photos;
             item.image_url = photos[0] || '';
         }
-        quote.editor_state = { ...quote.editor_state, item_details: quote.quotation_items.map(item => ({ photos:item.photos, photo_scale:item.photo_scale || 100, part_number:item.part_number || '', supplier_url:item.supplier_url || '' })) };
+        quote.editor_state = { ...quote.editor_state, item_details: quote.quotation_items.map(item => ({ item_number:item.item_number, photos:item.photos, photo_scale:item.photo_scale || 100, part_number:item.part_number || '', supplier_url:item.supplier_url || '' })) };
         const quotation = { ...quote, id: String(quote.id || '').startsWith('draft-') ? null : quote.id };
         const history = quotationHistory(quote);
         const res = await fetchWithTimeout(`${API}/api/quotations`, { method: 'POST', headers: { 'Content-Type':'application/json', 'x-admin-password':adminPass }, body: JSON.stringify({quotation, items:quote.quotation_items}), timeout:30000 });

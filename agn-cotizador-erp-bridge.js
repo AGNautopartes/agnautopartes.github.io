@@ -64,10 +64,10 @@
     phoneGroup.innerHTML = '<label for="inWhatsApp">WhatsApp cliente</label><input id="inWhatsApp" placeholder="Número del cliente">';
     byId('inClient').parentElement.parentElement.after(phoneGroup);
 
-    const fromOriginalItem = (item, oldItem = {}) => {
+    const fromOriginalItem = item => {
         const photos = [item.img, item.img2, item.img3].filter(Boolean);
         return {
-            ...oldItem, part_name:item.tit || '', part_brand:item.brand || '', option_name:item.opt || '',
+            ...item.erpMeta, item_number:item.itemNo, part_name:item.tit || '', part_brand:item.brand || '', option_name:item.opt || '',
             description:item.desc || '', internal_reference:item.refInt || '', warranty:item.war || '',
             price_usd:Number(item.c) || 0, shipping_usd:Number(item.s) || 0, margin_pct:Number(item.m) || 0,
             image_url:photos[0] || '', photos, photo_scale:Number(item.photoScale) || 100
@@ -77,7 +77,7 @@
     const toOriginalItem = item => {
         const photos = (item.photos?.length ? item.photos : [item.image_url]).filter(Boolean).slice(0,3);
         const c = Number(item.price_usd) || 0, s = Number(item.shipping_usd) || 0, m = Number(item.margin_pct) || 0;
-        return { tit:item.part_name || '', brand:item.part_brand || 'Genérico/Compatible', opt:item.option_name || '1: Alterno',
+        return { itemNo:item.item_number, erpMeta:{ ...item }, tit:item.part_name || '', brand:item.part_brand || 'Genérico/Compatible', opt:item.option_name || '1: Alterno',
             desc:item.description || '', refInt:item.internal_reference || '', war:item.warranty || '3 meses',
             c, s, m, p:(m < 100 ? (c+s)/(1-m/100) : 0).toFixed(2), img:photos[0] || null,
             img2:photos[1] || null, img3:photos[2] || null, photoScale:item.photo_scale || 100 };
@@ -89,15 +89,14 @@
             const hasCurrent = getValue('inTitle').trim();
             if (hasCurrent && editIdx >= 0) sourceItems[editIdx] = getData();
             else if (hasCurrent) sourceItems.push(getData());
-            const previous = existing.quotation_items || [];
-            const mapped = sourceItems.map((item,index) => fromOriginalItem(item, previous[index]));
-            if (!mapped.length) mapped.push(previous[0] || { part_name:'', price_usd:0, shipping_usd:0, margin_pct:30 });
+            const mapped = sourceItems.map(fromOriginalItem);
+            if (!mapped.length) mapped.push({ item_number:nextItemNumber, part_name:'', price_usd:0, shipping_usd:0, margin_pct:30 });
             const vehicle = getValue('inCar');
             const previousVehicle = [existing.vehicle_brand,existing.vehicle_model,existing.vehicle_year].filter(Boolean).join(' ');
             const vehicleFields = previousVehicle && vehicle !== previousVehicle ? { vehicle_brand:'', vehicle_model:'', vehicle_year:'' } : {};
             return { ...existing, ...vehicleFields, customer_name:getValue('inClient'), whatsapp_phone:getValue('inWhatsApp'),
                 vehicle_display:vehicle, delivery_time:getValue('inDeliveryTime'),
-                quotation_items:mapped, editor_state:{ ...existing.editor_state, vehicle_display:getValue('inCar'), advisor:getValue('inAdvisor'), address:getValue('inAddress'),
+                quotation_items:mapped, editor_state:{ ...existing.editor_state, next_item_number:Math.max(nextItemNumber, ...sourceItems.map(item => (Number(item.itemNo) || 0) + 1)), vehicle_display:getValue('inCar'), advisor:getValue('inAdvisor'), address:getValue('inAddress'),
                     observations:getValue('inObservations'), show_total:!!byId('chkShowTotal')?.checked,
                     discount_enabled:!!byId('chkDiscount')?.checked, discount_percent:Number(getValue('inDiscountPct')) || 0,
                     watermark:!!byId('chkAGN')?.checked, quote_number:quoteNumber, quote_created_at:quoteCreatedAt } };
@@ -113,7 +112,23 @@
             byId('chkDiscount').checked = !!extra.discount_enabled; discountEnabled = !!extra.discount_enabled;
             discountPercent = Number(extra.discount_percent) || 0; byId('chkAGN').checked = !!extra.watermark;
             quoteNumber = extra.quote_number || ''; quoteCreatedAt = extra.quote_created_at || '';
-            items = (quote.quotation_items || []).filter(item => String(item.part_name || '').trim()).map(toOriginalItem);
+            const used = new Set();
+            nextItemNumber = Math.max(1, Number(extra.next_item_number) || 1);
+            const incoming = (quote.quotation_items || []).filter(item => String(item.part_name || '').trim());
+            for (const item of incoming) {
+                const n = Number(item.item_number);
+                if (Number.isInteger(n) && n > 0 && !used.has(n)) { used.add(n); nextItemNumber = Math.max(nextItemNumber, n + 1); }
+            }
+            const assigned = new Set();
+            items = incoming.map(item => {
+                let n = Number(item.item_number);
+                if (!Number.isInteger(n) || n < 1 || assigned.has(n)) {
+                    while (used.has(nextItemNumber)) nextItemNumber++;
+                    n = nextItemNumber++; used.add(n);
+                }
+                assigned.add(n);
+                return toOriginalItem({ ...item, item_number:n });
+            });
             editIdx = -1; resetForm(); updateAll(); render();
         }
     };
