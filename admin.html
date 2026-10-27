@@ -2839,10 +2839,8 @@ async function loadHistory(orderId) {
             if (pendingImages.some(image => image.scope !== requiredScope)) clearPendingImages();
         }
 
-        const activeQuotation = () => {
-            const page = document.getElementById('page-quotations');
-            return page?.classList.contains('active') && selectedQuotation ? selectedQuotation : null;
-        };
+        const isQuotationPage = () => document.getElementById('page-quotations')?.classList.contains('active');
+        const activeQuotation = () => isQuotationPage() ? selectedQuotation : null;
 
         const clearPendingImages = () => {
             pendingImages.forEach(image => {
@@ -2892,7 +2890,11 @@ async function loadHistory(orderId) {
                     showToast(`Comprimiendo ${file.name}...`, 'info');
                     const compressed = await compressImage(file);
                     if (!compressed) continue;
-                    const quote = activeQuotation();
+                    let quote = activeQuotation();
+                    if (!quote && isQuotationPage()) {
+                        openNewQuotationDraft();
+                        quote = activeQuotation();
+                    }
                     // En cotizaciones no se escribe en Storage antes de Guardar.
                     // Para el asistente de pedidos se conserva el comportamiento anterior.
                     const uploadUrl = quote ? null : await uploadImageToStorage(compressed);
@@ -3192,7 +3194,13 @@ async function sendToAria() {
             ariaInput.value = '';
             ariaSend.disabled = true;
 
-            const quote = activeQuotation();
+            let quote = activeQuotation();
+            // La pestaña visible define el módulo. En Cotizaciones, incluso
+            // sin borrador previo, se crea uno local y nunca se llama a órdenes.
+            if (!quote && isQuotationPage()) {
+                openNewQuotationDraft();
+                quote = activeQuotation();
+            }
             if (quote) {
                 addAiMsg('user', msg);
                 const thinking = addAiMsg('assistant', '...');
