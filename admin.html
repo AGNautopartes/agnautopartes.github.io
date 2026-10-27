@@ -2976,27 +2976,7 @@ async function loadHistory(orderId) {
         }
 
         async function uploadImageToStorage(file) {
-    const supabaseUrl = 'https://apwehwrauctixfvzngtb.supabase.co';
-    const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Vod3JhdWN0aXhmdnpuZ3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTc0MjcsImV4cCI6MjA4NzM5MzQyN30.am3tR8PI7k5V4s-PBQFlriyckyHAFNoNKWfCkXKvp0k';
-    const bucket = 'quotation-images';
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name.replace(/\s+/g, '_')}`;
-    
-    const res = await fetchWithTimeout(`${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${anonKey}`,
-            'Content-Type': file.type
-        },
-        body: file,
-        timeout: 30000
-    });
-    
-    if (!res.ok) {
-        console.error('Upload failed:', res.status);
-        throw new Error(`No se pudo subir la imagen (código ${res.status}).`);
-    }
-    
-    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+    return uploadQuotationImage(file);
 }
 
 // Las imágenes de cotizaciones se suben con autenticación del ERP desde el servidor.
@@ -3037,12 +3017,17 @@ async function fetchQuotationPhotoBlob(url) {
 }
 
 // ============ STORAGE MANAGEMENT ============
-const STORAGE_CONFIG = {
-    buckets: ['quotation-images'], // Solo imágenes, PDFs se generan on-demand
-    supabaseUrl: 'https://apwehwrauctixfvzngtb.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwd2Vod3JhdWN0aXhmdnpuZ3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MTc0MjcsImV4cCI6MjA4NzM5MzQyN30.am3tR8PI7k5V4s-PBQFlriyckyHAFNoNKWfCkXKvp0k',
-    maxTotalBytes: 1024 * 1024 * 1024 // 1 GB free tier
-};
+const STORAGE_CONFIG = { buckets:['quotation-images'], supabaseUrl:'', maxTotalBytes:1024 * 1024 * 1024 };
+let storageAllFiles = [];
+async function storageRequest(method = 'GET', names = undefined, configOnly = false) {
+    const res = await fetchWithTimeout(`${API}/api/quotation-image-upload${configOnly ? '?config=1' : ''}`, {
+        method, headers:{'Content-Type':'application/json','x-admin-password':adminPass},
+        ...(names ? {body:JSON.stringify({names})} : {}), timeout:30000
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.message || 'No se pudo acceder al almacenamiento');
+    return result;
+}
 
 let storageFiles = [];
 
@@ -3052,43 +3037,25 @@ async function loadStorageFiles() {
     const dateTo = document.getElementById('storage-date-to')?.value;
     const search = document.getElementById('storage-search')?.value?.toLowerCase() || '';
     
-    // Solo un bucket: quotation-images
-    const buckets = STORAGE_CONFIG.buckets;
     let allFiles = [];
-    
-    for (const bucket of buckets) {
-        try {
-            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/list/${bucket}`, {
-                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
-            });
-            if (!res.ok) continue;
-            const files = await res.json();
-            
-            for (const f of files) {
-                if (f.name === '.emptyFolderPlaceholder') continue;
-                
-                const createdAt = f.created_at ? new Date(f.created_at) : null;
-                
-                // Date filter
-                if (dateFrom && createdAt && createdAt < new Date(dateFrom)) continue;
-                if (dateTo && createdAt && createdAt > new Date(dateTo + 'T23:59:59')) continue;
-                
-                // Search filter
-                if (search && !f.name.toLowerCase().includes(search)) continue;
-                
-                allFiles.push({
-                    ...f,
-                    bucket,
-                    sizeBytes: f.metadata?.size || 0,
-                    createdAt,
-                    checked: false
-                });
-            }
-        } catch (e) {
-            console.error(`Error loading bucket ${bucket}:`, e);
+    try {
+        const result = await storageRequest();
+        STORAGE_CONFIG.supabaseUrl = result.origin;
+        storageAllFiles = result.files || [];
+        for (const f of storageAllFiles) {
+            if (f.name === '.emptyFolderPlaceholder') continue;
+            const createdAt = f.created_at ? new Date(f.created_at) : null;
+            if (dateFrom && createdAt && createdAt < new Date(dateFrom)) continue;
+            if (dateTo && createdAt && createdAt > new Date(dateTo + 'T23:59:59')) continue;
+            if (search && !f.name.toLowerCase().includes(search)) continue;
+            allFiles.push({...f, bucket:'quotation-images', sizeBytes:f.metadata?.size || 0, createdAt, checked:false});
         }
+        if (result.truncated) showToast('Se muestran los primeros 1000 archivos; consulta Supabase para el consumo total.', 'error');
+    } catch (error) {
+        showToast(error.message, 'error');
+        return;
     }
-    
+
     // Sort by date desc
     allFiles.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     storageFiles = allFiles;
@@ -3160,20 +3127,9 @@ async function deleteStorageFile(idx) {
     if (!confirm(`¿Eliminar "${f.name}" de ${f.bucket}?`)) return;
     
     try {
-        const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/${f.bucket}/${f.name}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
-        });
-        
-        if (res.ok) {
-            showToast(`🗑️ Eliminado: ${f.name}`, 'success');
-            storageFiles.splice(idx, 1);
-            renderStorageFiles();
-            updateStorageStats();
-        } else {
-            const err = await res.text();
-            throw new Error(err);
-        }
+        await storageRequest('DELETE', [f.name]);
+        showToast(`🗑️ Eliminado: ${f.name}`, 'success');
+        await loadStorageFiles();
     } catch (e) {
         console.error('Delete failed:', e);
         showToast('❌ Error eliminando: ' + e.message, 'error');
@@ -3186,36 +3142,16 @@ async function deleteSelectedStorageFiles() {
     
     if (!confirm(`¿Eliminar ${selected.length} archivos?`)) return;
     
-    let deleted = 0;
-    for (const f of selected) {
-        try {
-            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/${f.bucket}/${f.name}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
-            });
-            if (res.ok) deleted++;
-        } catch (e) { console.error(e); }
-    }
-    
-    showToast(`🗑️ Eliminados ${deleted}/${selected.length} archivos`, deleted ? 'success' : 'error');
-    await loadStorageFiles();
+    try {
+        await storageRequest('DELETE', selected.map(f => f.name));
+        showToast(`🗑️ Eliminados ${selected.length} archivos`, 'success');
+        await loadStorageFiles();
+    } catch (error) { showToast(error.message, 'error'); }
+
 }
 
 async function updateStorageStats() {
-    let totalBytes = 0;
-    for (const bucket of STORAGE_CONFIG.buckets) {
-        try {
-            const res = await fetch(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/list/${bucket}`, {
-                headers: { 'Authorization': `Bearer ${STORAGE_CONFIG.anonKey}` }
-            });
-            if (!res.ok) continue;
-            const files = await res.json();
-            for (const f of files) {
-                if (f.metadata?.size) totalBytes += f.metadata.size;
-            }
-        } catch (e) { console.error(e); }
-    }
-    
+    const totalBytes = storageAllFiles.reduce((sum, f) => sum + (f.metadata?.size || 0), 0);
     const maxBytes = STORAGE_CONFIG.maxTotalBytes;
     const used = totalBytes;
     const free = Math.max(0, maxBytes - used);
@@ -4256,6 +4192,10 @@ async function saveQuotationDraft(quote) {
         if (pendingImages.some(image => image.scope === 'quotation')) attachPendingImagesToQuotation(quote, '');
         recalculateQuotation(quote);
         setQuotationSaveStatus('Preparando imágenes…');
+        if (quote.quotation_items.some(item => (item.photos?.length || item.image_url)) && !STORAGE_CONFIG.supabaseUrl) {
+            const config = await storageRequest('GET', undefined, true);
+            STORAGE_CONFIG.supabaseUrl = config.origin;
+        }
         const prepared = [];
         for (const [index, item] of quote.quotation_items.entries()) {
             const photos = (item.photos?.length ? item.photos : [item.image_url]).filter(Boolean).slice(0,3);

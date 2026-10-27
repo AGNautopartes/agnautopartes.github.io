@@ -349,3 +349,25 @@ test('exportar CSV incorpora imágenes externas y no entrega un archivo incomple
     parent.fetchQuotationPhotoBlob=async()=>{throw new Error('No disponible')};
     await assert.rejects(context.embed(csv),/No se pudo incorporar una foto/);
 });
+
+
+test('Storage utiliza el proyecto del servidor y protege sus operaciones', async () => {
+    const original = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://current.supabase.co';
+    let listed = 0, removed = null;
+    const bucket = {list:async()=>{listed++;return {data:[{name:'one.jpg',metadata:{size:42}}],error:null}}, remove:async names=>{removed=names;return {error:null}}};
+    const handler = createQuotationImageUploadHandler({client:{storage:{from:()=>bucket}},hasServiceRole:()=>true});
+    const response=()=>({statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}});
+    try {
+        let res=response(); await handler({method:'GET',url:'/api/quotation-image-upload?config=1',headers:{'x-admin-password':'test-password'}},res);
+        assert.equal(res.body.origin,'https://current.supabase.co'); assert.equal(listed,0);
+        res=response(); await handler({method:'GET',url:'/api/quotation-image-upload',headers:{'x-admin-password':'test-password'}},res);
+        assert.equal(res.body.files[0].name,'one.jpg'); assert.equal(listed,1);
+        res=response(); await handler({method:'DELETE',headers:{},body:{names:['one.jpg']}},res);
+        assert.equal(res.statusCode,401); assert.equal(removed,null);
+        res=response(); await handler({method:'DELETE',headers:{'x-admin-password':'test-password'},body:{names:['../one.jpg']}},res);
+        assert.equal(res.statusCode,400); assert.equal(removed,null);
+        res=response(); await handler({method:'DELETE',headers:{'x-admin-password':'test-password'},body:{names:['one.jpg']}},res);
+        assert.equal(res.statusCode,200); assert.deepEqual(removed,['one.jpg']);
+    } finally { if (original === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL; else process.env.NEXT_PUBLIC_SUPABASE_URL=original; }
+});
