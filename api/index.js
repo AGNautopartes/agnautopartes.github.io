@@ -14,7 +14,7 @@ const routes = {
     'get-order-status': () => import('../lib/handlers/get-order-status.js'),
     'quotations': () => import('../lib/handlers/quotations.js'),
     'quotation-assist': () => import('../lib/handlers/quotation-assist.js'),
-    'quotation-pdf': () => import('../lib/handlers/quotation-pdf.js'),
+    'quotation-link-preview': () => import('../lib/handlers/quotation-link-preview.js'),
     'create-order-from-quotation': () => import('../lib/handlers/create-order-from-quotation.js')
 };
 
