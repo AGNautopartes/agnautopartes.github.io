@@ -423,3 +423,21 @@ test('Aria admite la operación de logos y reconoce NTY y las marcas del ejemplo
         for (const name of ['Mercedes-Benz','Dayco','NTY']) { const item=catalog.find(x=>x.name===name); assert.ok(item);assert.ok(fs.existsSync(new URL('..'+item.url,import.meta.url))); }
     } finally {globalThis.fetch=originalFetch;}
 });
+
+
+test('la instrucción real añade Mercedes al ítem 4 sin depender de la IA', async () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const code=html.slice(html.indexOf('async function applyQuotationLogo('),html.indexOf('async function runQuotationAria('));
+    const context=vm.createContext({URL,location:{origin:'https://erp.test'}});vm.runInContext(`${code}\nglobalThis.apply=applyQuotationLogo`,context);
+    const quote={quotation_items:[{item_number:4,photos:['https://example.test/repuesto.webp']},{item_number:1,photos:[]}]};
+    const res={statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}};
+    const original=globalThis.fetch;globalThis.fetch=()=>{throw Error('No debe llamar al modelo')};
+    try {
+        await quotationAssist({method:'POST',headers:{'x-admin-password':'test-password'},body:{message:'EN ITEM 4 PON LOGO MERCEDES BENZ',quotation:quote}},res);
+        assert.equal(res.statusCode,200);assert.deepEqual(res.body.data.operations,[{type:'add_logo',item_number:4,brand:'Mercedes-Benz'}]);
+        const catalog=JSON.parse(fs.readFileSync(new URL('../logos/catalogo.json',import.meta.url),'utf8'));
+        await context.apply(quote,res.body.data.operations[0],catalog);
+        assert.deepEqual(Array.from(quote.quotation_items[0].photos),['https://example.test/repuesto.webp','https://erp.test/logos/mercedes-benz.jpg']);
+        assert.equal(quote.quotation_items[1].photos.length,0);
+    } finally {globalThis.fetch=original;}
+});
