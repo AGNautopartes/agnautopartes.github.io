@@ -3655,10 +3655,9 @@ async function loadQuotations() {
     if (!adminPass || isLoadingQuotations) return;
     isLoadingQuotations = true;
     try {
-        const resQuot = await fetch(`${API}/api/quotations-crud`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
-            body: JSON.stringify({ action: 'list', status: document.getElementById('quot-status-filter')?.value || '' })
+        const status = document.getElementById('quot-status-filter')?.value || '';
+        const resQuot = await fetch(`${API}/api/quotations${status ? `?status=${encodeURIComponent(status)}` : ''}`, {
+            headers: { 'x-admin-password': adminPass }
         });
         if (resQuot.ok) {
             const data = await resQuot.json();
@@ -3728,6 +3727,7 @@ async function selectQuotation(id) {
     if (!q) return;
 
     selectedQuotation = q;
+    return renderQuotationEditor(q);
     document.querySelectorAll('#quot-list .order-card').forEach(c => c.classList.remove('selected'));
     const card = document.querySelector(`#quot-list .order-card[data-id="${id}"]`);
     if (card) card.classList.add('selected');
@@ -3855,8 +3855,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Botones de la toolbar de cotizaciones
 document.getElementById('btn-new-quotation')?.addEventListener('click', () => {
-    // Abrir modal o usar Aria para crear
-    showToast('Usa Aria: "Crea cotización para Juan +593987654321 Toyota Hilux 2019 radiador $85 3kg margen 30%"', 'info');
+    selectedQuotation = { id: `draft-${crypto.randomUUID()}`, status: 'borrador', quotation_items: [{ part_name: '', part_number: '', description: '', supplier_url: '', image_url: '', price_usd: 0, margin_pct: 0 }] };
+    renderQuotationEditor(selectedQuotation);
 });
 
 document.getElementById('btn-quot-export')?.addEventListener('click', async () => {
@@ -3915,6 +3915,45 @@ document.getElementById('quot-search')?.addEventListener('input', (e) => {
 document.getElementById('quot-status-filter')?.addEventListener('change', () => {
     loadQuotations();
 });
+
+const quotationSessionKey = quote => `agn-quotation-session:${quote.id || 'new'}`;
+const quotationHistory = quote => JSON.parse(sessionStorage.getItem(`${quotationSessionKey(quote)}:history`) || '[]');
+const saveQuotationSession = quote => sessionStorage.setItem(quotationSessionKey(quote), JSON.stringify({ ...quote, quotation_items: (quote.quotation_items || []).map(({ _imageFile, image_preview, ...item }) => item) }));
+
+function renderQuotationEditor(quote) {
+    const panel = document.getElementById('quot-detail-panel');
+    const content = document.getElementById('quot-detail-content');
+    if (!content) return;
+    panel?.classList.remove('empty');
+    const items = quote.quotation_items || [];
+    content.innerHTML = `<div class="detail-header"><h3>${quote.readable_id || 'Nueva cotización'}</h3><div class="detail-sub" id="quot-save-state">Sin guardar</div></div>
+      <div class="detail-body"><div class="detail-section"><h4>Cliente y vehículo</h4><div class="info-grid">
+      ${[['customer_name','Cliente'],['whatsapp_phone','WhatsApp'],['vehicle_brand','Marca'],['vehicle_model','Modelo'],['vehicle_year','Año']].map(([key,label]) => `<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-quote-field="${key}" value="${escapeHtml(quote[key] || '')}"></div></div>`).join('')}</div></div>
+      <div class="detail-section"><h4>Ítems</h4><div id="quote-editor-items"></div><button class="btn-action btn-blue" id="quote-add-item">+ Añadir ítem</button></div>
+      <div class="detail-section"><h4>Aria</h4><textarea class="note-input" id="quote-aria-input" placeholder="Ej.: completa el ítem 1 desde este enlace…"></textarea><button class="btn-action btn-blue" id="quote-aria-run">Completar con Aria</button><div id="quote-aria-reply" class="detail-sub"></div></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn-action btn-blue" id="quote-save">Guardar</button><button class="btn-action" id="quote-download">Descargar PDF</button>${quote.id && !String(quote.id).startsWith('draft-') ? `<button class="btn-action" id="quote-convert">Crear orden</button>` : ''}</div></div>`;
+    const renderItems = () => {
+        const holder = document.getElementById('quote-editor-items');
+        holder.innerHTML = (quote.quotation_items || []).map((item, index) => `<div class="dynamic-item" data-item-card="${index}" style="border:1px solid var(--border);padding:.6rem;margin:.4rem 0"><strong>Ítem ${index + 1}</strong><button data-remove-item="${index}" class="btn-sm" style="float:right">×</button>${item.image_preview || item.image_url ? `<img src="${escapeHtml(item.image_preview || item.image_url)}" style="max-width:90px;max-height:70px;float:right;margin-right:.5rem">` : ''}<div class="info-grid">${[['part_name','Repuesto'],['part_number','N. parte'],['description','Descripción'],['supplier_url','Enlace'],['image_url','Imagen URL'],['price_usd','Precio'],['margin_pct','Margen %']].map(([key,label])=>`<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-item="${index}" data-item-field="${key}" value="${escapeHtml(item[key] ?? '')}"></div></div>`).join('')}<div class="info-item"><div class="il">Subir o pegar imagen</div><input type="file" accept="image/*" data-item-image="${index}"></div></div></div>`).join('');
+        holder.querySelectorAll('input').forEach(input => input.addEventListener('input', () => { const item = quote.quotation_items[Number(input.dataset.item)]; item[input.dataset.itemField] = input.value; saveQuotationSession(quote); }));
+        holder.querySelectorAll('[data-remove-item]').forEach(button => button.onclick = () => { quote.quotation_items.splice(Number(button.dataset.removeItem), 1); renderItems(); saveQuotationSession(quote); });
+        const stageImage = async (file, index) => { try { const compressed=await compressImage(file); if(!compressed)return; const item=quote.quotation_items[index]; item._imageFile=compressed; item.image_preview=URL.createObjectURL(compressed); saveQuotationSession(quote); renderItems(); } catch { showToast('No fue posible preparar la imagen','error'); } };
+        holder.querySelectorAll('[data-item-image]').forEach(input => input.onchange = () => { const file=input.files?.[0]; if(file)stageImage(file,Number(input.dataset.itemImage)); });
+        holder.querySelectorAll('[data-item-card]').forEach(card => card.addEventListener('paste', event => { const file=[...event.clipboardData.items].find(item=>item.type.startsWith('image/'))?.getAsFile(); if(file){event.preventDefault();stageImage(file,Number(card.dataset.itemCard));} }));
+    };
+    content.querySelectorAll('[data-quote-field]').forEach(input => input.addEventListener('input', () => { quote[input.dataset.quoteField] = input.value; saveQuotationSession(quote); }));
+    document.getElementById('quote-add-item').onclick = () => { quote.quotation_items.push({ part_name:'', part_number:'', description:'', supplier_url:'', image_url:'', price_usd:0, margin_pct:0 }); renderItems(); saveQuotationSession(quote); };
+    document.getElementById('quote-save').onclick = () => saveQuotationDraft(quote);
+    document.getElementById('quote-aria-run').onclick = () => runQuotationAria(quote, renderItems);
+    document.getElementById('quote-download').onclick = () => downloadQuotationPdf(quote);
+    document.getElementById('quote-convert')?.addEventListener('click', () => convertQuotationToOrder(quote.id));
+    renderItems();
+}
+
+const escapeHtml = value => String(value).replace(/[&<>"]/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[char]));
+async function saveQuotationDraft(quote) { const state = document.getElementById('quot-save-state'); state.textContent='Guardando…'; for(const item of quote.quotation_items||[]){if(item._imageFile){const url=await uploadImageToStorage(item._imageFile);if(!url){state.textContent='Error subiendo imagen';return;}item.image_url=url;URL.revokeObjectURL(item.image_preview);delete item._imageFile;delete item.image_preview;}} const quotation = { ...quote, id: String(quote.id || '').startsWith('draft-') ? null : quote.id }; const res=await fetch(`${API}/api/quotations`,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':adminPass},body:JSON.stringify({quotation,items:quote.quotation_items})}); const payload=await res.json(); if(!res.ok) return state.textContent=payload.message||'Error al guardar'; selectedQuotation=payload.data; sessionStorage.removeItem(quotationSessionKey(quote)); state.textContent='Guardado'; loadQuotations(); renderQuotationEditor(selectedQuotation); }
+async function runQuotationAria(quote, renderItems) { const input=document.getElementById('quote-aria-input'); const reply=document.getElementById('quote-aria-reply'); const history=quotationHistory(quote); const res=await fetch(`${API}/api/quotation-assist`,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':adminPass},body:JSON.stringify({message:input.value,quotation:quote,history,model:document.getElementById('aria-model-select')?.value})}); const payload=await res.json(); if(!res.ok) return reply.textContent=payload.message||'Aria no pudo responder'; for(const op of payload.data.operations){if(op.type==='update_header')Object.assign(quote,op.fields);if(op.type==='update_item'&&quote.quotation_items[op.index])Object.assign(quote.quotation_items[op.index],op.fields);if(op.type==='add_item')quote.quotation_items.push(op.fields);} history.push({role:'user',content:input.value},{role:'assistant',content:payload.data.reply});sessionStorage.setItem(`${quotationSessionKey(quote)}:history`,JSON.stringify(history.slice(-8)));reply.textContent=payload.data.reply; input.value='';saveQuotationSession(quote);renderQuotationEditor(quote); }
+function downloadQuotationPdf(quote) { const rows=(quote.quotation_items||[]).map((item,index)=>`<tr><td>${index+1}</td><td>${item.image_url ? `<img src="${escapeHtml(item.image_url)}">` : ''}</td><td>${escapeHtml(item.part_name||'')}</td><td>${escapeHtml(item.part_number||'')}</td><td>${escapeHtml(item.description||'')}</td><td>${Number(item.price_usd||0).toFixed(2)}</td></tr>`).join(''); const page=window.open('','_blank'); page.document.write(`<!doctype html><title>${quote.readable_id||'Cotización'}</title><style>body{font:14px Arial;padding:35px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}img{max-width:110px;max-height:90px}</style><h1>AGN Autopartes — Cotización</h1><p>Cliente: ${escapeHtml(quote.customer_name||'')}<br>Teléfono: ${escapeHtml(quote.whatsapp_phone||'')}<br>Vehículo: ${escapeHtml([quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' '))}</p><table><thead><tr><th>#</th><th>Imagen</th><th>Repuesto</th><th>N. parte</th><th>Descripción</th><th>Precio</th></tr></thead><tbody>${rows}</tbody></table>`); page.document.close(); page.onload=()=>page.print(); }
 </script>
 </body>
 

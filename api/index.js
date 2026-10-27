@@ -11,7 +11,11 @@ const routes = {
     'auth-login': () => import('../lib/handlers/auth-login.js'),
     'generate': () => import('../lib/handlers/generate.js'),
     'get-notes': () => import('../lib/handlers/get-notes.js'),
-    'get-order-status': () => import('../lib/handlers/get-order-status.js')
+    'get-order-status': () => import('../lib/handlers/get-order-status.js'),
+    'quotations': () => import('../lib/handlers/quotations.js'),
+    'quotation-assist': () => import('../lib/handlers/quotation-assist.js'),
+    'quotation-pdf': () => import('../lib/handlers/quotation-pdf.js'),
+    'create-order-from-quotation': () => import('../lib/handlers/create-order-from-quotation.js')
 };
 
 export default async function handler(req, res) {
