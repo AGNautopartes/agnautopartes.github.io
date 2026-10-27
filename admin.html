@@ -2844,8 +2844,6 @@ async function loadHistory(orderId) {
             return page?.classList.contains('active') && selectedQuotation ? selectedQuotation : null;
         };
 
-        const isQuotationRequest = message => /\b(?:cotiza\b|cotizar\b|cotizaci[oó]n?|cotis\w*|presupuest\w*)/i.test(String(message || ''));
-
         const clearPendingImages = () => {
             pendingImages.forEach(image => {
                 if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
@@ -3194,13 +3192,7 @@ async function sendToAria() {
             ariaInput.value = '';
             ariaSend.disabled = true;
 
-            let quote = activeQuotation();
-            // Un pedido de cotización no puede caer al asistente de órdenes solo
-            // porque el usuario todavía esté viendo esa pestaña.
-            if (!quote && isQuotationRequest(msg)) {
-                openNewQuotationDraft();
-                quote = activeQuotation();
-            }
+            const quote = activeQuotation();
             if (quote) {
                 addAiMsg('user', msg);
                 const thinking = addAiMsg('assistant', '...');
