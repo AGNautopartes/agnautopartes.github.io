@@ -813,7 +813,7 @@
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function formatQuoteNumber(d){
-        return `${pad2(d.getDate())}${pad2(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+        return `${String(d.getFullYear()).slice(-2)}${pad2(d.getMonth()+1)}${pad2(d.getDate())}${pad2(d.getHours())}${pad2(d.getMinutes())}`;
     }
     function formatQuoteDateTime(d){
         return d.toLocaleDateString('es-EC', {
@@ -1497,6 +1497,8 @@ async function navCSV(delta){
     }
     
     async function downloadSheet() {
+        const number = ensureQuoteNumber();
+        const client = sanitizeFilenamePart(document.getElementById('inClient')?.value || '') || 'SinCliente';
         const node = document.getElementById('formal-sheet');
         const scale = 2;
         const width = Math.ceil(Math.max(node.scrollWidth, node.offsetWidth));
@@ -1520,7 +1522,7 @@ async function navCSV(delta){
             }
         }).then(u => {
             const a = document.createElement('a');
-            a.download = 'Cotizacion_AGN.png';
+            a.download = `${number}_${client}.png`;
             a.href = u;
             a.click();
         }).catch(() => {

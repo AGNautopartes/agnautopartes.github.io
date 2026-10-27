@@ -441,3 +441,24 @@ test('la instrucción real añade Mercedes al ítem 4 sin depender de la IA', as
         assert.equal(quote.quotation_items[1].photos.length,0);
     } finally {globalThis.fetch=original;}
 });
+
+
+test('número de proforma usa año mes día hora y minuto', () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const code=html.slice(html.indexOf('    function pad2('),html.indexOf('    function formatQuoteDateTime('));
+    const context=vm.createContext({});vm.runInContext(`${code}\nglobalThis.format=formatQuoteNumber`,context);
+    assert.equal(context.format(new Date(2026,9,27,15,13)),'2610271513');
+    assert.equal(context.format(new Date(2026,0,2,3,4)),'2601020304');
+});
+
+test('tabla PNG usa el número de proforma y nombre seguro del cliente', async () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const sanitizer=html.slice(html.indexOf('    function sanitizeFilenamePart('),html.indexOf('    function updateCSVNameIndicator('));
+    const code=html.slice(html.indexOf('    async function downloadSheet()'),html.indexOf('    async function embedCSVImages('));
+    const a={click(){this.clicked=true}};
+    const node={offsetWidth:300,offsetHeight:100,scrollWidth:300,scrollHeight:100};
+    const context=vm.createContext({document:{getElementById:id=>id==='inClient'?{value:'Manuel / Samaniego'}:node,createElement:()=>a},
+        ensureQuoteNumber:()=> '2610271513',hydrateBrandAssets:()=>{},waitForImages:async()=>{},requestAnimationFrame:fn=>fn(),domtoimage:{toPng:async()=> 'data:image/png;base64,test'}});
+    vm.runInContext(`${sanitizer}\n${code}\nglobalThis.download=downloadSheet`,context);
+    await context.download();assert.equal(a.download,'2610271513_Manuel Samaniego.png');assert.equal(a.clicked,true);
+});
