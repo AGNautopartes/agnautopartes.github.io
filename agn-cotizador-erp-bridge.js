@@ -5,6 +5,22 @@
     const getValue = id => byId(id)?.value || '';
     const setValue = (id, value) => { if (byId(id)) byId(id).value = value ?? ''; };
 
+    // Escala únicamente la vista en pantalla: el PDF y el PNG conservan
+    // las dimensiones originales de la hoja.
+    const workspace = document.querySelector?.('.workspace');
+    const sheet = byId('formal-sheet');
+    const fitFormalPreview = () => {
+        if (!workspace || !sheet || workspace.clientWidth <= 0 || sheet.offsetWidth <= 0) return;
+        const style = getComputedStyle(workspace);
+        const available = workspace.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+        sheet.style.zoom = String(Math.min(1, Math.max(0.2, (available - 2) / sheet.offsetWidth)));
+    };
+    if (workspace && sheet) {
+        if (typeof ResizeObserver === 'function') new ResizeObserver(fitFormalPreview).observe(workspace);
+        window.addEventListener('resize', fitFormalPreview);
+        fitFormalPreview();
+    }
+
     const blobAsDataUrl = blob => new Promise((resolve,reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
@@ -15,6 +31,7 @@
     const exportWithPhotos = async (selector, exportOriginal) => {
         const photos = Array.from(document.querySelectorAll(selector)).filter(img => img.getAttribute('src'));
         const originalSources = photos.map(img => img.getAttribute('src'));
+        const originalZoom = sheet?.style.zoom;
         try {
             for (const img of photos) {
                 const source = img.currentSrc || img.src;
@@ -27,10 +44,12 @@
                 if (typeof img.decode === 'function') await img.decode();
                 else if (!img.complete || !img.naturalWidth) throw new Error('La foto no se cargó');
             }
+            if (selector.startsWith('#formal-sheet') && sheet) sheet.style.zoom = '1';
             await exportOriginal();
         } catch (error) {
             alert(`${error.message || 'No se pudo preparar una foto'}. Descarga o pega la imagen en el ítem y vuelve a intentarlo.`);
         } finally {
+            if (sheet && originalZoom !== undefined) sheet.style.zoom = originalZoom;
             photos.forEach((img,index) => { img.src = originalSources[index]; });
         }
     };

@@ -270,12 +270,16 @@ overflow: hidden;
             overflow: hidden;
         }
 
-        /* En Cotizaciones, la lista ocupa la mitad de su ancho anterior y
-           el cotizador aprovecha el espacio restante. */
+        /* Más espacio para el cotizador sin afectar el panel de órdenes. */
         #page-quotations > .orders-main {
-            flex: 0 0 25%;
-            width: 25%;
+            flex: 0 0 18%;
+            width: 18%;
             min-width: 0;
+        }
+
+        #app:has(#page-quotations.active) .ai-sidebar {
+            width: 16%;
+            min-width: 220px;
         }
 
         #page-quotations .orders-toolbar {
