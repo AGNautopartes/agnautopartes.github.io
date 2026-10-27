@@ -1517,6 +1517,7 @@ border-color:var(--blue);color:var(--blue);
                         style="background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-right:0.5rem">📥
                         Import CSV</button>
                     <button class="btn-add" id="btn-new-quotation">+ Nueva Cotización</button>
+                    <button class="btn-add" id="btn-save-original-quotation">Guardar en ERP</button>
                 </div>
                 <div class="orders-list" id="quot-list">
                     <div class="empty-state">Cargando cotizaciones...</div>
@@ -1524,7 +1525,8 @@ border-color:var(--blue);color:var(--blue);
             </div>
 
             <!-- Quotation Detail Panel -->
-            <div class="detail-panel empty" id="quot-detail-panel">
+            <iframe id="quotation-original-frame" src="agn-cotizador-integrado.html" title="Cotizador AGN original" style="flex:1;min-width:0;height:100%;border:0;background:white"></iframe>
+            <div class="detail-panel empty" id="quot-detail-panel" style="display:none">
                 <button class="btn-toggle-detail" id="toggle-quot-detail" title="Expand/Collapse">↔</button>
                 <div id="quot-detail-content"
                     style="width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden">
@@ -2031,7 +2033,10 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                     loadStorageFiles();
                     updateStorageStats();
                 }
-                if (btn.dataset.page === 'quotations') loadQuotations();
+                if (btn.dataset.page === 'quotations') {
+                    if (!selectedQuotation) openNewQuotationDraft();
+                    loadQuotations();
+                }
                 updateAriaContextUI();
             });
         });
@@ -3920,7 +3925,7 @@ async function deleteQuotation(id) {
 // Botones de la toolbar de cotizaciones
 function openNewQuotationDraft() {
     clearPendingImages();
-    selectedQuotation = { id: `draft-${crypto.randomUUID()}`, status: 'borrador', quotation_items: [{ part_name: '', part_number: '', description: '', supplier_url: '', image_url: '', price_usd: 0, margin_pct: 0 }] };
+    selectedQuotation = { id: `draft-${crypto.randomUUID()}`, status: 'borrador', delivery_time: '9-12 días lab.', quotation_items: [{ part_name: '', part_number: '', part_brand: 'Genérico/Compatible', option_name: '1: Alterno', warranty: '3 meses', description: '', supplier_url: '', image_url: '', price_usd: 0, shipping_usd: 0, margin_pct: 30 }] };
     const quoteTab = document.querySelector('[data-page="quotations"]');
     if (!document.getElementById('page-quotations')?.classList.contains('active')) quoteTab?.click();
     renderQuotationEditor(selectedQuotation);
@@ -3968,23 +3973,48 @@ document.getElementById('quot-status-filter')?.addEventListener('change', () => 
 
 const quotationSessionKey = quote => `agn-quotation-session:${quote.id || 'new'}`;
 const quotationHistory = quote => JSON.parse(sessionStorage.getItem(`${quotationSessionKey(quote)}:history`) || '[]');
-const saveQuotationSession = quote => sessionStorage.setItem(quotationSessionKey(quote), JSON.stringify({ ...quote, quotation_items: (quote.quotation_items || []).map(({ _imageFile, image_preview, ...item }) => item) }));
+const saveQuotationSession = quote => {
+    const items = (quote.quotation_items || []).map(({ _imageFile, image_preview, photos, ...item }) => ({
+        ...item,
+        image_url: /^(?:data|blob):/i.test(item.image_url || '') ? '' : item.image_url,
+        photos: (photos || []).filter(url => !/^(?:data|blob):/i.test(url))
+    }));
+    try { sessionStorage.setItem(quotationSessionKey(quote), JSON.stringify({ ...quote, quotation_items:items })); }
+    catch (error) { console.warn('No se pudo guardar la sesión temporal de la cotización', error); }
+};
 
 const quotationMoney = value => Math.round(value * 100) / 100;
 const quotationNumber = value => Number.isFinite(Number(value)) ? Number(value) : 0;
-const quotationHeaderFields = new Set(['customer_name', 'whatsapp_phone', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'notes']);
-const quotationItemFields = new Set(['part_name', 'part_number', 'description', 'supplier_url', 'image_url', 'price_usd', 'margin_pct']);
+const quotationHeaderFields = new Set(['customer_name', 'whatsapp_phone', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'delivery_time', 'notes']);
+const quotationItemFields = new Set(['part_name', 'part_number', 'part_brand', 'option_name', 'description', 'internal_reference', 'warranty', 'supplier_url', 'image_url', 'image_url_2', 'image_url_3', 'price_usd', 'shipping_usd', 'margin_pct']);
+
+function syncQuotationFromOriginal(quote) {
+    const bridge = document.getElementById('quotation-original-frame')?.contentWindow?.agnErpBridge;
+    if (!bridge) throw new Error('El cotizador todavía se está cargando.');
+    Object.assign(quote, bridge.getQuote(quote));
+}
+
+document.getElementById('quotation-original-frame')?.addEventListener('load', () => {
+    if (selectedQuotation) renderQuotationEditor(selectedQuotation);
+});
+document.getElementById('btn-save-original-quotation')?.addEventListener('click', () => {
+    if (!selectedQuotation) openNewQuotationDraft();
+    try { syncQuotationFromOriginal(selectedQuotation); saveQuotationDraft(selectedQuotation); }
+    catch (error) { showToast(error.message, 'error'); }
+});
 
 function recalculateQuotation(quote) {
     const items = quote.quotation_items || [];
     items.forEach(item => {
         item.price_usd = Math.max(0, quotationNumber(item.price_usd));
-        item.margin_pct = Math.min(99.99, Math.max(0, quotationNumber(item.margin_pct)));
-        item.final_price_usd = quotationMoney(item.price_usd / (1 - item.margin_pct / 100));
-        item.final_price_vat_usd = quotationMoney(item.final_price_usd * 1.15);
+        item.shipping_usd = Math.max(0, quotationNumber(item.shipping_usd));
+        item.margin_pct = Math.max(0, quotationNumber(item.margin_pct));
+        item.final_price_vat_usd = item.margin_pct < 100 ? quotationMoney((item.price_usd + item.shipping_usd) / (1 - item.margin_pct / 100)) : 0;
+        item.final_price_usd = quotationMoney(item.final_price_vat_usd / 1.15);
     });
-    quote.total_usd = quotationMoney(items.reduce((sum, item) => sum + quotationNumber(item.final_price_usd), 0));
-    quote.total_vat_usd = quotationMoney(items.reduce((sum, item) => sum + quotationNumber(item.final_price_vat_usd), 0));
+    const discount = quote.editor_state?.discount_enabled ? Math.max(0, Math.min(100, quotationNumber(quote.editor_state.discount_percent))) : 0;
+    quote.total_usd = quotationMoney(items.reduce((sum, item) => sum + quotationNumber(item.final_price_usd), 0) * (1 - discount / 100));
+    quote.total_vat_usd = quotationMoney(items.reduce((sum, item) => sum + quotationNumber(item.final_price_vat_usd), 0) * (1 - discount / 100));
 }
 
 async function stageQuotationImage(quote, index, file) {
@@ -4014,8 +4044,11 @@ function attachPendingImagesToQuotation(quote, message) {
         const index = mentionedIndex >= 0 ? Math.min(mentionedIndex + offset, quote.quotation_items.length - 1) : (firstEmpty >= 0 ? firstEmpty : 0);
         const item = quote.quotation_items[index];
         if (item.image_preview) URL.revokeObjectURL(item.image_preview);
-        item._imageFile = image.file;
-        item.image_preview = URL.createObjectURL(image.file);
+        const photos = [...(item.photos || [item.image_url].filter(Boolean))];
+        if (photos.length >= 3) throw new Error(`El ítem ${index + 1} ya tiene tres fotos`);
+        photos.push(URL.createObjectURL(image.file));
+        item.photos = photos;
+        item.image_url = photos[0];
     });
     clearPendingImages();
 }
@@ -4032,6 +4065,7 @@ async function enrichQuotationFromLink(quote, message) {
     const item = quotationItemForMessage(quote, message);
     // Si la página no permite ser leída, por lo menos se conserva el enlace
     // que el usuario proporcionó, sin reemplazar datos ya escritos.
+    if (/\.(?:jpe?g|png|webp|gif)(?:[?#]|$)/i.test(url)) return message;
     if (item && !item.supplier_url) item.supplier_url = url;
     try {
         const res = await fetchWithTimeout(`${API}/api/quotation-link-preview`, {
@@ -4071,12 +4105,26 @@ function applyQuotationOperation(quote, operation) {
         Object.entries(operation.fields || {}).forEach(([key, value]) => {
             if (quotationItemFields.has(key)) fields[key] = value;
         });
-        if (Object.keys(fields).length) quote.quotation_items.push({ part_name: '', part_number: '', description: '', supplier_url: '', image_url: '', price_usd: 0, margin_pct: 0, ...fields });
+        if (Object.keys(fields).length) quote.quotation_items.push({ part_name: '', part_number: '', part_brand: 'Genérico/Compatible', option_name: '1: Alterno', warranty: '3 meses', description: '', supplier_url: '', image_url: '', price_usd: 0, shipping_usd: 0, margin_pct: 30, ...fields });
+    }
+    if (operation.type === 'update_item' || operation.type === 'add_item') {
+        const item = operation.type === 'add_item' ? quote.quotation_items.at(-1) : quote.quotation_items[operation.index];
+        if (item) {
+            const photos = [...(item.photos || [item.image_url].filter(Boolean))];
+            ['image_url','image_url_2','image_url_3'].forEach((key,index) => {
+                if (Object.prototype.hasOwnProperty.call(operation.fields || {}, key)) photos[index] = operation.fields[key];
+            });
+            item.photos = photos.filter(Boolean).slice(0, 3);
+            item.image_url = item.photos[0] || '';
+        }
     }
 }
 
 function renderQuotationEditor(quote) {
     recalculateQuotation(quote);
+    const original = document.getElementById('quotation-original-frame')?.contentWindow?.agnErpBridge;
+    if (original) original.setQuote(quote);
+    return;
     const panel = document.getElementById('quot-detail-panel');
     const content = document.getElementById('quot-detail-content');
     if (!content) return;
@@ -4084,21 +4132,21 @@ function renderQuotationEditor(quote) {
     const items = quote.quotation_items || [];
     content.innerHTML = `<div class="detail-header"><h3>${quote.readable_id || 'Nueva cotización'}</h3><div class="detail-sub" id="quot-save-state">Sin guardar</div></div>
       <div class="detail-body"><div class="detail-section"><h4>Cliente y vehículo</h4><div class="info-grid">
-      ${[['customer_name','Cliente'],['whatsapp_phone','WhatsApp'],['vehicle_brand','Marca'],['vehicle_model','Modelo'],['vehicle_year','Año']].map(([key,label]) => `<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-quote-field="${key}" value="${escapeHtml(quote[key] || '')}"></div></div>`).join('')}</div></div>
-      <div class="detail-section"><h4>Ítems</h4><div id="quote-editor-items"></div><button class="btn-action btn-blue" id="quote-add-item">+ Añadir ítem</button><div class="detail-sub" id="quote-totals">Venta: $${quote.total_usd.toFixed(2)} · Con IVA: $${quote.total_vat_usd.toFixed(2)}</div></div>
+      ${[['customer_name','Cliente'],['whatsapp_phone','WhatsApp'],['vehicle_brand','Marca vehículo'],['vehicle_model','Modelo'],['vehicle_year','Año'],['delivery_time','Tiempo de entrega']].map(([key,label]) => `<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-quote-field="${key}" value="${escapeHtml(quote[key] || '')}"></div></div>`).join('')}</div></div>
+      <div class="detail-section"><h4>Ítems</h4><div id="quote-editor-items"></div><button class="btn-action btn-blue" id="quote-add-item">+ Añadir ítem</button><div class="detail-sub" id="quote-totals">Total con IVA: $${quote.total_vat_usd.toFixed(2)}</div></div>
       <div class="detail-section"><h4>Aria — esta cotización</h4><textarea class="note-input" id="quote-aria-input" placeholder="Ej.: completa el ítem 1; cliente Pedro; costo 50, margen 30%; enlace https://…"></textarea><button class="btn-action btn-blue" id="quote-aria-run">Completar esta cotización</button><div id="quote-aria-reply" class="detail-sub">${escapeHtml(quote._ariaReply || '')}</div></div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn-action btn-blue" id="quote-save">Guardar</button><button class="btn-action" id="quote-download">Descargar PDF</button>${quote.id && !String(quote.id).startsWith('draft-') ? `<button class="btn-action" id="quote-convert">Crear orden</button>` : ''}</div></div>`;
     const renderItems = () => {
         const holder = document.getElementById('quote-editor-items');
-        holder.innerHTML = (quote.quotation_items || []).map((item, index) => `<div class="dynamic-item" data-item-card="${index}" style="border:1px solid var(--border);padding:.6rem;margin:.4rem 0"><strong>Ítem ${index + 1}</strong><button data-remove-item="${index}" class="btn-sm" style="float:right">×</button>${item.image_preview || item.image_url ? `<img src="${escapeHtml(item.image_preview || item.image_url)}" style="max-width:90px;max-height:70px;float:right;margin-right:.5rem">` : ''}<div class="info-grid">${[['part_name','Repuesto'],['part_number','N. parte'],['description','Descripción'],['supplier_url','Enlace'],['image_url','Imagen URL'],['price_usd','Costo USD'],['margin_pct','Margen %']].map(([key,label])=>`<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-item="${index}" data-item-field="${key}" value="${escapeHtml(item[key] ?? '')}"></div></div>`).join('')}<div class="info-item"><div class="il">Venta calculada</div><div class="iv">$${Number(item.final_price_usd || 0).toFixed(2)} · IVA $${Number(item.final_price_vat_usd || 0).toFixed(2)}</div></div><div class="info-item"><div class="il">Subir o pegar imagen</div><input type="file" accept="image/*" data-item-image="${index}"></div></div></div>`).join('');
-        holder.querySelectorAll('[data-item-field]').forEach(input => input.addEventListener('input', () => { const item = quote.quotation_items[Number(input.dataset.item)]; item[input.dataset.itemField] = input.value; recalculateQuotation(quote); saveQuotationSession(quote); document.getElementById('quote-totals').textContent=`Venta: $${quote.total_usd.toFixed(2)} · Con IVA: $${quote.total_vat_usd.toFixed(2)}`; }));
+        holder.innerHTML = (quote.quotation_items || []).map((item, index) => `<div class="dynamic-item" data-item-card="${index}" style="border:1px solid var(--border);padding:.6rem;margin:.4rem 0"><strong>Ítem ${index + 1}</strong><button data-remove-item="${index}" class="btn-sm" style="float:right">×</button>${item.image_preview || item.image_url ? `<img src="${escapeHtml(item.image_preview || item.image_url)}" style="max-width:90px;max-height:70px;float:right;margin-right:.5rem">` : ''}<div class="info-grid">${[['part_name','Repuesto'],['part_number','N. parte'],['part_brand','Marca repuesto'],['option_name','Opción'],['description','Descripción'],['internal_reference','Referencia interna'],['warranty','Garantía'],['supplier_url','Enlace producto'],['image_url','Imagen URL'],['price_usd','Costo USD'],['shipping_usd','Flete USD'],['margin_pct','Margen %']].map(([key,label])=>`<div class="info-item"><div class="il">${label}</div><div class="iv"><input data-item="${index}" data-item-field="${key}" value="${escapeHtml(item[key] ?? '')}"></div></div>`).join('')}<div class="info-item"><div class="il">Precio con IVA</div><div class="iv" data-item-total="${index}">$${Number(item.final_price_vat_usd || 0).toFixed(2)}</div></div><div class="info-item"><div class="il">Subir o pegar imagen</div><input type="file" accept="image/*" data-item-image="${index}"></div></div></div>`).join('');
+        holder.querySelectorAll('[data-item-field]').forEach(input => input.addEventListener('input', () => { const index=Number(input.dataset.item); const item = quote.quotation_items[index]; item[input.dataset.itemField] = input.value; recalculateQuotation(quote); saveQuotationSession(quote); document.getElementById('quote-totals').textContent=`Total con IVA: $${quote.total_vat_usd.toFixed(2)}`; holder.querySelector(`[data-item-total="${index}"]`).textContent=`$${item.final_price_vat_usd.toFixed(2)}`; }));
         holder.querySelectorAll('[data-remove-item]').forEach(button => button.onclick = () => { quote.quotation_items.splice(Number(button.dataset.removeItem), 1); renderItems(); saveQuotationSession(quote); });
         const stageImage = async (file, index) => { try { await stageQuotationImage(quote, index, file); renderItems(); } catch { showToast('No fue posible preparar la imagen','error'); } };
         holder.querySelectorAll('[data-item-image]').forEach(input => input.onchange = () => { const file=input.files?.[0]; if(file)stageImage(file,Number(input.dataset.itemImage)); });
         holder.querySelectorAll('[data-item-card]').forEach(card => card.addEventListener('paste', event => { const file=[...event.clipboardData.items].find(item=>item.type.startsWith('image/'))?.getAsFile(); if(file){event.preventDefault();stageImage(file,Number(card.dataset.itemCard));} }));
     };
     content.querySelectorAll('[data-quote-field]').forEach(input => input.addEventListener('input', () => { quote[input.dataset.quoteField] = input.value; saveQuotationSession(quote); }));
-    document.getElementById('quote-add-item').onclick = () => { quote.quotation_items.push({ part_name:'', part_number:'', description:'', supplier_url:'', image_url:'', price_usd:0, margin_pct:0 }); renderItems(); saveQuotationSession(quote); };
+    document.getElementById('quote-add-item').onclick = () => { quote.quotation_items.push({ part_name:'', part_number:'', part_brand:'Genérico/Compatible', option_name:'1: Alterno', warranty:'3 meses', description:'', supplier_url:'', image_url:'', price_usd:0, shipping_usd:0, margin_pct:30 }); renderItems(); saveQuotationSession(quote); };
     document.getElementById('quote-save').onclick = () => saveQuotationDraft(quote);
     document.getElementById('quote-aria-run').onclick = async () => { const input=document.getElementById('quote-aria-input'); try { await runQuotationAria(quote, input.value, { attachPendingImages: pendingImages.some(image => image.scope === 'quotation') }); } catch (error) { const reply=document.getElementById('quote-aria-reply'); if(reply) reply.textContent=error.message || 'Aria no pudo responder'; } };
     document.getElementById('quote-download').onclick = () => downloadQuotationPdf(quote);
@@ -4107,9 +4155,105 @@ function renderQuotationEditor(quote) {
 }
 
 const escapeHtml = value => String(value).replace(/[&<>"]/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[char]));
-async function saveQuotationDraft(quote) { const state = document.getElementById('quot-save-state'); if(pendingImages.some(image => image.scope === 'quotation')) attachPendingImagesToQuotation(quote,''); recalculateQuotation(quote); state.textContent='Guardando…'; for(const item of quote.quotation_items||[]){if(item._imageFile){const url=await uploadImageToStorage(item._imageFile);if(!url){state.textContent='Error subiendo imagen';return;}item.image_url=url;URL.revokeObjectURL(item.image_preview);delete item._imageFile;delete item.image_preview;}} const quotation = { ...quote, id: String(quote.id || '').startsWith('draft-') ? null : quote.id }; const res=await fetch(`${API}/api/quotations`,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':adminPass},body:JSON.stringify({quotation,items:quote.quotation_items})}); const payload=await res.json(); if(!res.ok) return state.textContent=payload.message||'Error al guardar'; selectedQuotation=payload.data; sessionStorage.removeItem(quotationSessionKey(quote)); state.textContent='Guardado'; await loadQuotations(); renderQuotationEditor(selectedQuotation); }
-async function runQuotationAria(quote, message, options = {}) { const text=String(message || '').trim(); if(!text) throw new Error('Escribe una instrucción para Aria.'); const assistantMessage=await enrichQuotationFromLink(quote,text); const history=quotationHistory(quote); const res=await fetchWithTimeout(`${API}/api/quotation-assist`,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':adminPass},body:JSON.stringify({message:assistantMessage,quotation:quote,history,model:document.getElementById('aria-model-select')?.value}),timeout:45000}); const payload=await res.json(); if(!res.ok) throw new Error(payload.message||'Aria no pudo responder'); for(const operation of payload.data.operations || []) applyQuotationOperation(quote,operation); if(options.attachPendingImages) attachPendingImagesToQuotation(quote,text); recalculateQuotation(quote); const response=payload.data.reply || 'Actualicé la cotización.'; history.push({role:'user',content:text},{role:'assistant',content:response});sessionStorage.setItem(`${quotationSessionKey(quote)}:history`,JSON.stringify(history.slice(-8)));quote._ariaReply=response;saveQuotationSession(quote);renderQuotationEditor(quote); return response; }
-function downloadQuotationPdf(quote) { recalculateQuotation(quote); const rows=(quote.quotation_items||[]).map((item,index)=>`<tr><td>${index+1}</td><td>${item.image_url ? `<img src="${escapeHtml(item.image_url)}">` : ''}</td><td>${escapeHtml(item.part_name||'')}</td><td>${escapeHtml(item.part_number||'')}</td><td>${escapeHtml(item.description||'')}</td><td>$${Number(item.final_price_usd||0).toFixed(2)}</td></tr>`).join(''); const page=window.open('','_blank'); page.document.write(`<!doctype html><title>${quote.readable_id||'Cotización'}</title><style>body{font:14px Arial;padding:35px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}img{max-width:110px;max-height:90px}.totals{margin-top:18px;text-align:right;font-weight:bold}</style><h1>AGN Autopartes — Cotización</h1><p>Cliente: ${escapeHtml(quote.customer_name||'')}<br>Teléfono: ${escapeHtml(quote.whatsapp_phone||'')}<br>Vehículo: ${escapeHtml([quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' '))}</p><table><thead><tr><th>#</th><th>Imagen</th><th>Repuesto</th><th>N. parte</th><th>Descripción</th><th>Venta USD</th></tr></thead><tbody>${rows}</tbody></table><div class="totals">Subtotal: $${quote.total_usd.toFixed(2)}<br>Total con IVA: $${quote.total_vat_usd.toFixed(2)}</div>`); page.document.close(); page.onload=()=>page.print(); }
+async function saveQuotationDraft(quote) {
+    const state = document.getElementById('quot-save-state') || { textContent: '' };
+    const saveButton = document.getElementById('btn-save-original-quotation');
+    if (saveButton.disabled) return;
+    if (!quote.quotation_items?.length || quote.quotation_items.some(item => !String(item.part_name || '').trim())) {
+        state.textContent = 'Escribe el nombre de cada repuesto antes de guardar';
+        showToast(state.textContent, 'error');
+        return;
+    }
+    if (quote.quotation_items.some(item => quotationNumber(item.margin_pct) >= 100)) {
+        showToast('El margen debe ser menor al 100%', 'error');
+        return;
+    }
+    saveButton.disabled = true;
+    try {
+        if (pendingImages.some(image => image.scope === 'quotation')) attachPendingImagesToQuotation(quote, '');
+        recalculateQuotation(quote);
+        state.textContent = 'Preparando imágenes…';
+        const prepared = [];
+        for (const [index, item] of quote.quotation_items.entries()) {
+            const photos = (item.photos?.length ? item.photos : [item.image_url]).filter(Boolean).slice(0,3);
+            const mapped = [];
+            for (const photo of photos) {
+                if (photo.startsWith(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/public/quotation-images/`)) { mapped.push(photo); continue; }
+                try {
+                    const response = await fetch(photo, { mode: 'cors' });
+                    if (!response.ok) throw new Error('No disponible');
+                    const blob = await response.blob();
+                    const compressed = await compressImage(new File([blob], 'imagen.jpg', { type: blob.type }));
+                    if (!compressed) throw new Error('Formato no admitido');
+                    mapped.push(compressed);
+                } catch { throw new Error(`No se pudo preparar una imagen del ítem ${index + 1}; descárgala y súbela o pégala en ese ítem.`); }
+            }
+            prepared.push(mapped);
+        }
+        state.textContent = 'Guardando…';
+        for (const [index, item] of quote.quotation_items.entries()) {
+            const photos = [];
+            for (const image of prepared[index]) {
+                const url = typeof image === 'string' ? image : await uploadImageToStorage(image);
+                if (!url) throw new Error('No se pudo subir una imagen');
+                photos.push(url);
+            }
+            item.photos = photos;
+            item.image_url = photos[0] || '';
+        }
+        quote.editor_state = { ...quote.editor_state, item_details: quote.quotation_items.map(item => ({ photos:item.photos, photo_scale:item.photo_scale || 100, part_number:item.part_number || '', supplier_url:item.supplier_url || '' })) };
+        const quotation = { ...quote, id: String(quote.id || '').startsWith('draft-') ? null : quote.id };
+        const history = quotationHistory(quote);
+        const res = await fetch(`${API}/api/quotations`, { method: 'POST', headers: { 'Content-Type':'application/json', 'x-admin-password':adminPass }, body: JSON.stringify({quotation, items:quote.quotation_items}) });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.message || 'Error al guardar');
+        selectedQuotation = payload.data;
+        sessionStorage.removeItem(quotationSessionKey(quote));
+        sessionStorage.removeItem(`${quotationSessionKey(quote)}:history`);
+        sessionStorage.setItem(`${quotationSessionKey(selectedQuotation)}:history`, JSON.stringify(history));
+        await loadQuotations();
+        renderQuotationEditor(selectedQuotation);
+        showToast('Cotización guardada en el ERP', 'success');
+    } catch (error) {
+        state.textContent = error.message || 'Error al guardar';
+        showToast(state.textContent, 'error');
+    } finally {
+        saveButton.disabled = false;
+    }
+}
+async function runQuotationAria(quote, message, options = {}) {
+    const text = String(message || '').trim();
+    if (!text) throw new Error('Escribe una instrucción para Aria.');
+    syncQuotationFromOriginal(quote);
+    const assistantMessage = await enrichQuotationFromLink(quote, text);
+    const history = quotationHistory(quote);
+    const safeQuote = { ...quote, quotation_items:quote.quotation_items.map(({photos,...item}) => ({...item, image_url:/^(?:data|blob):/i.test(item.image_url||'') ? '' : item.image_url})) };
+    const res = await fetchWithTimeout(`${API}/api/quotation-assist`, {method:'POST',headers:{'Content-Type':'application/json','x-admin-password':adminPass},body:JSON.stringify({message:assistantMessage,quotation:safeQuote,history,model:document.getElementById('aria-model-select')?.value}),timeout:45000});
+    const payload = await res.json();
+    if (!res.ok) throw new Error(payload.message || 'Aria no pudo responder');
+    const operations = payload.data.operations || [];
+    for (const operation of operations) applyQuotationOperation(quote, operation);
+    if (options.attachPendingImages) attachPendingImagesToQuotation(quote, text);
+    recalculateQuotation(quote);
+    const changes = operations.filter(op => op.type === 'update_header' || op.type === 'update_item' || op.type === 'add_item');
+    const questions = operations.filter(op => op.type === 'question').map(op => op.text).filter(Boolean);
+    const response = changes.length ? `Apliqué ${changes.length} cambio${changes.length === 1 ? '' : 's'} al borrador. Revisa los campos antes de guardar.${questions.length ? ' ' + questions.join(' ') : ''}` : (payload.data.reply || 'No se aplicaron cambios.');
+    history.push({role:'user',content:text},{role:'assistant',content:response});
+    sessionStorage.setItem(`${quotationSessionKey(quote)}:history`,JSON.stringify(history.slice(-8)));
+    quote._ariaReply=response;
+    saveQuotationSession(quote);
+    if (selectedQuotation === quote && isQuotationPage()) renderQuotationEditor(quote);
+    return response;
+}
+function downloadQuotationPdf(quote) {
+    recalculateQuotation(quote);
+    const rows=(quote.quotation_items||[]).map((item,index)=>`<tr><td>${index+1}</td><td>${item.image_preview || item.image_url ? `<img src="${escapeHtml(item.image_preview || item.image_url)}">` : ''}</td><td><strong>${escapeHtml(item.part_name||'')}</strong><br>Marca: ${escapeHtml(item.part_brand||'')}<br>Opción: ${escapeHtml(item.option_name||'')}<br>${escapeHtml(item.description||'')}<br>Garantía: ${escapeHtml(item.warranty||'')}</td><td>$${Number(item.final_price_vat_usd||0).toFixed(2)}</td></tr>`).join('');
+    const page=window.open('','_blank');
+    if (!page) { showToast('Permite ventanas emergentes para imprimir la cotización.', 'error'); return; }
+    page.document.write(`<!doctype html><title>${escapeHtml(quote.readable_id||'Cotización')}</title><style>body{font:14px Arial;padding:35px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}img{max-width:110px;max-height:90px}.totals{margin-top:18px;text-align:right;font-weight:bold}</style><h1>AGN Autopartes — Cotización</h1><p>Cliente: ${escapeHtml(quote.customer_name||'')}<br>Teléfono: ${escapeHtml(quote.whatsapp_phone||'')}<br>Vehículo: ${escapeHtml([quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' '))}<br>Entrega: ${escapeHtml(quote.delivery_time||'')}</p><table><thead><tr><th>#</th><th>Imagen</th><th>Descripción</th><th>Precio con IVA</th></tr></thead><tbody>${rows}</tbody></table><div class="totals">Total con IVA: $${quote.total_vat_usd.toFixed(2)}</div>`);
+    page.document.close();
+    page.onload=()=>page.print();
+}
 </script>
 </body>
 
