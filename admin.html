@@ -4114,20 +4114,10 @@ function attachPendingImagesToQuotation(quote, message) {
     clearPendingImages();
 }
 
-function quotationItemForMessage(quote, message) {
-    const mentioned = itemIndexFromMessage(message, quote);
-    if (mentioned >= 0) return quote.quotation_items[mentioned];
-    return quote.quotation_items.find(item => !item.supplier_url && !item.part_name) || quote.quotation_items[0];
-}
-
 async function enrichQuotationFromLink(quote, message) {
     const url = String(message || '').match(/https?:\/\/[^\s<>"']+/i)?.[0];
     if (!url) return message;
-    const item = quotationItemForMessage(quote, message);
-    // Si la página no permite ser leída, por lo menos se conserva el enlace
-    // que el usuario proporcionó, sin reemplazar datos ya escritos.
     if (/\.(?:jpe?g|png|webp|gif)(?:[?#]|$)/i.test(url)) return message;
-    if (item && !item.supplier_url) item.supplier_url = url;
     try {
         const res = await fetchWithTimeout(`${API}/api/quotation-link-preview`, {
             method: 'POST',
@@ -4137,15 +4127,9 @@ async function enrichQuotationFromLink(quote, message) {
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.message || 'No se pudo leer el enlace');
         const preview = payload.data;
-        if (item) {
-            item.supplier_url = preview.url || url;
-            if (!item.part_name && preview.title) item.part_name = preview.title;
-            if (!item.description && preview.description) item.description = preview.description;
-            if (!item.image_url && preview.image_url) item.image_url = preview.image_url;
-        }
-        return `${message}\n\nDatos confirmados por el enlace: título=${preview.title || '(sin título)'}; descripción=${preview.description || '(sin descripción)'}; imagen=${preview.image_url || '(sin imagen)'}.`;
+        return `${message}\n\nDatos confirmados por el enlace ${preview.url || url}: título=${preview.title || '(sin título)'}; descripción=${preview.description || '(sin descripción)'}; imagen=${preview.image_url || '(sin imagen)'}.`;
     } catch (error) {
-        showToast(`El enlace quedó guardado; no se pudo previsualizar: ${error.message}`, 'warning');
+        showToast(`No se pudo previsualizar el enlace: ${error.message}. Aria recibirá el enlace original.`, 'warning');
         return message;
     }
 }

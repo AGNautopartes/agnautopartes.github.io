@@ -67,7 +67,7 @@
     const fromOriginalItem = item => {
         const photos = [item.img, item.img2, item.img3].filter(Boolean);
         return {
-            ...item.erpMeta, item_number:item.itemNo, part_name:item.tit || '', part_brand:item.brand || '', option_name:item.opt || '',
+            ...item.erpMeta, item_number:item.itemNo, _draft_incomplete:!String(item.tit || '').trim(), part_name:item.tit || '', part_brand:item.brand || '', option_name:item.opt || '',
             description:item.desc || '', internal_reference:item.refInt || '', warranty:item.war || '',
             price_usd:Number(item.c) || 0, shipping_usd:Number(item.s) || 0, margin_pct:Number(item.m) || 0,
             image_url:photos[0] || '', photos, photo_scale:Number(item.photoScale) || 100
@@ -86,9 +86,10 @@
     window.agnErpBridge = {
         getQuote(existing = {}) {
             const sourceItems = items.slice();
-            const hasCurrent = getValue('inTitle').trim();
-            if (hasCurrent && editIdx >= 0) sourceItems[editIdx] = getData();
-            else if (hasCurrent) sourceItems.push(getData());
+            const current = getData();
+            const hasCurrent = ['tit','desc','refInt','c','s'].some(key => String(current[key] ?? '').trim()) || !!(current.img || current.img2 || current.img3);
+            if (editIdx >= 0) sourceItems[editIdx] = current;
+            else if (hasCurrent) sourceItems.push(current);
             const mapped = sourceItems.map(fromOriginalItem);
             if (!mapped.length) mapped.push({ item_number:nextItemNumber, part_name:'', price_usd:0, shipping_usd:0, margin_pct:30 });
             const vehicle = getValue('inCar');
@@ -114,7 +115,10 @@
             quoteNumber = extra.quote_number || ''; quoteCreatedAt = extra.quote_created_at || '';
             const used = new Set();
             nextItemNumber = Math.max(1, Number(extra.next_item_number) || 1);
-            const incoming = (quote.quotation_items || []).filter(item => String(item.part_name || '').trim());
+            const incoming = (quote.quotation_items || []).filter(item =>
+                item._draft_incomplete || ['part_name','description','internal_reference','part_number','supplier_url','image_url','image_url_2','image_url_3'].some(key => String(item[key] || '').trim()) ||
+                Number(item.price_usd) || Number(item.shipping_usd) || (item.photos || []).some(Boolean)
+            );
             for (const item of incoming) {
                 const n = Number(item.item_number);
                 if (Number.isInteger(n) && n > 0 && !used.has(n)) { used.add(n); nextItemNumber = Math.max(nextItemNumber, n + 1); }
@@ -129,7 +133,10 @@
                 assigned.add(n);
                 return toOriginalItem({ ...item, item_number:n });
             });
-            editIdx = -1; resetForm(); updateAll(); render();
+            editIdx = -1; resetForm(); updateAll();
+            const incompleteIndex = items.findIndex(item => !String(item.tit || '').trim());
+            if (incompleteIndex >= 0 && typeof loadItem === 'function') loadItem(incompleteIndex);
+            render();
         }
     };
 })();

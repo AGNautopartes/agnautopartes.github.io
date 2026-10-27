@@ -208,3 +208,45 @@ test('Aria identifica el repuesto por número fijo después de cambiar su posici
     assert.equal(quote.quotation_items[0].shipping_usd,undefined);
     assert.equal(quote.quotation_items[2].item_number,4);
 });
+
+test('un borrador sin nombre conserva costo, flete y foto al consultar a Aria', () => {
+    const ids=['inClient','inWhatsApp','inCar','inAdvisor','inAddress','inDeliveryTime','inObservations','inDiscountPct','inTitle','chkShowTotal','chkDiscount','chkAGN'];
+    const values=Object.fromEntries(ids.map(id=>[id,{value:'',checked:false}]));
+    values.inClient.parentElement={parentElement:{after(){}}};
+    const context=vm.createContext({document:{getElementById:id=>values[id],createElement:()=>({})},window:{}});
+    vm.runInContext("let items=[],editIdx=-1,nextItemNumber=1,showTotal=false,discountEnabled=false,discountPercent=0,quoteNumber='',quoteCreatedAt='',currentData={itemNo:1,tit:'',c:'145',s:'50',m:'30',img:'data:image/png;base64,foto'}; function getData(){return currentData} function resetForm(){currentData={}} function updateAll(){} function render(){} function loadItem(i){editIdx=i;currentData=items[i]}",context);
+    vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js',import.meta.url),'utf8'),context);
+    const partial=context.window.agnErpBridge.getQuote({});
+    assert.equal(partial.quotation_items[0].price_usd,145);
+    assert.equal(partial.quotation_items[0].shipping_usd,50);
+    assert.equal(partial.quotation_items[0].image_url,'data:image/png;base64,foto');
+    context.window.agnErpBridge.setQuote(partial);
+    const reopened=context.window.agnErpBridge.getQuote(partial);
+    assert.equal(reopened.quotation_items[0].item_number,1);
+    assert.equal(reopened.quotation_items[0].price_usd,145);
+    assert.equal(reopened.quotation_items[0].shipping_usd,50);
+    assert.equal(reopened.quotation_items[0].image_url,'data:image/png;base64,foto');
+    reopened.quotation_items[0].part_name='Manifold';
+    context.window.agnErpBridge.setQuote(reopened);
+    const named=context.window.agnErpBridge.getQuote(reopened);
+    assert.equal(named.quotation_items[0].part_name,'Manifold');
+    assert.equal(named.quotation_items[0].price_usd,145);
+    assert.equal(named.quotation_items[0].image_url,'data:image/png;base64,foto');
+});
+
+test('previsualizar un enlace para un repuesto nuevo no cambia el repuesto existente', async () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const source=html.slice(html.indexOf('async function enrichQuotationFromLink('),html.indexOf('function applyQuotationOperation('));
+    let warning='';
+    const context=vm.createContext({API:'',adminPass:'test',showToast:message=>{warning=message},fetchWithTimeout:async()=>({ok:true,json:async()=>({data:{url:'https://example.test/nuevo',title:'Repuesto nuevo',description:'Detalle',image_url:'https://example.test/nuevo.jpg'}})})});
+    vm.runInContext(`${source}\nglobalThis.enrich=enrichQuotationFromLink;`,context);
+    const quote={quotation_items:[{item_number:1,part_name:'Repuesto existente',supplier_url:''}]};
+    const message=await context.enrich(quote,'Agrega un repuesto nuevo https://example.test/nuevo');
+    assert.equal(quote.quotation_items[0].supplier_url,'');
+    assert.match(message,/Repuesto nuevo/);
+    context.fetchWithTimeout=async()=>{throw new Error('sin conexión')};
+    const original='Agrega otro https://example.test/otro';
+    assert.equal(await context.enrich(quote,original),original);
+    assert.equal(quote.quotation_items[0].supplier_url,'');
+    assert.match(warning,/No se pudo previsualizar/);
+});
