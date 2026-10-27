@@ -4201,6 +4201,8 @@ async function saveQuotationDraft(quote) {
             const photos = (item.photos?.length ? item.photos : [item.image_url]).filter(Boolean).slice(0,3);
             const mapped = [];
             for (const photo of photos) {
+                const logoUrl = new URL(photo, location.href);
+                if (logoUrl.origin === location.origin && /^\/logos\/[a-z0-9-]+\.jpg$/.test(logoUrl.pathname) && !logoUrl.search && !logoUrl.hash) { mapped.push(logoUrl.href); continue; }
                 if (photo.startsWith(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/public/quotation-images/`)) { mapped.push(photo); continue; }
                 try {
                     const blob = await fetchQuotationPhotoBlob(photo);
@@ -4249,6 +4251,18 @@ async function saveQuotationDraft(quote) {
         saveButton.textContent = 'Guardar en ERP';
     }
 }
+async function applyQuotationLogo(quote, operation, catalog) {
+    const item = quote.quotation_items.find(entry => Number(entry.item_number) === operation.item_number);
+    if (!item) throw new Error(`No existe el ítem ${operation.item_number} en esta cotización.`);
+    const logo = catalog.find(entry => entry.name === operation.brand);
+    if (!logo || !/^\/logos\/[a-z0-9-]+\.jpg$/.test(logo.url)) throw new Error('El logo no está disponible en el catálogo.');
+    const url = new URL(logo.url, location.origin).href;
+    const photos = [...(item.photos?.length ? item.photos : [item.image_url].filter(Boolean))];
+    if (photos.includes(url)) return false;
+    if (photos.length >= 3) throw new Error(`El ítem ${operation.item_number} ya tiene tres imágenes. Quita una para añadir el logo.`);
+    photos.push(url); item.photos = photos; item.image_url = photos[0] || '';
+    return true;
+}
 async function runQuotationAria(quote, message, options = {}) {
     const text = String(message || '').trim();
     if (!text) throw new Error('Escribe una instrucción para Aria.');
@@ -4260,10 +4274,20 @@ async function runQuotationAria(quote, message, options = {}) {
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.message || 'Aria no pudo responder');
     const operations = payload.data.operations || [];
-    for (const operation of operations) applyQuotationOperation(quote, operation);
+    const logoOps = operations.filter(operation => operation.type === 'add_logo');
+    let catalog = [];
+    if (logoOps.length) {
+        const catalogResponse = await fetchWithTimeout('/logos/catalogo.json', {timeout:10000});
+        if (!catalogResponse.ok) throw new Error('No se pudo cargar el catálogo de logos.');
+        catalog = await catalogResponse.json();
+    }
+    for (const operation of operations) {
+        if (operation.type === 'add_logo') await applyQuotationLogo(quote, operation, catalog);
+        else applyQuotationOperation(quote, operation);
+    }
     if (options.attachPendingImages) attachPendingImagesToQuotation(quote, text);
     recalculateQuotation(quote);
-    const changes = operations.filter(op => op.type === 'update_header' || op.type === 'update_item' || op.type === 'add_item');
+    const changes = operations.filter(op => op.type === 'update_header' || op.type === 'update_item' || op.type === 'add_item' || op.type === 'add_logo');
     const questions = operations.filter(op => op.type === 'question').map(op => op.text).filter(Boolean);
     const response = changes.length ? `Apliqué ${changes.length} cambio${changes.length === 1 ? '' : 's'} al borrador. Revisa los campos antes de guardar.${questions.length ? ' ' + questions.join(' ') : ''}` : (payload.data.reply || 'No se aplicaron cambios.');
     history.push({role:'user',content:text},{role:'assistant',content:response});

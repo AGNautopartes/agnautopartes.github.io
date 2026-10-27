@@ -1,0 +1,318 @@
+[
+  {
+    "name": "Toyota",
+    "url": "/logos/toyota.jpg"
+  },
+  {
+    "name": "Volkswagen",
+    "url": "/logos/volkswagen.jpg"
+  },
+  {
+    "name": "Ford",
+    "url": "/logos/ford.jpg"
+  },
+  {
+    "name": "Honda",
+    "url": "/logos/honda.jpg"
+  },
+  {
+    "name": "Hyundai",
+    "url": "/logos/hyundai.jpg"
+  },
+  {
+    "name": "Kia",
+    "url": "/logos/kia.jpg"
+  },
+  {
+    "name": "Nissan",
+    "url": "/logos/nissan.jpg"
+  },
+  {
+    "name": "Chevrolet",
+    "url": "/logos/chevrolet.jpg"
+  },
+  {
+    "name": "Suzuki",
+    "url": "/logos/suzuki.jpg"
+  },
+  {
+    "name": "Mitsubishi",
+    "url": "/logos/mitsubishi.jpg"
+  },
+  {
+    "name": "Mazda",
+    "url": "/logos/mazda.jpg"
+  },
+  {
+    "name": "Mercedes-Benz",
+    "url": "/logos/mercedes-benz.jpg"
+  },
+  {
+    "name": "BMW",
+    "url": "/logos/bmw.jpg"
+  },
+  {
+    "name": "Audi",
+    "url": "/logos/audi.jpg"
+  },
+  {
+    "name": "Renault",
+    "url": "/logos/renault.jpg"
+  },
+  {
+    "name": "Peugeot",
+    "url": "/logos/peugeot.jpg"
+  },
+  {
+    "name": "Citroen",
+    "url": "/logos/citroen.jpg"
+  },
+  {
+    "name": "Fiat",
+    "url": "/logos/fiat.jpg"
+  },
+  {
+    "name": "Jeep",
+    "url": "/logos/jeep.jpg"
+  },
+  {
+    "name": "Subaru",
+    "url": "/logos/subaru.jpg"
+  },
+  {
+    "name": "Lexus",
+    "url": "/logos/lexus.jpg"
+  },
+  {
+    "name": "Porsche",
+    "url": "/logos/porsche.jpg"
+  },
+  {
+    "name": "Volvo",
+    "url": "/logos/volvo.jpg"
+  },
+  {
+    "name": "Land Rover",
+    "url": "/logos/land-rover.jpg"
+  },
+  {
+    "name": "BYD",
+    "url": "/logos/byd.jpg"
+  },
+  {
+    "name": "Chery",
+    "url": "/logos/chery.jpg"
+  },
+  {
+    "name": "Geely",
+    "url": "/logos/geely.jpg"
+  },
+  {
+    "name": "ChangAn",
+    "url": "/logos/changan.jpg"
+  },
+  {
+    "name": "Tesla",
+    "url": "/logos/tesla.jpg"
+  },
+  {
+    "name": "Isuzu",
+    "url": "/logos/isuzu.jpg"
+  },
+  {
+    "name": "ACDelco",
+    "url": "/logos/acdelco.jpg"
+  },
+  {
+    "name": "ATP",
+    "url": "/logos/atp.jpg"
+  },
+  {
+    "name": "Aisin",
+    "url": "/logos/aisin.jpg"
+  },
+  {
+    "name": "Akebono",
+    "url": "/logos/akebono.jpg"
+  },
+  {
+    "name": "Anco",
+    "url": "/logos/anco.jpg"
+  },
+  {
+    "name": "Arnott",
+    "url": "/logos/arnott.jpg"
+  },
+  {
+    "name": "Bando",
+    "url": "/logos/bando.jpg"
+  },
+  {
+    "name": "Behr",
+    "url": "/logos/behr.jpg"
+  },
+  {
+    "name": "Bilstein",
+    "url": "/logos/bilstein.jpg"
+  },
+  {
+    "name": "Bosch",
+    "url": "/logos/bosch.jpg"
+  },
+  {
+    "name": "Cardone",
+    "url": "/logos/cardone.jpg"
+  },
+  {
+    "name": "Carter",
+    "url": "/logos/carter.jpg"
+  },
+  {
+    "name": "Champion",
+    "url": "/logos/champion.jpg"
+  },
+  {
+    "name": "Continental",
+    "url": "/logos/continental.jpg"
+  },
+  {
+    "name": "Dayco",
+    "url": "/logos/dayco.jpg"
+  },
+  {
+    "name": "Delphi",
+    "url": "/logos/delphi.jpg"
+  },
+  {
+    "name": "Denso",
+    "url": "/logos/denso.jpg"
+  },
+  {
+    "name": "Dorman",
+    "url": "/logos/dorman.jpg"
+  },
+  {
+    "name": "Exedy",
+    "url": "/logos/exedy.jpg"
+  },
+  {
+    "name": "Febest",
+    "url": "/logos/febest.jpg"
+  },
+  {
+    "name": "Febi",
+    "url": "/logos/febi.jpg"
+  },
+  {
+    "name": "Febi Bilstein",
+    "url": "/logos/febi-bilstein.jpg"
+  },
+  {
+    "name": "Fel-Pro",
+    "url": "/logos/fel-pro.jpg"
+  },
+  {
+    "name": "Ferodo",
+    "url": "/logos/ferodo.jpg"
+  },
+  {
+    "name": "Fram",
+    "url": "/logos/fram.jpg"
+  },
+  {
+    "name": "GMB",
+    "url": "/logos/gmb.jpg"
+  },
+  {
+    "name": "GSP",
+    "url": "/logos/gsp.jpg"
+  },
+  {
+    "name": "Gates",
+    "url": "/logos/gates.jpg"
+  },
+  {
+    "name": "Hella",
+    "url": "/logos/hella.jpg"
+  },
+  {
+    "name": "Hitachi",
+    "url": "/logos/hitachi.jpg"
+  },
+  {
+    "name": "Jurid",
+    "url": "/logos/jurid.jpg"
+  },
+  {
+    "name": "KYB",
+    "url": "/logos/kyb.jpg"
+  },
+  {
+    "name": "Luk",
+    "url": "/logos/luk.jpg"
+  },
+  {
+    "name": "MANN-FILTER",
+    "url": "/logos/mann-filter.jpg"
+  },
+  {
+    "name": "Mahle",
+    "url": "/logos/mahle.jpg"
+  },
+  {
+    "name": "Mevotech",
+    "url": "/logos/mevotech.jpg"
+  },
+  {
+    "name": "Monroe",
+    "url": "/logos/monroe.jpg"
+  },
+  {
+    "name": "Moog",
+    "url": "/logos/moog.jpg"
+  },
+  {
+    "name": "Mopar",
+    "url": "/logos/mopar.jpg"
+  },
+  {
+    "name": "Motorcraft",
+    "url": "/logos/motorcraft.jpg"
+  },
+  {
+    "name": "NGK",
+    "url": "/logos/ngk.jpg"
+  },
+  {
+    "name": "NTK",
+    "url": "/logos/ntk.jpg"
+  },
+  {
+    "name": "Pagid",
+    "url": "/logos/pagid.jpg"
+  },
+  {
+    "name": "SMP",
+    "url": "/logos/smp.jpg"
+  },
+  {
+    "name": "TRW",
+    "url": "/logos/trw.jpg"
+  },
+  {
+    "name": "Valeo",
+    "url": "/logos/valeo.jpg"
+  },
+  {
+    "name": "Ford Motorcraft",
+    "url": "/logos/ford-motorcraft.jpg"
+  },
+  {
+    "name": "GM Genuine Parts ACDelco",
+    "url": "/logos/gm-genuine-parts-acdelco.jpg"
+  },
+  {
+    "name": "MOBIS",
+    "url": "/logos/mobis.jpg"
+  }
+]

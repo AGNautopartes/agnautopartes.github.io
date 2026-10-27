@@ -159,7 +159,7 @@ test('si falla una imagen, guardar muestra el error y no envía la cotización',
     const context = vm.createContext({
         document:{getElementById:()=>button}, pendingImages:[], quotationNumber:Number,
         setQuotationSaveStatus:(text,type)=>progress.push({text,type}), showToast:()=>{}, recalculateQuotation:()=>{},
-        STORAGE_CONFIG:{supabaseUrl:'https://example.test'},
+        STORAGE_CONFIG:{supabaseUrl:'https://example.test'}, URL, location:{href:'https://erp.test/admin.html',origin:'https://erp.test'},
         fetchQuotationPhotoBlob:async()=>{throw new Error('Imagen no disponible');},
         fetchWithTimeout:async()=>{sent=true;},
     });
@@ -370,4 +370,42 @@ test('Storage utiliza el proyecto del servidor y protege sus operaciones', async
         res=response(); await handler({method:'DELETE',headers:{'x-admin-password':'test-password'},body:{names:['one.jpg']}},res);
         assert.equal(res.statusCode,200); assert.deepEqual(removed,['one.jpg']);
     } finally { if (original === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL; else process.env.NEXT_PUBLIC_SUPABASE_URL=original; }
+});
+
+
+test('Aria reconoce logos del catálogo y rechaza marcas inventadas', () => {
+    assert.deepEqual(sanitizeOperations([{type:'add_logo',item_number:2,brand:'Denso'}],1,true),[{type:'add_logo',item_number:2,brand:'Denso'}]);
+    assert.equal(sanitizeOperations([{type:'add_logo',item_number:2,brand:'Marca inexistente'}],1,true)[0].type,'question');
+});
+
+test('el logo se añade al ítem numerado sin reemplazar fotos y respeta el límite', async () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const code=html.slice(html.indexOf('async function applyQuotationLogo('),html.indexOf('async function runQuotationAria('));
+    const context=vm.createContext({URL,location:{origin:'https://erp.test'}});
+    vm.runInContext(`${code}\nglobalThis.apply=applyQuotationLogo`,context);
+    const quote={quotation_items:[{item_number:7,photos:['https://example.test/photo.jpg'],image_url:'https://example.test/photo.jpg'},{item_number:2,photos:[]}]};
+    const catalog=[{name:'Denso',url:'/logos/denso.jpg'}];
+    assert.equal(await context.apply(quote,{item_number:7,brand:'Denso'},catalog),true);
+    assert.deepEqual(Array.from(quote.quotation_items[0].photos),['https://example.test/photo.jpg','https://erp.test/logos/denso.jpg']);
+    assert.equal(await context.apply(quote,{item_number:7,brand:'Denso'},catalog),false);
+    quote.quotation_items[0].photos.push('https://example.test/other.jpg');
+    await assert.rejects(context.apply(quote,{item_number:7,brand:'Denso2'},[{name:'Denso2',url:'/logos/denso2.jpg'}]),/tres imágenes/);
+    await assert.rejects(context.apply(quote,{item_number:8,brand:'Denso'},catalog),/No existe el ítem/);
+});
+
+
+test('guardar reutiliza el logo del catálogo sin subirlo a Supabase', async () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const code=html.slice(html.indexOf('async function saveQuotationDraft('),html.indexOf('async function runQuotationAria('));
+    let sent, uploads=0;
+    const context=vm.createContext({URL,location:{href:'https://erp.test/admin.html',origin:'https://erp.test'},
+        document:{getElementById:()=>({disabled:false,textContent:''})},pendingImages:[],quotationNumber:Number,
+        setQuotationSaveStatus:()=>{},showToast:()=>{},recalculateQuotation:()=>{},STORAGE_CONFIG:{supabaseUrl:'https://db.test'},
+        uploadQuotationImage:async()=>{uploads++;},fetchQuotationPhotoBlob:async()=>{throw Error('no debe leer el logo')},
+        quotationHistory:()=>[],quotationSessionKey:q=>q.id,API:'',adminPass:'test',
+        sessionStorage:{removeItem(){},setItem(){}},loadQuotations:async()=>{},renderQuotationEditor:()=>{},selectedQuotation:null,
+        fetchWithTimeout:async(_url,opts)=>{sent=JSON.parse(opts.body);return {ok:true,json:async()=>({data:{id:'q1',readable_id:'Q-1'}})}}});
+    vm.runInContext(`${code}\nglobalThis.save=saveQuotationDraft`,context);
+    await context.save({id:'draft-1',quotation_items:[{item_number:1,part_name:'Filtro',margin_pct:30,photos:['https://erp.test/logos/denso.jpg']}]});
+    assert.equal(uploads,0);assert.equal(sent.items[0].photos[0],'https://erp.test/logos/denso.jpg');
 });
