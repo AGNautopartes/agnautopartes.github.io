@@ -1950,13 +1950,7 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
 
                 const data = await res.json();
 
-                // Manejar ambos formatos de respuesta: array directo o { data: [...], nextCursor, hasMore }
-                let ordersArray = null;
-                if (Array.isArray(data)) {
-                    ordersArray = data; // Formato legacy: array directo
-                } else if (data?.data && Array.isArray(data.data)) {
-                    ordersArray = data.data; // Formato nuevo: { data: [...], nextCursor, hasMore }
-                }
+                const ordersArray = data?.data;
 
                 if (!ordersArray) {
                     err.textContent = 'Respuesta inesperada del servidor.';
@@ -1993,8 +1987,8 @@ if (savedModel && filtered.some(m => m.id === savedModel)) {
                 });
                 if (res.ok) {
                     const responseData = await res.json();
-                    // Manejar ambos formatos: array directo o { data: [...], nextCursor, hasMore }
-                    allOrders = (responseData.data && Array.isArray(responseData.data)) ? responseData.data : responseData;
+                    allOrders = responseData?.data;
+                    if (!Array.isArray(allOrders)) throw new Error('Respuesta de órdenes inválida');
                     renderOrders(allOrders);
                     updateStats(allOrders);
                 } else {
@@ -2608,7 +2602,11 @@ function syncNewTitle() {
                 headers: { 'x-admin-password': adminPass }
             });
             if (res.ok) {
-                allOrders = await res.json();
+                const responseData = await res.json();
+                if (!Array.isArray(responseData?.data)) {
+                    throw new Error('Respuesta de órdenes inválida');
+                }
+                allOrders = responseData.data;
                 renderOrders(allOrders);
                 updateStats(allOrders);
                 return;
@@ -3654,11 +3652,6 @@ async function loadQuotations() {
     if (!adminPass || isLoadingQuotations) return;
     isLoadingQuotations = true;
     try {
-        const res = await fetch(`${API}/api/get-all-orders`, {
-            headers: { 'x-admin-password': adminPass }
-        });
-        // Reutilizar endpoint que ya trae orders + quotation items (adaptar query params)
-        // Por ahora crear endpoint dedicado o usar query param ?type=quotations
         const resQuot = await fetch(`${API}/api/quotations-crud`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },

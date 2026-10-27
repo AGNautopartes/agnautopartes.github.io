@@ -179,7 +179,7 @@ test('model catalog includes paid and free tool-capable models', async () => {
     });
 
     try {
-        const { default: getModelsHandler } = await import('../api/get-models.js');
+        const { default: getModelsHandler } = await import('../lib/handlers/get-models.js');
         const response = await invokeApiHandler(getModelsHandler, {
             method: 'GET'
         });
@@ -365,7 +365,7 @@ test('financial commands preserve FOB decimals and price before VAT', async () =
 
 test('recalculates margin from FOB and price instead of preserving the 20 percent default', async () => {
     const { calculateMarginFromCostAndPrice } =
-        await import('../api/update-order-full.js');
+        await import('../lib/handlers/update-order-full.js');
     const margin = calculateMarginFromCostAndPrice(43, 120);
 
     assert.equal(Number(margin.toFixed(2)), 64.17);
@@ -374,7 +374,7 @@ test('recalculates margin from FOB and price instead of preserving the 20 percen
 test('command sequence reuses the newly created order reference', async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL ||= 'https://example.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-key';
-    const { executeCommandSequence } = await import('../api/admin-chat.js');
+    const { executeCommandSequence } = await import('../lib/handlers/admin-chat.js');
     const received = [];
     const registry = {
         execute: async (name, args) => {
@@ -465,7 +465,7 @@ test('supplier, URL and editable date commands persist and verify item fields', 
 });
 
 test('bounded Aria loop continues after create and preserves dependency order', async () => {
-    const { runAriaCommandLoop } = await import('../api/admin-chat.js');
+    const { runAriaCommandLoop } = await import('../lib/handlers/admin-chat.js');
     const calls = [];
     const decisions = [
         {
@@ -523,7 +523,7 @@ test('bounded Aria loop continues after create and preserves dependency order', 
 });
 
 test('create-order persists editable item dates with Ecuador current-date fallback', async () => {
-    const source = await readFile(new URL('../api/create-order.js', import.meta.url), 'utf8');
+    const source = await readFile(new URL('../lib/handlers/create-order.js', import.meta.url), 'utf8');
     assert.match(source, /timeZone:\s*'America\/Guayaquil'/);
     assert.match(source, /order_date:\s*item\.order_date\s*\|\|\s*currentEcuadorDate\(\)/);
     assert.match(source, /estimated_arrival:\s*item\.estimated_arrival\s*\|\|\s*null/);
@@ -604,7 +604,7 @@ test('manual order deletion uses one restricted transactional RPC', async () => 
         'utf8'
     );
     const endpoint = await readFile(
-        new URL('../api/delete-order.js', import.meta.url),
+        new URL('../lib/handlers/delete-order.js', import.meta.url),
         'utf8'
     );
 
