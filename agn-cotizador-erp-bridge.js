@@ -9,8 +9,9 @@
     // las dimensiones originales de la hoja.
     const workspace = document.querySelector?.('.workspace');
     const sheet = byId('formal-sheet');
+    let exportingFormal = false;
     const fitFormalPreview = () => {
-        if (!workspace || !sheet || workspace.clientWidth <= 0 || sheet.offsetWidth <= 0) return;
+        if (exportingFormal || !workspace || !sheet || workspace.clientWidth <= 0 || sheet.offsetWidth <= 0) return;
         const style = getComputedStyle(workspace);
         const available = workspace.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
         sheet.style.zoom = String(Math.min(1, Math.max(0.2, (available - 2) / sheet.offsetWidth)));
@@ -29,6 +30,9 @@
     });
 
     const exportWithPhotos = async (selector, exportOriginal) => {
+        const formal = selector.startsWith('#formal-sheet');
+        if (formal && exportingFormal) return;
+        if (formal) exportingFormal = true;
         const photos = Array.from(document.querySelectorAll(selector)).filter(img => img.getAttribute('src'));
         const originalSources = photos.map(img => img.getAttribute('src'));
         const originalZoom = sheet?.style.zoom;
@@ -44,13 +48,14 @@
                 if (typeof img.decode === 'function') await img.decode();
                 else if (!img.complete || !img.naturalWidth) throw new Error('La foto no se cargó');
             }
-            if (selector.startsWith('#formal-sheet') && sheet) sheet.style.zoom = '1';
+            if (formal && sheet) sheet.style.zoom = '1';
             await exportOriginal();
         } catch (error) {
             alert(`${error.message || 'No se pudo preparar una foto'}. Descarga o pega la imagen en el ítem y vuelve a intentarlo.`);
         } finally {
             if (sheet && originalZoom !== undefined) sheet.style.zoom = originalZoom;
             photos.forEach((img,index) => { img.src = originalSources[index]; });
+            if (formal) { exportingFormal = false; fitFormalPreview(); }
         }
     };
 

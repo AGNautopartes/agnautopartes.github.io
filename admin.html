@@ -2999,6 +2999,23 @@ async function loadHistory(orderId) {
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
 }
 
+// Las imágenes de cotizaciones se suben con autenticación del ERP desde el servidor.
+async function uploadQuotationImage(file) {
+    const image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo preparar la imagen'));
+        reader.readAsDataURL(file);
+    });
+    const res = await fetchWithTimeout(`${API}/api/quotation-image-upload`, {
+        method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPass},
+        body:JSON.stringify({image}), timeout:30000
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.url) throw new Error(payload.message || `No se pudo subir la imagen (código ${res.status}).`);
+    return payload.url;
+}
+
 // Download an image locally when possible. Some providers allow displaying an
 // image but forbid exporting it; in that case the authenticated API fetches it.
 async function fetchQuotationPhotoBlob(url) {
@@ -4240,7 +4257,7 @@ async function saveQuotationDraft(quote) {
                     const compressed = await compressImage(new File([blob], 'imagen.jpg', { type: blob.type }));
                     if (!compressed) throw new Error('Formato no admitido');
                     mapped.push(compressed);
-                } catch { throw new Error(`No se pudo preparar una imagen del ítem ${index + 1}; descárgala y súbela o pégala en ese ítem.`); }
+                } catch { throw new Error(`No se pudo preparar una imagen del ítem ${item.item_number || index + 1}; descárgala y súbela o pégala en ese ítem.`); }
             }
             prepared.push(mapped);
         }
@@ -4248,7 +4265,9 @@ async function saveQuotationDraft(quote) {
         for (const [index, item] of quote.quotation_items.entries()) {
             const photos = [];
             for (const image of prepared[index]) {
-                const url = typeof image === 'string' ? image : await uploadImageToStorage(image);
+                let url;
+                try { url = typeof image === 'string' ? image : await uploadQuotationImage(image); }
+                catch (error) { throw new Error(`Ítem ${item.item_number || index + 1}: ${error.message || 'No se pudo subir la imagen.'}`); }
                 if (!url) throw new Error('No se pudo subir una imagen');
                 photos.push(url);
             }

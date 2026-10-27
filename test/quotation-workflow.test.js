@@ -11,6 +11,7 @@ process.env.OPENROUTER_API_KEY = 'test-key';
 const { calculateItem } = await import('../lib/handlers/quotations.js');
 const { default: quotationAssist, sanitizeOperations } = await import('../lib/handlers/quotation-assist.js');
 const { default: quotationImage, isPublicIPv4, fetchPublicImage } = await import('../lib/handlers/quotation-image.js');
+const { createQuotationImageUploadHandler } = await import('../lib/handlers/quotation-image-upload.js');
 
 test('precio con IVA coincide con la fórmula del cotizador original', () => {
     const result = calculateItem({ price_usd: 145, shipping_usd: 50, margin_pct: 30 });
@@ -249,4 +250,37 @@ test('previsualizar un enlace para un repuesto nuevo no cambia el repuesto exist
     assert.equal(await context.enrich(quote,original),original);
     assert.equal(quote.quotation_items[0].supplier_url,'');
     assert.match(warning,/No se pudo previsualizar/);
+});
+
+test('la subida de cotizaciones exige autenticación y guarda JPEG limitado a 125 KB', async () => {
+    let upload;
+    const bucket={upload:async(path,bytes,options)=>{upload={path,bytes,options};return {error:null}},getPublicUrl:path=>({data:{publicUrl:`https://example.test/${path}`}})};
+    const handler=createQuotationImageUploadHandler({client:{storage:{from:name=>{assert.equal(name,'quotation-images');return bucket}}},hasServiceRole:()=>true});
+    const response=()=>({statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}});
+    let res=response();
+    await handler({method:'POST',headers:{},body:{}},res);
+    assert.equal(res.statusCode,401);
+    const jpeg=Buffer.from([0xff,0xd8,0xff,0xd9]);
+    res=response();
+    await handler({method:'POST',headers:{'x-admin-password':'test-password'},body:{image:'data:image/jpeg;base64,'+jpeg.toString('base64')}},res);
+    assert.equal(res.statusCode,200);
+    assert.match(res.body.url,/\.jpg$/);
+    assert.deepEqual(upload.bytes,jpeg);
+    assert.equal(upload.options.contentType,'image/jpeg');
+    res=response();
+    await handler({method:'POST',headers:{'x-admin-password':'test-password'},body:{image:'data:image/jpeg;base64,'+Buffer.alloc(125*1024+1).toString('base64')}},res);
+    assert.equal(res.statusCode,400);
+    res=response();
+    await handler({method:'POST',headers:{'x-admin-password':'test-password'},body:{image:'data:image/png;base64,AAAA'}},res);
+    assert.equal(res.statusCode,400);
+});
+
+test('la subida indica si falta el espacio de imágenes sin crear buckets', async () => {
+    const bucket={upload:async()=>({error:{message:'Bucket not found',statusCode:'404'}})};
+    const handler=createQuotationImageUploadHandler({client:{storage:{from:()=>bucket}},hasServiceRole:()=>true});
+    const res={statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}};
+    const jpeg=Buffer.from([0xff,0xd8,0xff,0xd9]);
+    await handler({method:'POST',headers:{'x-admin-password':'test-password'},body:{image:'data:image/jpeg;base64,'+jpeg.toString('base64')}},res);
+    assert.equal(res.statusCode,503);
+    assert.match(res.body.message,/quotation-images/);
 });
