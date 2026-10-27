@@ -409,3 +409,17 @@ test('guardar reutiliza el logo del catálogo sin subirlo a Supabase', async () 
     await context.save({id:'draft-1',quotation_items:[{item_number:1,part_name:'Filtro',margin_pct:30,photos:['https://erp.test/logos/denso.jpg']}]});
     assert.equal(uploads,0);assert.equal(sent.items[0].photos[0],'https://erp.test/logos/denso.jpg');
 });
+
+
+test('Aria admite la operación de logos y reconoce NTY y las marcas del ejemplo', async () => {
+    const originalFetch=globalThis.fetch; let prompt='';
+    globalThis.fetch=async (_url,opts)=>{prompt=JSON.parse(opts.body).messages[0].content;return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({reply:'',operations:[{type:'add_logo',item_number:1,brand:'Mercedes-Benz'},{type:'add_logo',item_number:2,brand:'Dayco'},{type:'add_logo',item_number:3,brand:'NTY'}]})}}]})}};
+    const res={statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}};
+    try {
+        await quotationAssist({method:'POST',headers:{'x-admin-password':'test-password'},body:{message:'Pon los logos de cada marca',quotation:{quotation_items:[{item_number:1,part_brand:'Mercedes Benz'},{item_number:2,part_brand:'Dayco'},{item_number:3,part_brand:'NTY'}]}}},res);
+        assert.equal(res.statusCode,200);assert.deepEqual(res.body.data.operations.map(x=>x.brand),['Mercedes-Benz','Dayco','NTY']);
+        assert.match(prompt,/Operaciones:[^\n]*add_logo/);assert.match(prompt,/según las marcas de los ítems/);
+        const catalog=JSON.parse(fs.readFileSync(new URL('../logos/catalogo.json',import.meta.url),'utf8'));
+        for (const name of ['Mercedes-Benz','Dayco','NTY']) { const item=catalog.find(x=>x.name===name); assert.ok(item);assert.ok(fs.existsSync(new URL('..'+item.url,import.meta.url))); }
+    } finally {globalThis.fetch=originalFetch;}
+});
