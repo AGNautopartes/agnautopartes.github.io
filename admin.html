@@ -1708,8 +1708,8 @@ let ariaHistory = [];
 const IMAGE_CONFIG = {
     MAX_SIZE: 125 * 1024,    // 125 KB hard limit
     MAX_DIMENSION: 1200,      // max side (px)
-    QUALITY: 0.75,            // WebP quality
-    FALLBACK_QUALITY: 0.7,    // JPEG fallback quality
+    JPEG_QUALITY: 0.86,
+    MAX_PASSES: 4,
     ACCEPT_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 };
 
@@ -1733,54 +1733,57 @@ async function compressImage(file) {
         img.onload = function() {
             URL.revokeObjectURL(url);
             
-            let w = img.width, h = img.height;
-            const ratio = w / h;
-            
-            if (w > IMAGE_CONFIG.MAX_DIMENSION || h > IMAGE_CONFIG.MAX_DIMENSION) {
-                if (w > h) {
-                    w = IMAGE_CONFIG.MAX_DIMENSION;
-                    h = Math.round(w / ratio);
-                } else {
-                    h = IMAGE_CONFIG.MAX_DIMENSION;
-                    w = Math.round(h * ratio);
-                }
-            }
-            
             const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
             const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, w, h);
-            ctx.drawImage(img, 0, 0, w, h);
-            
-            const tryCompress = (format, quality) => {
+
+            // La raíz conserva la proporción: el área se reduce en la misma
+            // proporción que el peso objetivo respecto al archivo original.
+            const sizeScale = Math.min(1, Math.sqrt(IMAGE_CONFIG.MAX_SIZE / file.size));
+            const dimensionScale = Math.min(
+                1,
+                IMAGE_CONFIG.MAX_DIMENSION / Math.max(img.width, img.height)
+            );
+            let scale = Math.min(sizeScale, dimensionScale);
+
+            const renderJpeg = (pass = 0) => {
+                const width = Math.max(1, Math.round(img.width * scale));
+                const height = Math.max(1, Math.round(img.height * scale));
+                canvas.width = width;
+                canvas.height = height;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
                 canvas.toBlob((blob) => {
                     if (!blob) {
                         reject(new Error('Canvas no soportado'));
                         return;
                     }
-                    
+
                     if (blob.size <= IMAGE_CONFIG.MAX_SIZE) {
                         const finalFile = new File(
                             [blob],
-                            file.name.replace(/\.[^.]+$/, format === 'image/webp' ? '.webp' : '.jpg'),
-                            { type: format, lastModified: Date.now() }
+                            file.name.replace(/\.[^.]+$/, '.jpg'),
+                            { type: 'image/jpeg', lastModified: Date.now() }
                         );
                         resolve(finalFile);
-                    } else {
-                        const newQuality = Math.max(0.3, quality - 0.15);
-                        if (newQuality < 0.3) {
-                            tryCompress('image/jpeg', 0.6);
-                        } else {
-                            tryCompress(format, newQuality);
-                        }
+                        return;
                     }
-                }, format, quality);
+
+                    if (pass >= IMAGE_CONFIG.MAX_PASSES || width === 1 || height === 1) {
+                        reject(new Error('No fue posible reducir la imagen a 125 KB'));
+                        return;
+                    }
+
+                    // Se vuelve a calcular proporcionalmente a partir del peso real
+                    // del JPEG generado; la imagen nunca se recorta ni se deforma.
+                    const correction = Math.sqrt(IMAGE_CONFIG.MAX_SIZE / blob.size) * 0.98;
+                    scale *= Math.min(0.99, correction);
+                    renderJpeg(pass + 1);
+                }, 'image/jpeg', IMAGE_CONFIG.JPEG_QUALITY);
             };
-            
-            tryCompress('image/webp', IMAGE_CONFIG.QUALITY);
+
+            renderJpeg();
         };
         
         img.onerror = () => {
