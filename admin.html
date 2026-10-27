@@ -1170,13 +1170,6 @@ border-color:var(--blue);color:var(--blue);
         /* TOAST */
         .toast {
             position: fixed;
-        }
-
-        .required::after {
-            content: "*";
-            color: var(--accent);
-            margin-left: 2px;
-        }
             bottom: 2rem;
             right: 2rem;
             padding: 1rem 2rem;
@@ -1187,6 +1180,11 @@ border-color:var(--blue);color:var(--blue);
             animation: slideUp 0.3s ease-out;
         }
 
+        .required::after {
+            content: "*";
+            color: var(--accent);
+            margin-left: 2px;
+        }
         .toast.success {
             background: var(--green);
         }
@@ -1518,6 +1516,7 @@ border-color:var(--blue);color:var(--blue);
                         Import CSV</button>
                     <button class="btn-add" id="btn-new-quotation">+ Nueva Cotización</button>
                     <button class="btn-add" id="btn-save-original-quotation">Guardar en ERP</button>
+                    <div id="quotation-save-status" role="status" aria-live="polite" style="flex-basis:100%;font-size:.8rem;font-weight:600"></div>
                 </div>
                 <div class="orders-list" id="quot-list">
                     <div class="empty-state">Cargando cotizaciones...</div>
@@ -1695,7 +1694,7 @@ border-color:var(--blue);color:var(--blue);
     </div>
     </div>
 
-    <div id="toast"></div>
+    <div id="toast" hidden></div>
 
     <script>
         console.log('AGN Admin Script: Starting...');
@@ -1826,9 +1825,10 @@ if (sessionStorage.getItem('agn-admin-logged') === 'true') {
             const t = document.getElementById('toast');
             if (!t) return;
             t.textContent = msg;
-            t.className = `toast-${type} show`;
+            t.className = `toast ${type}`;
+            t.hidden = false;
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.className = '', 3000);
+            t._timeout = setTimeout(() => { t.hidden = true; }, 5000);
         }
 
         // ══ LOGIN ══
@@ -2936,9 +2936,8 @@ async function loadHistory(orderId) {
             const { timeout = 10000 } = options;
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeout);
-            const response = await fetch(resource, { ...options, signal: controller.signal });
-            clearTimeout(id);
-            return response;
+            try { return await fetch(resource, { ...options, signal: controller.signal }); }
+            finally { clearTimeout(id); }
         }
 
         async function uploadImageToStorage(file) {
@@ -2947,13 +2946,14 @@ async function loadHistory(orderId) {
     const bucket = 'quotation-images';
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name.replace(/\s+/g, '_')}`;
     
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`, {
+    const res = await fetchWithTimeout(`${supabaseUrl}/storage/v1/object/${bucket}/${fileName}`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${anonKey}`,
             'Content-Type': file.type
         },
-        body: file
+        body: file,
+        timeout: 30000
     });
     
     if (!res.ok) {
@@ -2971,13 +2971,13 @@ async function loadHistory(orderId) {
 async function fetchQuotationPhotoBlob(url) {
     let response;
     try {
-        response = await fetch(url, { mode:'cors' });
+        response = await fetchWithTimeout(url, { mode:'cors', timeout:15000 });
         if (!response.ok) throw new Error('Imagen no disponible');
     } catch (error) {
         if (!/^https?:\/\//i.test(url)) throw error;
-        response = await fetch(`${API}/api/quotation-image`, {
+        response = await fetchWithTimeout(`${API}/api/quotation-image`, {
             method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPass},
-            body:JSON.stringify({url})
+            body:JSON.stringify({url}), timeout:30000
         });
         if (!response.ok) throw new Error('No se pudo leer la imagen desde el enlace');
     }
@@ -4017,10 +4017,17 @@ function syncQuotationFromOriginal(quote) {
 document.getElementById('quotation-original-frame')?.addEventListener('load', () => {
     if (selectedQuotation) renderQuotationEditor(selectedQuotation);
 });
-document.getElementById('btn-save-original-quotation')?.addEventListener('click', () => {
+function setQuotationSaveStatus(message, type = 'info') {
+    const status = document.getElementById('quotation-save-status');
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = type === 'error' ? 'var(--accent)' : type === 'success' ? 'var(--green)' : 'var(--text2)';
+}
+
+document.getElementById('btn-save-original-quotation')?.addEventListener('click', async () => {
     if (!selectedQuotation) openNewQuotationDraft();
-    try { syncQuotationFromOriginal(selectedQuotation); saveQuotationDraft(selectedQuotation); }
-    catch (error) { showToast(error.message, 'error'); }
+    try { syncQuotationFromOriginal(selectedQuotation); await saveQuotationDraft(selectedQuotation); }
+    catch (error) { setQuotationSaveStatus(error.message, 'error'); showToast(error.message, 'error'); }
 });
 
 function recalculateQuotation(quote) {
@@ -4176,23 +4183,26 @@ function renderQuotationEditor(quote) {
 
 const escapeHtml = value => String(value).replace(/[&<>"]/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[char]));
 async function saveQuotationDraft(quote) {
-    const state = document.getElementById('quot-save-state') || { textContent: '' };
     const saveButton = document.getElementById('btn-save-original-quotation');
     if (saveButton.disabled) return;
     if (!quote.quotation_items?.length || quote.quotation_items.some(item => !String(item.part_name || '').trim())) {
-        state.textContent = 'Escribe el nombre de cada repuesto antes de guardar';
-        showToast(state.textContent, 'error');
+        const message = 'Escribe el nombre de cada repuesto antes de guardar';
+        setQuotationSaveStatus(message, 'error');
+        showToast(message, 'error');
         return;
     }
     if (quote.quotation_items.some(item => quotationNumber(item.margin_pct) >= 100)) {
-        showToast('El margen debe ser menor al 100%', 'error');
+        const message = 'El margen debe ser menor al 100%';
+        setQuotationSaveStatus(message, 'error');
+        showToast(message, 'error');
         return;
     }
     saveButton.disabled = true;
+    saveButton.textContent = 'Guardando…';
     try {
         if (pendingImages.some(image => image.scope === 'quotation')) attachPendingImagesToQuotation(quote, '');
         recalculateQuotation(quote);
-        state.textContent = 'Preparando imágenes…';
+        setQuotationSaveStatus('Preparando imágenes…');
         const prepared = [];
         for (const [index, item] of quote.quotation_items.entries()) {
             const photos = (item.photos?.length ? item.photos : [item.image_url]).filter(Boolean).slice(0,3);
@@ -4208,7 +4218,7 @@ async function saveQuotationDraft(quote) {
             }
             prepared.push(mapped);
         }
-        state.textContent = 'Guardando…';
+        setQuotationSaveStatus('Subiendo imágenes y guardando la cotización…');
         for (const [index, item] of quote.quotation_items.entries()) {
             const photos = [];
             for (const image of prepared[index]) {
@@ -4222,21 +4232,26 @@ async function saveQuotationDraft(quote) {
         quote.editor_state = { ...quote.editor_state, item_details: quote.quotation_items.map(item => ({ photos:item.photos, photo_scale:item.photo_scale || 100, part_number:item.part_number || '', supplier_url:item.supplier_url || '' })) };
         const quotation = { ...quote, id: String(quote.id || '').startsWith('draft-') ? null : quote.id };
         const history = quotationHistory(quote);
-        const res = await fetch(`${API}/api/quotations`, { method: 'POST', headers: { 'Content-Type':'application/json', 'x-admin-password':adminPass }, body: JSON.stringify({quotation, items:quote.quotation_items}) });
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.message || 'Error al guardar');
+        const res = await fetchWithTimeout(`${API}/api/quotations`, { method: 'POST', headers: { 'Content-Type':'application/json', 'x-admin-password':adminPass }, body: JSON.stringify({quotation, items:quote.quotation_items}), timeout:30000 });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.message || `No se pudo guardar (código ${res.status})`);
+        if (!payload.data?.id) throw new Error('El servidor no confirmó el identificador de la cotización');
         selectedQuotation = payload.data;
         sessionStorage.removeItem(quotationSessionKey(quote));
         sessionStorage.removeItem(`${quotationSessionKey(quote)}:history`);
         sessionStorage.setItem(`${quotationSessionKey(selectedQuotation)}:history`, JSON.stringify(history));
         await loadQuotations();
         renderQuotationEditor(selectedQuotation);
-        showToast('Cotización guardada en el ERP', 'success');
+        const message = `Cotización ${selectedQuotation.readable_id || ''} guardada en el ERP`.replace(/\s+/g, ' ').trim();
+        setQuotationSaveStatus(message, 'success');
+        showToast(message, 'success');
     } catch (error) {
-        state.textContent = error.message || 'Error al guardar';
-        showToast(state.textContent, 'error');
+        const message = error.name === 'AbortError' ? 'La conexión tardó demasiado. Verifica si la cotización aparece en la lista antes de intentar otra vez.' : (error.message || 'Error al guardar');
+        setQuotationSaveStatus(message, 'error');
+        showToast(message, 'error');
     } finally {
         saveButton.disabled = false;
+        saveButton.textContent = 'Guardar en ERP';
     }
 }
 async function runQuotationAria(quote, message, options = {}) {

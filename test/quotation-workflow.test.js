@@ -125,3 +125,47 @@ test('la tabla incorpora la foto remota antes de generar el PNG y luego restaura
     assert.equal(exportedSource,'data:image/png;base64,TEST');
     assert.equal(photo.src,'https://example.test/photo.png');
 });
+
+test('guardar envía el borrador y muestra el identificador confirmado', async () => {
+    const html = fs.readFileSync(new URL('../admin.html', import.meta.url),'utf8');
+    const saveCode = html.slice(html.indexOf('async function saveQuotationDraft('),html.indexOf('async function runQuotationAria('));
+    const button = {disabled:false,textContent:'Guardar en ERP'};
+    const progress = [];
+    let sent;
+    const context = vm.createContext({
+        document:{getElementById:()=>button}, pendingImages:[], quotationNumber:Number,
+        setQuotationSaveStatus:(text,type)=>progress.push({text,type}), showToast:()=>{}, recalculateQuotation:()=>{},
+        quotationHistory:()=>[], quotationSessionKey:q=>q.id, API:'', adminPass:'test',
+        sessionStorage:{removeItem(){},setItem(){}}, STORAGE_CONFIG:{supabaseUrl:'https://example.test'},
+        fetchWithTimeout:async (_url,opts)=>{sent=JSON.parse(opts.body);return {ok:true,json:async()=>({data:{id:'quote-1',readable_id:'Q-2026-001',quotation_items:[]}})};},
+        loadQuotations:async()=>{},renderQuotationEditor:()=>{}, selectedQuotation:null,
+    });
+    vm.runInContext(`${saveCode}\nglobalThis.save=saveQuotationDraft;`,context);
+    await context.save({id:'draft-1',quotation_items:[{part_name:'Manifold',price_usd:145,shipping_usd:50,margin_pct:30}],editor_state:{}});
+    assert.equal(sent.quotation.id,null);
+    assert.equal(sent.items[0].shipping_usd,50);
+    assert.equal(progress.at(-1).text,'Cotización Q-2026-001 guardada en el ERP');
+    assert.equal(button.disabled,false);
+    assert.equal(button.textContent,'Guardar en ERP');
+});
+
+test('si falla una imagen, guardar muestra el error y no envía la cotización', async () => {
+    const html = fs.readFileSync(new URL('../admin.html', import.meta.url),'utf8');
+    const saveCode = html.slice(html.indexOf('async function saveQuotationDraft('),html.indexOf('async function runQuotationAria('));
+    const button = {disabled:false,textContent:'Guardar en ERP'};
+    const progress = [];
+    let sent = false;
+    const context = vm.createContext({
+        document:{getElementById:()=>button}, pendingImages:[], quotationNumber:Number,
+        setQuotationSaveStatus:(text,type)=>progress.push({text,type}), showToast:()=>{}, recalculateQuotation:()=>{},
+        STORAGE_CONFIG:{supabaseUrl:'https://example.test'},
+        fetchQuotationPhotoBlob:async()=>{throw new Error('Imagen no disponible');},
+        fetchWithTimeout:async()=>{sent=true;},
+    });
+    vm.runInContext(`${saveCode}\nglobalThis.save=saveQuotationDraft;`,context);
+    await context.save({id:'draft-1',quotation_items:[{part_name:'Manifold',margin_pct:30,photos:['https://example.test/photo.jpg']}]});
+    assert.equal(sent,false);
+    assert.match(progress.at(-1).text,/No se pudo preparar una imagen del ítem 1/);
+    assert.equal(progress.at(-1).type,'error');
+    assert.equal(button.disabled,false);
+});
