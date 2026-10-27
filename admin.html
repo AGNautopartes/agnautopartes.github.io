@@ -2844,6 +2844,8 @@ async function loadHistory(orderId) {
             return page?.classList.contains('active') && selectedQuotation ? selectedQuotation : null;
         };
 
+        const isQuotationRequest = message => /\b(?:cotiza\b|cotizar\b|cotizaci[oó]n?|cotis\w*|presupuest\w*)/i.test(String(message || ''));
+
         const clearPendingImages = () => {
             pendingImages.forEach(image => {
                 if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
@@ -3192,7 +3194,13 @@ async function sendToAria() {
             ariaInput.value = '';
             ariaSend.disabled = true;
 
-            const quote = activeQuotation();
+            let quote = activeQuotation();
+            // Un pedido de cotización no puede caer al asistente de órdenes solo
+            // porque el usuario todavía esté viendo esa pestaña.
+            if (!quote && isQuotationRequest(msg)) {
+                openNewQuotationDraft();
+                quote = activeQuotation();
+            }
             if (quote) {
                 addAiMsg('user', msg);
                 const thinking = addAiMsg('assistant', '...');
@@ -3910,11 +3918,16 @@ async function deleteQuotation(id) {
 }
 
 // Botones de la toolbar de cotizaciones
-document.getElementById('btn-new-quotation')?.addEventListener('click', () => {
+function openNewQuotationDraft() {
     clearPendingImages();
     selectedQuotation = { id: `draft-${crypto.randomUUID()}`, status: 'borrador', quotation_items: [{ part_name: '', part_number: '', description: '', supplier_url: '', image_url: '', price_usd: 0, margin_pct: 0 }] };
+    const quoteTab = document.querySelector('[data-page="quotations"]');
+    if (!document.getElementById('page-quotations')?.classList.contains('active')) quoteTab?.click();
     renderQuotationEditor(selectedQuotation);
-});
+    updateAriaContextUI();
+}
+
+document.getElementById('btn-new-quotation')?.addEventListener('click', openNewQuotationDraft);
 
 document.getElementById('btn-quot-export')?.addEventListener('click', async () => {
     // Exportar CSV
