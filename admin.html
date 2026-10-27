@@ -2966,6 +2966,26 @@ async function loadHistory(orderId) {
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
 }
 
+// Download an image locally when possible. Some providers allow displaying an
+// image but forbid exporting it; in that case the authenticated API fetches it.
+async function fetchQuotationPhotoBlob(url) {
+    let response;
+    try {
+        response = await fetch(url, { mode:'cors' });
+        if (!response.ok) throw new Error('Imagen no disponible');
+    } catch (error) {
+        if (!/^https?:\/\//i.test(url)) throw error;
+        response = await fetch(`${API}/api/quotation-image`, {
+            method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPass},
+            body:JSON.stringify({url})
+        });
+        if (!response.ok) throw new Error('No se pudo leer la imagen desde el enlace');
+    }
+    const blob = await response.blob();
+    if (!blob.type.startsWith('image/')) throw new Error('El enlace no contiene una imagen');
+    return blob;
+}
+
 // ============ STORAGE MANAGEMENT ============
 const STORAGE_CONFIG = {
     buckets: ['quotation-images'], // Solo imágenes, PDFs se generan on-demand
@@ -4180,9 +4200,7 @@ async function saveQuotationDraft(quote) {
             for (const photo of photos) {
                 if (photo.startsWith(`${STORAGE_CONFIG.supabaseUrl}/storage/v1/object/public/quotation-images/`)) { mapped.push(photo); continue; }
                 try {
-                    const response = await fetch(photo, { mode: 'cors' });
-                    if (!response.ok) throw new Error('No disponible');
-                    const blob = await response.blob();
+                    const blob = await fetchQuotationPhotoBlob(photo);
                     const compressed = await compressImage(new File([blob], 'imagen.jpg', { type: blob.type }));
                     if (!compressed) throw new Error('Formato no admitido');
                     mapped.push(compressed);

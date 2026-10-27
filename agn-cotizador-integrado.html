@@ -1451,10 +1451,10 @@ async function navCSV(delta){
         document.getElementById('dlSheetBtn').style.display = m==='formal'?'inline-block':'none';
     }
     
-    function downloadCard() {
+    async function downloadCard() {
         const node = document.getElementById('social-card');
         const scale = 2.5;
-        domtoimage.toPng(node, {
+        await domtoimage.toPng(node, {
             quality: 1, 
             width: node.offsetWidth*scale, 
             height: node.offsetHeight*scale,
@@ -1476,7 +1476,7 @@ async function navCSV(delta){
         const imgs = Array.from(root.querySelectorAll('img'));
         if(!imgs.length) return Promise.resolve();
         return Promise.all(imgs.map(img => {
-            if(img.complete && img.naturalWidth > 0) return Promise.resolve();
+            if(img.complete) return Promise.resolve();
             return new Promise(resolve => {
                 const done = () => resolve();
                 img.addEventListener('load', done, { once:true });
@@ -1495,7 +1495,7 @@ async function navCSV(delta){
         await waitForImages(node);
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-        domtoimage.toPng(node, {
+        await domtoimage.toPng(node, {
             cacheBust: true,
             bgcolor: '#fff',
             quality: 1,
@@ -1513,7 +1513,7 @@ async function navCSV(delta){
             a.href = u;
             a.click();
         }).catch(() => {
-            alert('No se pudo generar el PNG completo. Recarga la página e inténtalo de nuevo.');
+            throw new Error('No se pudo generar la imagen completa de la cotización.');
         })
     }
 

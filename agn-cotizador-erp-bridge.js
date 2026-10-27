@@ -5,6 +5,41 @@
     const getValue = id => byId(id)?.value || '';
     const setValue = (id, value) => { if (byId(id)) byId(id).value = value ?? ''; };
 
+    const blobAsDataUrl = blob => new Promise((resolve,reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo preparar una foto'));
+        reader.readAsDataURL(blob);
+    });
+
+    const exportWithPhotos = async (selector, exportOriginal) => {
+        const photos = Array.from(document.querySelectorAll(selector)).filter(img => img.getAttribute('src'));
+        const originalSources = photos.map(img => img.getAttribute('src'));
+        try {
+            for (const img of photos) {
+                const source = img.currentSrc || img.src;
+                if (!source) throw new Error('Hay una foto sin dirección');
+                if (!source.startsWith('data:')) {
+                    const fetchPhoto = window.parent?.fetchQuotationPhotoBlob;
+                    if (typeof fetchPhoto !== 'function') throw new Error('No se pudo acceder a las fotos del ERP');
+                    img.src = await blobAsDataUrl(await fetchPhoto(source));
+                }
+                if (typeof img.decode === 'function') await img.decode();
+                else if (!img.complete || !img.naturalWidth) throw new Error('La foto no se cargó');
+            }
+            await exportOriginal();
+        } catch (error) {
+            alert(`${error.message || 'No se pudo preparar una foto'}. Descarga o pega la imagen en el ítem y vuelve a intentarlo.`);
+        } finally {
+            photos.forEach((img,index) => { img.src = originalSources[index]; });
+        }
+    };
+
+    const originalDownloadSheet = window.downloadSheet;
+    const originalDownloadCard = window.downloadCard;
+    window.downloadSheet = () => exportWithPhotos('#formal-sheet img.quote-photo', originalDownloadSheet);
+    window.downloadCard = () => exportWithPhotos('#social-card #cImg', originalDownloadCard);
+
     const phoneGroup = document.createElement('div');
     phoneGroup.className = 'form-group';
     phoneGroup.innerHTML = '<label for="inWhatsApp">WhatsApp cliente</label><input id="inWhatsApp" placeholder="Número del cliente">';

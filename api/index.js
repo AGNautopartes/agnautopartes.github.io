@@ -15,6 +15,7 @@ const routes = {
     'quotations': () => import('../lib/handlers/quotations.js'),
     'quotation-assist': () => import('../lib/handlers/quotation-assist.js'),
     'quotation-link-preview': () => import('../lib/handlers/quotation-link-preview.js'),
+    'quotation-image': () => import('../lib/handlers/quotation-image.js'),
     'create-order-from-quotation': () => import('../lib/handlers/create-order-from-quotation.js')
 };
 

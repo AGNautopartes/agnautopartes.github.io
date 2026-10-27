@@ -10,6 +10,7 @@ process.env.OPENROUTER_API_KEY = 'test-key';
 
 const { calculateItem } = await import('../lib/handlers/quotations.js');
 const { default: quotationAssist, sanitizeOperations } = await import('../lib/handlers/quotation-assist.js');
+const { default: quotationImage, isPublicIPv4, fetchPublicImage } = await import('../lib/handlers/quotation-image.js');
 
 test('precio con IVA coincide con la fórmula del cotizador original', () => {
     const result = calculateItem({ price_usd: 145, shipping_usd: 50, margin_pct: 30 });
@@ -82,4 +83,45 @@ test('el adaptador conserva tres fotos, datos y opciones al reabrir la cotizaci�
     assert.equal(result.quotation_items[0].photo_scale,125);
     assert.equal(result.editor_state.discount_percent,5);
     assert.equal(result.editor_state.show_total,true);
+});
+
+test('el lector de imágenes rechaza redes internas y requiere autenticación', async () => {
+    for (const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','172.16.1.1','192.168.1.1','100.64.0.1','224.0.0.1','::1']) {
+        assert.equal(isPublicIPv4(ip), false, ip);
+    }
+    assert.equal(isPublicIPv4('8.8.8.8'), true);
+    await assert.rejects(fetchPublicImage('http://127.0.0.1/image.jpg'), /Destino no permitido/);
+    await assert.rejects(fetchPublicImage('http://user:pass@example.com/image.jpg'), /Enlace no permitido/);
+    let status;
+    const response = { status(code) { status=code;return this; }, json() { return this; } };
+    await quotationImage({method:'POST',headers:{},body:{url:'https://example.com/image.jpg'}},response);
+    assert.equal(status,401);
+});
+
+test('no descarga la tabla si no se puede incorporar una foto', async () => {
+    const values = {inClient:{parentElement:{parentElement:{after(){}}}}};
+    const photo = {src:'https://example.test/photo.png',currentSrc:'https://example.test/photo.png',getAttribute(){return this.src;}};
+    const document = {getElementById:id=>values[id],createElement:()=>({}),querySelectorAll:()=>[photo]};
+    let exported = false, warning = '';
+    const window = {parent:{fetchQuotationPhotoBlob:async()=>{throw new Error('Foto no disponible');}},downloadSheet:async()=>{exported=true;},downloadCard:async()=>{}};
+    const context = vm.createContext({document,window,alert:text=>{warning=text;}});
+    vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js',import.meta.url),'utf8'),context);
+    await context.window.downloadSheet();
+    assert.equal(exported,false);
+    assert.match(warning,/Foto no disponible/);
+    assert.equal(photo.src,'https://example.test/photo.png');
+});
+
+test('la tabla incorpora la foto remota antes de generar el PNG y luego restaura la vista', async () => {
+    const values = {inClient:{parentElement:{parentElement:{after(){}}}}};
+    const photo = {src:'https://example.test/photo.png',currentSrc:'https://example.test/photo.png',getAttribute(){return this.src;},async decode(){}};
+    const document = {getElementById:id=>values[id],createElement:()=>({}),querySelectorAll:()=>[photo]};
+    let exportedSource = '';
+    const window = {parent:{fetchQuotationPhotoBlob:async()=>({})},downloadSheet:async()=>{exportedSource=photo.src;},downloadCard:async()=>{}};
+    class FakeReader { readAsDataURL() { this.result='data:image/png;base64,TEST'; this.onload(); } }
+    const context = vm.createContext({document,window,FileReader:FakeReader,alert:()=>{throw new Error('Unexpected error');}});
+    vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js',import.meta.url),'utf8'),context);
+    await context.window.downloadSheet();
+    assert.equal(exportedSource,'data:image/png;base64,TEST');
+    assert.equal(photo.src,'https://example.test/photo.png');
 });
