@@ -270,6 +270,37 @@ overflow: hidden;
             overflow: hidden;
         }
 
+        /* En Cotizaciones, la lista ocupa la mitad de su ancho anterior y
+           el cotizador aprovecha el espacio restante. */
+        #page-quotations > .orders-main {
+            flex: 0 0 25%;
+            width: 25%;
+            min-width: 0;
+        }
+
+        #page-quotations .orders-toolbar {
+            padding: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        #page-quotations .search-box {
+            flex-basis: 100%;
+            min-width: 0;
+        }
+
+        #page-quotations .stat-item {
+            min-width: 0;
+            padding: 0.6rem 0.15rem;
+        }
+
+        #page-quotations .stat-item .l {
+            font-size: 0.55rem;
+        }
+
+        #page-quotations .orders-list {
+            padding: 0.75rem;
+        }
+
         .orders-toolbar {
             padding: 1rem 1.5rem;
             display: flex;
