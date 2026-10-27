@@ -284,3 +284,13 @@ test('la subida indica si falta el espacio de imágenes sin crear buckets', asyn
     assert.equal(res.statusCode,503);
     assert.match(res.body.message,/quotation-images/);
 });
+
+test('una copia CSV recupera imágenes pegadas y enlaces sin aceptar protocolos inseguros', () => {
+    const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
+    const source=html.slice(html.indexOf('    function readCSVImage('),html.indexOf('    // FUNCIÓN CON RETROCOMPATIBILIDAD: importCSV'));
+    const context=vm.createContext({URL});
+    vm.runInContext(`${source}\nglobalThis.read=readCSVImage`,context);
+    assert.equal(context.read('https://example.test/foto.webp'),'https://example.test/foto.webp');
+    assert.equal(context.read('data:image/png;base64,AAAA'),'data:image/png;base64,AAAA');
+    assert.equal(context.read('javascript:alert(1)'),null);
+});

@@ -904,9 +904,10 @@
         const quoteNo = ensureQuoteNumber();
         const createdAt = quoteCreatedAt || '';
 
-        let csv = 'Cliente|Vehiculo|TiempoEntrega|NumeroCotizacion|FechaCotizacion|Asesor|Direccion|Observaciones|DescuentoActivo|DescuentoPorcentaje|Titulo|Marca|Opcion|Descripcion|RefInterna|Costo|Flete|Margen|Precio|Garantia|Imagen|Imagen2|Imagen3|FotoScale\n';
+        const whatsapp = (document.getElementById('inWhatsApp')?.value || '').replace(/\|/g, ';');
+        let csv = 'Cliente|Vehiculo|TiempoEntrega|NumeroCotizacion|FechaCotizacion|Asesor|Direccion|Observaciones|DescuentoActivo|DescuentoPorcentaje|Titulo|Marca|Opcion|Descripcion|RefInterna|Costo|Flete|Margen|Precio|Garantia|Imagen|Imagen2|Imagen3|FotoScale|ItemNumero|WhatsApp\n';
         items.forEach(item => {
-            csv += `${cliente}|${vehiculo}|${tiempoEntrega}|${quoteNo}|${createdAt}|${asesor.replace(/\|/g, ';')}|${direccion.replace(/\|/g, ';')}|${observaciones}|${descActivo}|${descPct}|${item.tit}|${item.brand}|${item.opt}|${encodeCSVText(item.desc)}|${(item.refInt || '').replace(/\|/g, ';')}|${item.c}|${item.s}|${item.m}|${item.p}|${item.war}|${item.img || ''}|${item.img2 || ''}|${item.img3 || ''}|${item.photoScale || 100}\n`;
+            csv += `${cliente}|${vehiculo}|${tiempoEntrega}|${quoteNo}|${createdAt}|${asesor.replace(/\|/g, ';')}|${direccion.replace(/\|/g, ';')}|${observaciones}|${descActivo}|${descPct}|${item.tit}|${item.brand}|${item.opt}|${encodeCSVText(item.desc)}|${(item.refInt || '').replace(/\|/g, ';')}|${item.c}|${item.s}|${item.m}|${item.p}|${item.war}|${item.img || ''}|${item.img2 || ''}|${item.img3 || ''}|${item.photoScale || 100}|${item.itemNo || ''}|${whatsapp}\n`;
         });
         return csv;
     }
@@ -1569,6 +1570,13 @@ async function navCSV(delta){
         return true;
     }
 
+    function readCSVImage(value) {
+        const image = String(value || '').trim();
+        if (/^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+$/i.test(image)) return image;
+        try { const url = new URL(image); return ['http:', 'https:'].includes(url.protocol) ? url.href : null; }
+        catch { return null; }
+    }
+
     // FUNCIÓN CON RETROCOMPATIBILIDAD: importCSV detecta formato antiguo vs nuevo
     function parseCSVContent(csvText, fileName){
         isLoadingCSV = true;
@@ -1576,6 +1584,11 @@ async function navCSV(delta){
         const header = allLines[0] || '';
         const lines = allLines.slice(1);
         items = [];
+        nextItemNumber = 1;
+        const csvColumns = header.split('|').map(column => column.trim());
+        const itemNumberIndex = csvColumns.indexOf('ItemNumero');
+        const whatsappIndex = csvColumns.indexOf('WhatsApp');
+        const usedItemNumbers = new Set();
         discountEnabled = false;
         discountPercent = 0;
         quoteNumber = '';
@@ -1639,9 +1652,9 @@ async function navCSV(delta){
                     m: cols[base+7] || '30',
                     p: cols[base+8] || '0',
                     war: cols[base+9] || '3 meses',
-                    img: (cols[base+10] && cols[base+10].startsWith('data:image')) ? cols[base+10] : null,
-                    img2: (cols[base+11] && cols[base+11].trim().startsWith('data:image')) ? cols[base+11].trim() : null,
-                    img3: (hasImagen3 && cols[base+12] && cols[base+12].trim().startsWith('data:image')) ? cols[base+12].trim() : null,
+                    img: readCSVImage(cols[base+10]),
+                    img2: readCSVImage(cols[base+11]),
+                    img3: hasImagen3 ? readCSVImage(cols[base+12]) : null,
                     photoScale: hasFotoScale ? (parseInt(cols[base+13], 10) || 100) : 100
                 });
             } else if(isNewFormat) {
@@ -1683,9 +1696,9 @@ async function navCSV(delta){
                     m: cols[base+6] || '30',
                     p: cols[base+7] || '0',
                     war: cols[base+8] || '3 meses',
-                    img: (cols[base+9] && cols[base+9].startsWith('data:image')) ? cols[base+9] : null,
-                    img2: (cols[base+10] && cols[base+10].trim().startsWith('data:image')) ? cols[base+10].trim() : null,
-                    img3: (hasImagen3 && cols[base+11] && cols[base+11].trim().startsWith('data:image')) ? cols[base+11].trim() : null,
+                    img: readCSVImage(cols[base+9]),
+                    img2: readCSVImage(cols[base+10]),
+                    img3: hasImagen3 ? readCSVImage(cols[base+11]) : null,
                     photoScale: hasFotoScale ? (parseInt(cols[base+12], 10) || 100) : 100
                 });
             } else {
@@ -1708,12 +1721,19 @@ async function navCSV(delta){
                     m: cols[8] || '30',
                     p: cols[9] || '0',
                     war: cols[11] || '3 meses',
-                    img: (cols[12] && cols[12].startsWith('data:image')) ? cols[12] : null,
+                    img: readCSVImage(cols[12]),
                     img2: null,
                     img3: null,
                     photoScale: 100
                 });
             }
+            const number = itemNumberIndex >= 0 ? Number(cols[itemNumberIndex]) : 0;
+            if (Number.isSafeInteger(number) && number > 0 && !usedItemNumbers.has(number)) {
+                items[items.length - 1].itemNo = number;
+                usedItemNumbers.add(number);
+                nextItemNumber = Math.max(nextItemNumber, number + 1);
+            }
+            if (whatsappIndex >= 0 && document.getElementById('inWhatsApp')) document.getElementById('inWhatsApp').value = cols[whatsappIndex] || '';
         });
 
         updateAll();
