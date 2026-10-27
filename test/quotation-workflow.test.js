@@ -285,6 +285,20 @@ test('la subida indica si falta el espacio de imágenes sin crear buckets', asyn
     assert.match(res.body.message,/quotation-images/);
 });
 
+test('el diagnóstico distingue el proyecto y si Storage reconoce el espacio', async () => {
+    const bucket={upload:async()=>({error:{message:'Bucket not found',statusCode:'404'}})};
+    let lookups=0;
+    const client={storage:{from:()=>bucket,getBucket:async name=>{lookups++;assert.equal(name,'quotation-images');return {data:{public:true},error:null}}}};
+    const handler=createQuotationImageUploadHandler({client,hasServiceRole:()=>true});
+    const res={statusCode:0,body:null,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}};
+    const jpeg=Buffer.from([0xff,0xd8,0xff,0xd9]);
+    await handler({method:'POST',headers:{'x-admin-password':'test-password'},body:{image:'data:image/jpeg;base64,'+jpeg.toString('base64')}},res);
+    assert.equal(res.statusCode,503);
+    assert.equal(lookups,1);
+    assert.match(res.body.message,/example\.supabase\.co/);
+    assert.match(res.body.message,/Storage reconoce quotation-images \(público\)/);
+});
+
 test('una copia CSV recupera imágenes pegadas y enlaces sin aceptar protocolos inseguros', () => {
     const html=fs.readFileSync(new URL('../agn-cotizador-integrado.html',import.meta.url),'utf8');
     const source=html.slice(html.indexOf('    function readCSVImage('),html.indexOf('    // FUNCIÓN CON RETROCOMPATIBILIDAD: importCSV'));
