@@ -89,7 +89,7 @@
     };
 
     window.agnErpBridge = {
-        getQuote(existing = {}) {
+        getQuote(existing = {}, options = {}) {
             const sourceItems = items.slice();
             const current = getData();
             const hasCurrent = ['tit','desc','refInt','c','s'].some(key => String(current[key] ?? '').trim()) || !!(current.img || current.img2 || current.img3);
@@ -97,6 +97,7 @@
             else if (hasCurrent) sourceItems.push(current);
             const mapped = sourceItems.map(fromOriginalItem);
             if (!mapped.length) mapped.push({ item_number:nextItemNumber, part_name:'', price_usd:0, shipping_usd:0, margin_pct:30 });
+            const savedName = options.forSave ? getDefaultCSVFilename().replace(/\.csv$/i, '') : existing.editor_state?.display_name;
             const vehicle = getValue('inCar');
             const previousVehicle = [existing.vehicle_brand,existing.vehicle_model,existing.vehicle_year].filter(Boolean).join(' ');
             const vehicleFields = previousVehicle && vehicle !== previousVehicle ? { vehicle_brand:'', vehicle_model:'', vehicle_year:'' } : {};
@@ -105,7 +106,7 @@
                 quotation_items:mapped, editor_state:{ ...existing.editor_state, next_item_number:Math.max(nextItemNumber, ...sourceItems.map(item => (Number(item.itemNo) || 0) + 1)), vehicle_display:getValue('inCar'), advisor:getValue('inAdvisor'), address:getValue('inAddress'),
                     observations:getValue('inObservations'), show_total:!!byId('chkShowTotal')?.checked,
                     discount_enabled:!!byId('chkDiscount')?.checked, discount_percent:Number(getValue('inDiscountPct')) || 0,
-                    watermark:!!byId('chkAGN')?.checked, quote_number:quoteNumber, quote_created_at:quoteCreatedAt } };
+                    watermark:!!byId('chkAGN')?.checked, quote_number:quoteNumber, quote_created_at:quoteCreatedAt, display_name:savedName } };
         },
         setQuote(quote) {
             const extra = quote.editor_state || {};

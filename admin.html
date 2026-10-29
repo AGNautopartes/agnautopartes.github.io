@@ -3775,6 +3775,17 @@ function updateQuotationStats(quotas) {
     document.getElementById('qs-aceptado').textContent = quotas.filter(q => q.status === 'aceptado').length;
 }
 
+function quotationDisplayName(q) {
+    const saved = String(q.editor_state?.display_name || '').trim();
+    if (saved) return saved;
+    const number = String(q.editor_state?.quote_number || '').trim();
+    if (!number) return q.readable_id || String(q.id || '').slice(0,8);
+    const clean = value => String(value || '').trim().replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const vehicle = clean(q.editor_state?.vehicle_display || [q.vehicle_brand, q.vehicle_model, q.vehicle_year].filter(Boolean).join(' ')).slice(0,15) || 'SinVehiculo';
+    const client = clean(q.customer_name) || 'SinCliente';
+    return `${number}_AGN_${vehicle}_${client}`;
+}
+
 function renderQuotations(quotas) {
     const list = document.getElementById('quot-list');
     if (!list) return;
@@ -3789,7 +3800,7 @@ function renderQuotations(quotas) {
         return `
         <div class="order-card" data-id="${q.id}" style="cursor:pointer">
             <div>
-                <div class="order-client">${q.readable_id || q.id.slice(0,8)}</div>
+                <div class="order-client" style="overflow-wrap:anywhere">${escapeHtml(quotationDisplayName(q))}</div>
                 <div class="order-part">${q.customer_name || 'Sin cliente'} • ${q.vehicle_brand || ''} ${q.vehicle_model || ''} ${q.vehicle_year || ''}</div>
                 <div class="order-vehicle">${itemsCount} items • ${total}</div>
             </div>
@@ -3977,6 +3988,7 @@ document.getElementById('quot-search')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const filtered = allQuotations.filter(q =>
         (q.readable_id || '').toLowerCase().includes(term) ||
+        quotationDisplayName(q).toLowerCase().includes(term) ||
         (q.customer_name || '').toLowerCase().includes(term) ||
         `${q.vehicle_brand||''} ${q.vehicle_model||''}`.toLowerCase().includes(term)
     );
@@ -4004,10 +4016,10 @@ const quotationNumber = value => Number.isFinite(Number(value)) ? Number(value) 
 const quotationHeaderFields = new Set(['customer_name', 'whatsapp_phone', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'delivery_time', 'notes']);
 const quotationItemFields = new Set(['part_name', 'part_number', 'part_brand', 'option_name', 'description', 'internal_reference', 'warranty', 'supplier_url', 'image_url', 'image_url_2', 'image_url_3', 'price_usd', 'shipping_usd', 'margin_pct']);
 
-function syncQuotationFromOriginal(quote) {
+function syncQuotationFromOriginal(quote, options = {}) {
     const bridge = document.getElementById('quotation-original-frame')?.contentWindow?.agnErpBridge;
     if (!bridge) throw new Error('El cotizador todavía se está cargando.');
-    Object.assign(quote, bridge.getQuote(quote));
+    Object.assign(quote, bridge.getQuote(quote, options));
 }
 
 document.getElementById('quotation-original-frame')?.addEventListener('load', () => {
@@ -4022,7 +4034,7 @@ function setQuotationSaveStatus(message, type = 'info') {
 
 document.getElementById('btn-save-original-quotation')?.addEventListener('click', async () => {
     if (!selectedQuotation) selectedQuotation = { id:`draft-${crypto.randomUUID()}`, status:'borrador', quotation_items:[] };
-    try { syncQuotationFromOriginal(selectedQuotation); await saveQuotationDraft(selectedQuotation); }
+    try { syncQuotationFromOriginal(selectedQuotation, {forSave:true}); await saveQuotationDraft(selectedQuotation); }
     catch (error) { setQuotationSaveStatus(error.message, 'error'); showToast(error.message, 'error'); }
 });
 

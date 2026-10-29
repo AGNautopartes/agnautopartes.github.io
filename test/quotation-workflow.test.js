@@ -462,3 +462,13 @@ test('tabla PNG usa el número de proforma y nombre seguro del cliente', async (
     vm.runInContext(`${sanitizer}\n${code}\nglobalThis.download=downloadSheet`,context);
     await context.download();assert.equal(a.download,'2610271513_Manuel Samaniego.png');assert.equal(a.clicked,true);
 });
+
+
+test('el panel muestra el nombre guardado y recupera nombres de cotizaciones anteriores', () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const code=html.slice(html.indexOf('function quotationDisplayName('),html.indexOf('function renderQuotations('));
+    const context=vm.createContext({});vm.runInContext(`${code}\nglobalThis.name=quotationDisplayName`,context);
+    assert.equal(context.name({id:'123',editor_state:{display_name:'2610282029_AGN_Chery Tiggo 3 1_+593 99 608 7884'}}),'2610282029_AGN_Chery Tiggo 3 1_+593 99 608 7884');
+    assert.equal(context.name({id:'123',customer_name:'+593 99 608 7884',editor_state:{quote_number:'2610282029',vehicle_display:'Chery Tiggo 3 1.6'}}),'2610282029_AGN_Chery Tiggo 3 1_+593 99 608 7884');
+    assert.equal(context.name({id:'123',readable_id:'Q-2026-001',editor_state:{}}),'Q-2026-001');
+});
