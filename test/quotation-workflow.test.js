@@ -504,3 +504,13 @@ test('si Aria entrega VIN por separado, también queda visible en Vehículo', ()
  assert.equal(quote.vehicle_display,'Jeep Wrangler 2012 — VIN: 1C4HJWFG9CL171369');
  assert.equal(quote.editor_state.vehicle_vin,'1C4HJWFG9CL171369');
 });
+
+
+test('la conversión de cotización a orden conserva el VIN específico', async () => {
+ const {quotationVinForOrder}=await import('../lib/handlers/create-order-from-quotation.js');
+ assert.equal(quotationVinForOrder({editor_state:{vehicle_vin:' 1C4HJWFG9CL171369 '}}),'1C4HJWFG9CL171369');
+ assert.equal(quotationVinForOrder({editor_state:{vehicle_display:'JEEP Wrangler 2012 — VIN / FRAME: 1C4HJWFG9CL171369'}}),'1C4HJWFG9CL171369');
+ assert.equal(quotationVinForOrder({editor_state:{vehicle_display:'JEEP Wrangler 2012'}}),'');
+ const source=fs.readFileSync(new URL('../lib/handlers/create-order-from-quotation.js',import.meta.url),'utf8');
+ assert.match(source,/vin:\s*quotationVinForOrder\(quotation\)/);
+});
