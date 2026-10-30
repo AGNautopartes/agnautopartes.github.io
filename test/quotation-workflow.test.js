@@ -472,3 +472,35 @@ test('el panel muestra el nombre guardado y recupera nombres de cotizaciones ant
     assert.equal(context.name({id:'123',customer_name:'+593 99 608 7884',editor_state:{quote_number:'2610282029',vehicle_display:'Chery Tiggo 3 1.6'}}),'2610282029_AGN_Chery Tiggo 3 1_+593 99 608 7884');
     assert.equal(context.name({id:'123',readable_id:'Q-2026-001',editor_state:{}}),'Q-2026-001');
 });
+
+
+test('Aria conserva el vehículo completo y el VIN en la cotización y al reabrir', () => {
+    const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+    const calc=html.slice(html.indexOf('const quotationMoney ='),html.indexOf('function syncQuotationFromOriginal('));
+    const apply=html.slice(html.indexOf('function applyQuotationOperation('),html.indexOf('function renderQuotationEditor('));
+    const values=Object.fromEntries(['inClient','inWhatsApp','inCar','inAdvisor','inAddress','inDeliveryTime','inObservations','inDiscountPct','inTitle','chkShowTotal','chkDiscount','chkAGN'].map(id=>[id,{value:'',checked:false}]));
+    values.inClient.parentElement={parentElement:{after(){}}};const document={getElementById:id=>values[id],createElement:()=>({})};
+    const context=vm.createContext({document,window:{}});
+    vm.runInContext(`let items=[],editIdx=-1,nextItemNumber=1,showTotal=false,discountEnabled=false,discountPercent=0,quoteNumber='',quoteCreatedAt=''; function resetForm(){} function updateAll(){} function render(){} function getData(){return {}}`,context);
+    vm.runInContext(`${calc}\n${apply}\nglobalThis.apply=applyQuotationOperation`,context);
+    vm.runInContext(fs.readFileSync(new URL('../agn-cotizador-erp-bridge.js',import.meta.url),'utf8'),context);
+    const text='JEEP, 2012 Wrangler — VIN / FRAME: 1C4HJWFG9CL171369';
+    const operations=sanitizeOperations([{type:'update_header',fields:{vehicle_brand:'Jeep',vehicle_model:'Wrangler',vehicle_year:'2012',vehicle_display:text,vehicle_vin:'1C4HJWFG9CL171369'}}],0,true);
+    const quote={editor_state:{},quotation_items:[]};context.apply(quote,operations[0]);context.window.agnErpBridge.setQuote(quote);
+    assert.equal(values.inCar.value,text);
+    const saved=context.window.agnErpBridge.getQuote(quote);assert.equal(saved.editor_state.vehicle_display,text);assert.equal(saved.editor_state.vehicle_vin,'1C4HJWFG9CL171369');
+    context.window.agnErpBridge.setQuote({vehicle_brand:'Jeep',vehicle_model:'Wrangler',vehicle_year:'2012',editor_state:saved.editor_state,quotation_items:[]});
+    assert.equal(values.inCar.value,text);
+});
+
+
+test('si Aria entrega VIN por separado, también queda visible en Vehículo', () => {
+ const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+ const calc=html.slice(html.indexOf('const quotationMoney ='),html.indexOf('function syncQuotationFromOriginal('));
+ const apply=html.slice(html.indexOf('function applyQuotationOperation('),html.indexOf('function renderQuotationEditor('));
+ const ctx=vm.createContext({});vm.runInContext(`${calc}\n${apply}\nglobalThis.apply=applyQuotationOperation`,ctx);
+ const quote={vehicle_display:'Jeep Wrangler 2012',editor_state:{vehicle_display:'Jeep Wrangler 2012'},quotation_items:[]};
+ ctx.apply(quote,{type:'update_header',fields:{vehicle_vin:'1C4HJWFG9CL171369'}});
+ assert.equal(quote.vehicle_display,'Jeep Wrangler 2012 — VIN: 1C4HJWFG9CL171369');
+ assert.equal(quote.editor_state.vehicle_vin,'1C4HJWFG9CL171369');
+});

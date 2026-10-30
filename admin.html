@@ -4013,7 +4013,7 @@ const saveQuotationSession = quote => {
 
 const quotationMoney = value => Math.round(value * 100) / 100;
 const quotationNumber = value => Number.isFinite(Number(value)) ? Number(value) : 0;
-const quotationHeaderFields = new Set(['customer_name', 'whatsapp_phone', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'delivery_time', 'notes']);
+const quotationHeaderFields = new Set(['customer_name', 'whatsapp_phone', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'vehicle_display', 'vehicle_vin', 'delivery_time', 'notes']);
 const quotationItemFields = new Set(['part_name', 'part_number', 'part_brand', 'option_name', 'description', 'internal_reference', 'warranty', 'supplier_url', 'image_url', 'image_url_2', 'image_url_3', 'price_usd', 'shipping_usd', 'margin_pct']);
 
 function syncQuotationFromOriginal(quote, options = {}) {
@@ -4115,9 +4115,25 @@ function applyQuotationOperation(quote, operation) {
         if (operation.index < 0) throw new Error(`No existe el ítem ${operation.item_number} en esta cotización.`);
     }
     if (operation.type === 'update_header') {
-        Object.entries(operation.fields || {}).forEach(([key, value]) => {
+        const fields = operation.fields || {};
+        const oldVehicle = [quote.vehicle_brand, quote.vehicle_model, quote.vehicle_year].filter(Boolean).join(' ');
+        Object.entries(fields).forEach(([key, value]) => {
             if (quotationHeaderFields.has(key)) quote[key] = value;
         });
+        quote.editor_state = { ...quote.editor_state };
+        if (Object.hasOwn(fields, 'vehicle_display')) quote.editor_state.vehicle_display = fields.vehicle_display;
+        else if (['vehicle_brand','vehicle_model','vehicle_year'].some(key => Object.hasOwn(fields, key)) &&
+                 (!quote.vehicle_display || quote.vehicle_display === oldVehicle)) {
+            quote.vehicle_display = [quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' ');
+            quote.editor_state.vehicle_display = quote.vehicle_display;
+        }
+        if (Object.hasOwn(fields, 'vehicle_vin')) {
+            quote.editor_state.vehicle_vin = fields.vehicle_vin;
+            if (!Object.hasOwn(fields, 'vehicle_display') && fields.vehicle_vin && !String(quote.vehicle_display || '').includes(fields.vehicle_vin)) {
+                quote.vehicle_display = [quote.vehicle_display, `VIN: ${fields.vehicle_vin}`].filter(Boolean).join(' — ');
+                quote.editor_state.vehicle_display = quote.vehicle_display;
+            }
+        }
     }
     if (operation.type === 'update_item' && Number.isInteger(operation.index) && quote.quotation_items[operation.index]) {
         Object.entries(operation.fields || {}).forEach(([key, value]) => {

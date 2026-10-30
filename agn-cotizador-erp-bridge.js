@@ -99,11 +99,13 @@
             if (!mapped.length) mapped.push({ item_number:nextItemNumber, part_name:'', price_usd:0, shipping_usd:0, margin_pct:30 });
             const savedName = options.forSave ? getDefaultCSVFilename().replace(/\.csv$/i, '') : existing.editor_state?.display_name;
             const vehicle = getValue('inCar');
-            const previousVehicle = [existing.vehicle_brand,existing.vehicle_model,existing.vehicle_year].filter(Boolean).join(' ');
+            const previousVehicle = existing.vehicle_display || existing.editor_state?.vehicle_display || [existing.vehicle_brand,existing.vehicle_model,existing.vehicle_year].filter(Boolean).join(' ');
+            const explicitVin = vehicle.match(/(?:VIN|FRAME)\s*[:#-]?\s*([A-HJ-NPR-Z0-9]{17})\b/i)?.[1] || '';
+            const savedVin = explicitVin || (vehicle === previousVehicle ? (existing.vehicle_vin || existing.editor_state?.vehicle_vin || '') : '');
             const vehicleFields = previousVehicle && vehicle !== previousVehicle ? { vehicle_brand:'', vehicle_model:'', vehicle_year:'' } : {};
             return { ...existing, ...vehicleFields, customer_name:getValue('inClient'), whatsapp_phone:getValue('inWhatsApp'),
-                vehicle_display:vehicle, delivery_time:getValue('inDeliveryTime'),
-                quotation_items:mapped, editor_state:{ ...existing.editor_state, next_item_number:Math.max(nextItemNumber, ...sourceItems.map(item => (Number(item.itemNo) || 0) + 1)), vehicle_display:getValue('inCar'), advisor:getValue('inAdvisor'), address:getValue('inAddress'),
+                vehicle_display:vehicle, vehicle_vin:savedVin, delivery_time:getValue('inDeliveryTime'),
+                quotation_items:mapped, editor_state:{ ...existing.editor_state, next_item_number:Math.max(nextItemNumber, ...sourceItems.map(item => (Number(item.itemNo) || 0) + 1)), vehicle_display:getValue('inCar'), vehicle_vin:savedVin, advisor:getValue('inAdvisor'), address:getValue('inAddress'),
                     observations:getValue('inObservations'), show_total:!!byId('chkShowTotal')?.checked,
                     discount_enabled:!!byId('chkDiscount')?.checked, discount_percent:Number(getValue('inDiscountPct')) || 0,
                     watermark:!!byId('chkAGN')?.checked, quote_number:quoteNumber, quote_created_at:quoteCreatedAt, display_name:savedName } };
@@ -111,7 +113,7 @@
         setQuote(quote) {
             const extra = quote.editor_state || {};
             setValue('inClient',quote.customer_name); setValue('inWhatsApp',quote.whatsapp_phone);
-            setValue('inCar',[quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' ') || quote.vehicle_display || extra.vehicle_display || '');
+            setValue('inCar',quote.vehicle_display || extra.vehicle_display || [quote.vehicle_brand,quote.vehicle_model,quote.vehicle_year].filter(Boolean).join(' ') || '');
             setValue('inAdvisor',extra.advisor || 'Pedro Cordero'); setValue('inAddress',extra.address);
             setValue('inDeliveryTime',quote.delivery_time || '9-12 días lab.');
             setValue('inObservations',extra.observations); setValue('inDiscountPct',extra.discount_percent || 0);
